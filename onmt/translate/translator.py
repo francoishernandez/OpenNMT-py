@@ -41,8 +41,14 @@ def build_translator(opt, report_score=True, logger=None, out_file=None):
 
     translator = Translator(model, fields, global_scorer=scorer,
                             out_file=out_file, report_score=report_score,
+<<<<<<< HEAD
+                            copy_attn=model_opt.copy_attn,
+                            self_attn_type=model_opt.self_attn_type,
+                            decoder_type=model_opt.decoder_type, **kwargs)
+=======
                             copy_attn=model_opt.copy_attn, logger=logger,
                             self_attn_type=model_opt.self_attn_type, **kwargs)
+>>>>>>> d6e8ea4250b2a48262bae0276047371ea2dcccf1
     return translator
 
 
@@ -76,6 +82,7 @@ class Translator(object):
                  copy_attn=False,
                  logger=None,
                  self_attn_type="scaled-dot",
+                 decoder_type=None,
                  gpu=False,
                  dump_beam="",
                  min_length=0,
@@ -105,6 +112,7 @@ class Translator(object):
         self.global_scorer = global_scorer
         self.copy_attn = copy_attn
         self.self_attn_type = self_attn_type
+        self.decoder_type = decoder_type
         self.beam_size = beam_size
         self.min_length = min_length
         self.stepwise_penalty = stepwise_penalty
@@ -350,12 +358,10 @@ class Translator(object):
         memory_lengths = src_lengths.repeat(beam_size)
         dec_states.repeat_beam_size_times(beam_size)
 
-        # initialize cache
-        if self.self_attn_type == "average":
-            cache = self.model.decoder._init_cache(
-              memory_bank, memory_lengths=memory_lengths)
-        else:
-            cache = None
+        # # initialize cache
+        if self.decoder_type == "transformer":
+          cache = self.model.decoder._init_cache(memory_bank, memory_lengths=memory_lengths)
+
 
         # (3) run the decoder to generate sentences, using beam search.
         for i in range(self.max_length):
@@ -378,13 +384,20 @@ class Translator(object):
             inp = inp.unsqueeze(2)
 
             # Run one step.
-            if self.self_attn_type == "average":
-                dec_out, dec_states, attn = self.model.decoder(
-                  inp, memory_bank, dec_states, memory_lengths=memory_lengths,
-                  step=i, cache=cache)
+
+            if self.decoder_type == "transformer":
+              if self.self_attn_type == "average":
+                  dec_out, dec_states, attn = self.model.decoder(
+                    inp, memory_bank, dec_states, memory_lengths=memory_lengths,
+                    step=i, cache=cache)
+              else:
+                  dec_out, dec_states, attn = self.model.decoder(
+                    inp, memory_bank, dec_states, memory_lengths=memory_lengths,
+                    cache=cache)
             else:
-                dec_out, dec_states, attn = self.model.decoder(
-                  inp, memory_bank, dec_states, memory_lengths=memory_lengths)
+              dec_out, dec_states, attn = self.model.decoder(
+                inp, memory_bank, dec_states, memory_lengths=memory_lengths)
+
 
             dec_out = dec_out.squeeze(0)
             # dec_out: beam x rnn_size
@@ -411,7 +424,9 @@ class Translator(object):
             for j, b in enumerate(beam):
                 b.advance(out[:, j],
                           beam_attn.data[:, j, :memory_lengths[j]])
-                dec_states.beam_update(j, b.get_current_origin(), beam_size)
+
+                dec_states.beam_update(j, b.get_current_origin(), beam_size, cache=cache)
+
 
         # (4) Extract sentences from beam.
         ret = self._from_beam(beam)

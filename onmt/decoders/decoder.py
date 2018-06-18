@@ -388,7 +388,7 @@ class DecoderState(object):
         self.hidden = tuple([_.detach() for _ in self.hidden])
         self.input_feed = self.input_feed.detach()
 
-    def beam_update(self, idx, positions, beam_size):
+    def beam_update(self, idx, positions, beam_size, cache=None):
         """ Need to document this """
         for e in self._all:
             sizes = e.size()

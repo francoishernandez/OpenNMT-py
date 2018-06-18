@@ -41,14 +41,10 @@ def build_translator(opt, report_score=True, logger=None, out_file=None):
 
     translator = Translator(model, fields, global_scorer=scorer,
                             out_file=out_file, report_score=report_score,
-<<<<<<< HEAD
                             copy_attn=model_opt.copy_attn,
                             self_attn_type=model_opt.self_attn_type,
                             decoder_type=model_opt.decoder_type, **kwargs)
-=======
-                            copy_attn=model_opt.copy_attn, logger=logger,
-                            self_attn_type=model_opt.self_attn_type, **kwargs)
->>>>>>> d6e8ea4250b2a48262bae0276047371ea2dcccf1
+
     return translator
 
 

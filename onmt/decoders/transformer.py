@@ -90,10 +90,6 @@ class TransformerDecoderLayer(nn.Module):
                                       :tgt_pad_mask.size(1)], 0)
         input_norm = self.layer_norm_1(inputs)
         all_input = input_norm
-        if previous_input is not None:
-            all_input = torch.cat((previous_input, input_norm), dim=1)
-            dec_mask = None
-
         if self.self_attn_type == "scaled-dot":
             query, attn = self.self_attn(all_input, all_input, input_norm, type="self",
                                          mask=dec_mask, layer_cache=layer_cache)
@@ -236,9 +232,6 @@ class TransformerDecoder(nn.Module):
         # aeq(tgt_batch, memory_batch, src_batch, tgt_batch)
         # aeq(memory_len, src_len)
 
-        if state.previous_input is not None:
-            tgt = torch.cat([state.previous_input, tgt], 0)
-
         # Initialize return variables.
         outputs = []
         attns = {"std": []}
@@ -246,9 +239,8 @@ class TransformerDecoder(nn.Module):
             attns["copy"] = []
 
         # Run the forward pass of the TransformerDecoder.
-        emb = self.embeddings(tgt)
-        if state.previous_input is not None:
-            emb = emb[state.previous_input.size(0):, ]
+        emb = self.embeddings(tgt, step=step)
+
         assert emb.dim() == 3  # len x batch x embedding_dim
 
         output = emb.transpose(0, 1).contiguous()
@@ -263,20 +255,14 @@ class TransformerDecoder(nn.Module):
         saved_inputs = []
 
         for i in range(self.num_layers):
-            prev_layer_input = None
-            if state.previous_input is not None:
-                prev_layer_input = state.previous_layer_inputs[i]
             output, attn, all_input \
                 = self.transformer_layers[i](output, src_memory_bank,
                                              src_pad_mask, tgt_pad_mask,
-                                             previous_input=prev_layer_input,
+                                             previous_input=None,
                                              layer_cache=cache["layer_{}".
                                                                format(i)]
                                              if cache is not None else None,
                                              step=step)
-            saved_inputs.append(all_input)
-
-        saved_inputs = torch.stack(saved_inputs)
 
         output = self.layer_norm(output)
 
@@ -288,8 +274,6 @@ class TransformerDecoder(nn.Module):
         if self._copy:
             attns["copy"] = attn
 
-        # Update the state.
-        state = state.update_state(tgt, saved_inputs)
         return outputs, state, attns
 
     def init_decoder_state(self, src, memory_bank, enc_hidden):
@@ -336,20 +320,6 @@ class TransformerDecoderState(DecoderState):
 
     def beam_update(self, idx, positions, beam_size, cache=None):
         """ Need to document this """
-        for e in self._all:
-            sizes = e.size()
-            br = sizes[1]
-            if len(sizes) == 3:
-                sent_states = e.view(sizes[0], beam_size, br // beam_size,
-                                     sizes[2])[:, :, idx]
-            else:
-                sent_states = e.view(sizes[0], beam_size,
-                                     br // beam_size,
-                                     sizes[2],
-                                     sizes[3])[:, :, idx]
-
-            sent_states.data.copy_(
-                sent_states.data.index_select(1, positions))
 
         for k_layer, layer in cache.items():
             if k_layer not in ["memory", "memory_mask"]:

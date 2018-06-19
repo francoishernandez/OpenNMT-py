@@ -34,9 +34,13 @@ class PositionalEncoding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
         self.dim = dim
 
-    def forward(self, emb):
+    def forward(self, emb, step=None):
         emb = emb * math.sqrt(self.dim)
-        emb = emb + self.pe[:emb.size(0)]
+
+        if step is None:
+            emb = emb + self.pe[:emb.size(0)]
+        else:
+            emb = emb + self.pe[step]
         emb = self.dropout(emb)
         return emb
 
@@ -148,7 +152,9 @@ class Embeddings(nn.Module):
             mlp = nn.Sequential(nn.Linear(in_dim, out_dim), nn.ReLU())
             self.make_embedding.add_module('mlp', mlp)
 
-        if position_encoding:
+        self.position_encoding = position_encoding
+
+        if self.position_encoding:
             pe = PositionalEncoding(dropout, self.embedding_size)
             self.make_embedding.add_module('pe', pe)
 
@@ -175,7 +181,7 @@ class Embeddings(nn.Module):
             if fixed:
                 self.word_lut.weight.requires_grad = False
 
-    def forward(self, source):
+    def forward(self, source, step=None):
         """
         Computes the embeddings for words and features.
 
@@ -187,11 +193,21 @@ class Embeddings(nn.Module):
         # in_length, in_batch, nfeat = source.size()
         # aeq(nfeat, len(self.emb_luts))
 
-        emb = self.make_embedding(source)
+        # emb = self.make_embedding(source)
+        if self.position_encoding:
+            for i, module in enumerate(self.make_embedding._modules.values()):
+                if i == len(self.make_embedding._modules.values()) - 1:
+                    # print("STEP : ", step)
+                    source = module(source, step=step)
+                else:
+                    source = module(source)
+        else:
+            emb = self.make_embedding(source)
+
 
         # out_length, out_batch, emb_size = emb.size()
         # aeq(in_length, out_length)
         # aeq(in_batch, out_batch)
         # aeq(emb_size, self.embedding_size)
 
-        return emb
+        return source

@@ -159,6 +159,9 @@ class MultiHeadedAttention(nn.Module):
           value = self.linear_values(value)
           query = self.linear_query(query)
 
+        key_len = key.size(1)
+        query_len = query.size(1)
+
         key_up = shape(key)
         value_up = shape(value)
         query_up = shape(query)

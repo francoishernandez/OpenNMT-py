@@ -389,7 +389,7 @@ class Translator(object):
               else:
                   dec_out, dec_states, attn = self.model.decoder(
                     inp, memory_bank, dec_states, memory_lengths=memory_lengths,
-                    cache=cache)
+                    step=i, cache=cache)
             else:
               dec_out, dec_states, attn = self.model.decoder(
                 inp, memory_bank, dec_states, memory_lengths=memory_lengths)

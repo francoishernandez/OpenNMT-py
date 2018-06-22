@@ -354,16 +354,14 @@ class Translator(object):
         memory_lengths = src_lengths.repeat(beam_size)
         dec_states.repeat_beam_size_times(beam_size)
 
-        # # initialize cache
+        # Initialise transformer cache inside decoder state
         if self.decoder_type == "transformer":
-          cache = self.model.decoder._init_cache(memory_bank, memory_lengths=memory_lengths)
-
+            dec_states._init_cache(self.model.decoder.num_layers, memory_bank, self.self_attn_type)
 
         # (3) run the decoder to generate sentences, using beam search.
         for i in range(self.max_length):
             if all((b.done() for b in beam)):
                 break
-
             # Construct batch x beam_size nxt words.
             # Get all the pending current beam words and arrange for forward.
             inp = var(torch.stack([b.get_current_state() for b in beam])
@@ -380,22 +378,12 @@ class Translator(object):
             inp = inp.unsqueeze(2)
 
             # Run one step.
-
-            if self.decoder_type == "transformer":
-              if self.self_attn_type == "average":
-                  dec_out, dec_states, attn = self.model.decoder(
-                    inp, memory_bank, dec_states, memory_lengths=memory_lengths,
-                    step=i, cache=cache)
-              else:
-                  dec_out, dec_states, attn = self.model.decoder(
-                    inp, memory_bank, dec_states, memory_lengths=memory_lengths,
-                    step=i, cache=cache)
-            else:
-              dec_out, dec_states, attn = self.model.decoder(
-                inp, memory_bank, dec_states, memory_lengths=memory_lengths)
-
+            dec_out, dec_states, attn = self.model.decoder(
+                inp, memory_bank, dec_states, memory_lengths=memory_lengths,
+                step=i)
 
             dec_out = dec_out.squeeze(0)
+
             # dec_out: beam x rnn_size
 
             # (b) Compute a vector of batch x beam word scores.
@@ -420,8 +408,7 @@ class Translator(object):
             for j, b in enumerate(beam):
                 b.advance(out[:, j],
                           beam_attn.data[:, j, :memory_lengths[j]])
-
-                dec_states.beam_update(j, b.get_current_origin(), beam_size, cache=cache)
+                dec_states.beam_update(j, b.get_current_origin(), beam_size)
 
 
         # (4) Extract sentences from beam.

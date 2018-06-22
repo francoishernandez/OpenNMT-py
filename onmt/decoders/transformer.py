@@ -187,34 +187,8 @@ class TransformerDecoder(nn.Module):
             self._copy = True
         self.layer_norm = onmt.modules.LayerNorm(hidden_size)
 
-    def _init_cache(self, memory_bank, memory_lengths=None):
-        cache = {
-            "memory": memory_bank,
-            "memory_mask": []
-        }
-
-        batch_size = memory_bank.size(1)
-        depth = memory_bank.size(-1)
-
-        for l in range(self.num_layers):
-            layer_cache = {
-                "memory_keys": None,
-                "memory_values": None
-            }
-            if self.self_attn_type == "scaled-dot":
-                layer_cache["self_keys"] = None
-                layer_cache["self_values"] = None
-            elif self.self_attn_type == "average":
-                layer_cache["prev_g"] = torch.zeros((batch_size, 1, depth))
-            else:
-                layer_cache["self_keys"] = None
-                layer_cache["self_values"] = None
-            cache["layer_{}".format(l)] = layer_cache
-
-        return cache
-
     def forward(self, tgt, memory_bank, state, memory_lengths=None,
-                step=None, cache=None):
+                step=None):
         """
         See :obj:`onmt.modules.RNNDecoderBase.forward()`
         """
@@ -259,9 +233,9 @@ class TransformerDecoder(nn.Module):
                 = self.transformer_layers[i](output, src_memory_bank,
                                              src_pad_mask, tgt_pad_mask,
                                              previous_input=None,
-                                             layer_cache=cache["layer_{}".
+                                             layer_cache=state.cache["layer_{}".
                                                                format(i)]
-                                             if cache is not None else None,
+                                             if state.cache is not None else None,
                                              step=step)
 
         output = self.layer_norm(output)
@@ -293,6 +267,25 @@ class TransformerDecoderState(DecoderState):
         self.src = src
         self.previous_input = None
         self.previous_layer_inputs = None
+        self.cache = None
+
+    def _init_cache(self, num_layers, memory_bank, self_attn_type='scaled-dot'):
+        self.cache = {}
+
+        batch_size = memory_bank.size(1)
+        depth = memory_bank.size(-1)
+
+        for l in range(num_layers):
+            layer_cache = {
+                "memory_keys": None,
+                "memory_values": None
+            }
+            if self_attn_type == "average":
+                layer_cache["prev_g"] = torch.zeros((batch_size, 1, depth))
+            else:
+                layer_cache["self_keys"] = None
+                layer_cache["self_values"] = None
+            self.cache["layer_{}".format(l)] = layer_cache
 
     @property
     def _all(self):
@@ -318,10 +311,9 @@ class TransformerDecoderState(DecoderState):
         self.src = torch.tensor(self.src.data.repeat(1, beam_size, 1),
                                 requires_grad=False)
 
-    def beam_update(self, idx, positions, beam_size, cache=None):
+    def beam_update(self, idx, positions, beam_size):
         """ Need to document this """
-
-        for k_layer, layer in cache.items():
+        for k_layer, layer in self.cache.items():
             if k_layer not in ["memory", "memory_mask"]:
                 for layer_cache in [layer["self_keys"], layer["self_values"]]:
                     if layer_cache is not None:

@@ -40,6 +40,7 @@ def make_translator(opt, report_score=True, logger=None, out_file=None):
     translator = Translator(model, fields, global_scorer=scorer,
                             out_file=out_file, report_score=report_score,
                             copy_attn=model_opt.copy_attn, logger=logger,
+                            decoder_type=model_opt.decoder_type,
                             **kwargs)
     return translator
 
@@ -73,6 +74,7 @@ class Translator(object):
                  global_scorer=None,
                  copy_attn=False,
                  logger=None,
+                 decoder_type=None,
                  gpu=False,
                  dump_beam="",
                  min_length=0,
@@ -101,6 +103,7 @@ class Translator(object):
         self.max_length = max_length
         self.global_scorer = global_scorer
         self.copy_attn = copy_attn
+        self.decoder_type = decoder_type
         self.beam_size = beam_size
         self.min_length = min_length
         self.stepwise_penalty = stepwise_penalty
@@ -307,6 +310,10 @@ class Translator(object):
         memory_lengths = src_lengths.repeat(beam_size)
         dec_states.repeat_beam_size_times(beam_size)
 
+        # Initialise transformer cache inside decoder state
+        if self.decoder_type == "transformer":
+            dec_states._init_cache(self.model.decoder.num_layers, memory_bank)
+
         # (3) run the decoder to generate sentences, using beam search.
         for i in range(self.max_length):
             if all((b.done() for b in beam)):
@@ -329,7 +336,8 @@ class Translator(object):
 
             # Run one step.
             dec_out, dec_states, attn = self.model.decoder(
-                inp, memory_bank, dec_states, memory_lengths=memory_lengths)
+                inp, memory_bank, dec_states, memory_lengths=memory_lengths,
+                step=i)
             dec_out = dec_out.squeeze(0)
             # dec_out: beam x rnn_size
 

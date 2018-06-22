@@ -169,12 +169,12 @@ class TransformerDecoderLayer(nn.Module):
         self.register_buffer('mask', mask)
 
     def forward(self, inputs, memory_bank, src_pad_mask, tgt_pad_mask,
-                previous_input=None):
+                layer_cache=None, step=None):
         # Args Checks
         input_batch, input_len, _ = inputs.size()
-        if previous_input is not None:
-            pi_batch, _, _ = previous_input.size()
-            aeq(pi_batch, input_batch)
+        # if previous_input is not None:
+        #     pi_batch, _, _ = previous_input.size()
+        #     aeq(pi_batch, input_batch)
         contxt_batch, contxt_len, _ = memory_bank.size()
         aeq(input_batch, contxt_batch)
 
@@ -190,15 +190,15 @@ class TransformerDecoderLayer(nn.Module):
                                       :tgt_pad_mask.size(1)], 0)
         input_norm = self.layer_norm_1(inputs)
         all_input = input_norm
-        if previous_input is not None:
-            all_input = torch.cat((previous_input, input_norm), dim=1)
-            dec_mask = None
+
         query, attn = self.self_attn(all_input, all_input, input_norm,
+                                     type="self", layer_cache=layer_cache,
                                      mask=dec_mask)
         query = self.drop(query) + inputs
 
         query_norm = self.layer_norm_2(query)
         mid, attn = self.context_attn(memory_bank, memory_bank, query_norm,
+                                      type="context", layer_cache=layer_cache,
                                       mask=src_pad_mask)
         output = self.feed_forward(self.drop(mid) + query)
 
@@ -275,7 +275,8 @@ class TransformerDecoder(nn.Module):
             self._copy = True
         self.layer_norm = onmt.modules.LayerNorm(hidden_size)
 
-    def forward(self, tgt, memory_bank, state, memory_lengths=None):
+    def forward(self, tgt, memory_bank, state, memory_lengths=None,
+                step=None):
         """
         See :obj:`onmt.modules.RNNDecoderBase.forward()`
         """
@@ -293,8 +294,6 @@ class TransformerDecoder(nn.Module):
         aeq(tgt_batch, memory_batch, src_batch, tgt_batch)
         aeq(memory_len, src_len)
 
-        if state.previous_input is not None:
-            tgt = torch.cat([state.previous_input, tgt], 0)
         # END CHECKS
 
         # Initialize return variables.
@@ -305,8 +304,6 @@ class TransformerDecoder(nn.Module):
 
         # Run the forward pass of the TransformerDecoder.
         emb = self.embeddings(tgt)
-        if state.previous_input is not None:
-            emb = emb[state.previous_input.size(0):, ]
         assert emb.dim() == 3  # len x batch x embedding_dim
 
         output = emb.transpose(0, 1).contiguous()
@@ -320,16 +317,13 @@ class TransformerDecoder(nn.Module):
 
         saved_inputs = []
         for i in range(self.num_layers):
-            prev_layer_input = None
-            if state.previous_input is not None:
-                prev_layer_input = state.previous_layer_inputs[i]
             output, attn, all_input \
                 = self.transformer_layers[i](output, src_memory_bank,
-                                             src_pad_mask, tgt_pad_mask,
-                                             previous_input=prev_layer_input)
-            saved_inputs.append(all_input)
+                            src_pad_mask, tgt_pad_mask,
+                            layer_cache=state.cache["layer_{}".format(i)]
+                            if state.cache is not None else None,
+                            step=step)
 
-        saved_inputs = torch.stack(saved_inputs)
         output = self.layer_norm(output)
 
         # Process the result and update the attentions.
@@ -340,8 +334,6 @@ class TransformerDecoder(nn.Module):
         if self._copy:
             attns["copy"] = attn
 
-        # Update the state.
-        state = state.update_state(tgt, saved_inputs)
         return outputs, state, attns
 
     def init_decoder_state(self, src, memory_bank, enc_hidden):
@@ -356,23 +348,49 @@ class TransformerDecoderState(DecoderState):
                     with optional feature tensors, of size (len x batch).
         """
         self.src = src
-        self.previous_input = None
-        self.previous_layer_inputs = None
+        self.cache = None
 
     @property
     def _all(self):
         """
         Contains attributes that need to be updated in self.beam_update().
         """
-        return (self.previous_input, self.previous_layer_inputs, self.src)
+        return (self.src)
 
     def update_state(self, input, previous_layer_inputs):
         """ Called for every decoder forward pass. """
-        state = TransformerDecoderState(self.src)
-        state.previous_input = input
-        state.previous_layer_inputs = previous_layer_inputs
-        return state
+        return TransformerDecoderState(self.src)
+
+    def detach(self):
+        self.src = self.src.detach()
 
     def repeat_beam_size_times(self, beam_size):
         """ Repeat beam_size times along batch dimension. """
         self.src = self.src.data.repeat(1, beam_size, 1)
+
+    def _init_cache(self, num_layers, memory_bank):
+        self.cache = {}
+
+        batch_size = memory_bank.size(1)
+        depth = memory_bank.size(-1)
+
+        for l in range(num_layers):
+            layer_cache = {
+                "memory_keys": None,
+                "memory_values": None
+            }
+            layer_cache["self_keys"] = None
+            layer_cache["self_values"] = None
+            self.cache["layer_{}".format(l)] = layer_cache
+
+    def beam_update(self, idx, positions, beam_size):
+        """ Need to document this """
+        for k_layer, layer in self.cache.items():
+            if k_layer not in ["memory", "memory_mask"]:
+                for layer_cache in [layer["self_keys"], layer["self_values"]]:
+                    if layer_cache is not None:
+                        n, n_step, dim = layer_cache.size()
+                        batch_size = n // beam_size
+                        sent_states = layer_cache.view(beam_size, batch_size, -1)[:, idx, :]
+                        sent_states.data.copy_(
+                            sent_states.data.index_select(0, positions))

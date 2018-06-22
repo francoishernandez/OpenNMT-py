@@ -53,7 +53,7 @@ class TransformerDecoderLayer(nn.Module):
         self.register_buffer('mask', mask)
 
     def forward(self, inputs, memory_bank, src_pad_mask, tgt_pad_mask,
-                previous_input=None, layer_cache=None, step=None):
+                layer_cache=None, step=None):
         """
         Args:
             inputs: [ batch_size, 1, model_dim ]
@@ -90,6 +90,7 @@ class TransformerDecoderLayer(nn.Module):
                                       :tgt_pad_mask.size(1)], 0)
         input_norm = self.layer_norm_1(inputs)
         all_input = input_norm
+
         if self.self_attn_type == "scaled-dot":
             query, attn = self.self_attn(all_input, all_input, input_norm, type="self",
                                          mask=dec_mask, layer_cache=layer_cache)
@@ -232,11 +233,13 @@ class TransformerDecoder(nn.Module):
             output, attn, all_input \
                 = self.transformer_layers[i](output, src_memory_bank,
                                              src_pad_mask, tgt_pad_mask,
-                                             previous_input=None,
                                              layer_cache=state.cache["layer_{}".
                                                                format(i)]
                                              if state.cache is not None else None,
                                              step=step)
+            saved_inputs.append(all_input)
+
+        saved_inputs = torch.stack(saved_inputs)
 
         output = self.layer_norm(output)
 
@@ -247,6 +250,9 @@ class TransformerDecoder(nn.Module):
         attns["std"] = attn
         if self._copy:
             attns["copy"] = attn
+
+        # Update the state
+        # state = state.update_state(tgt, saved_inputs)
 
         return outputs, state, attns
 
@@ -265,8 +271,6 @@ class TransformerDecoderState(DecoderState):
                     with optional feature tensors, of size (len x batch).
         """
         self.src = src
-        self.previous_input = None
-        self.previous_layer_inputs = None
         self.cache = None
 
     def _init_cache(self, num_layers, memory_bank, self_attn_type='scaled-dot'):
@@ -292,19 +296,14 @@ class TransformerDecoderState(DecoderState):
         """
         Contains attributes that need to be updated in self.beam_update().
         """
-        return (self.previous_input, self.previous_layer_inputs, self.src)
+        return (self.src)
 
     def detach(self):
-        self.previous_input = self.previous_input.detach()
-        self.previous_layer_inputs = self.previous_layer_inputs.detach()
         self.src = self.src.detach()
 
     def update_state(self, new_input, previous_layer_inputs):
         """ Called for every decoder forward pass. """
-        state = TransformerDecoderState(self.src)
-        state.previous_input = new_input
-        state.previous_layer_inputs = previous_layer_inputs
-        return state
+        return TransformerDecoderState(self.src)
 
     def repeat_beam_size_times(self, beam_size):
         """ Repeat beam_size times along batch dimension. """

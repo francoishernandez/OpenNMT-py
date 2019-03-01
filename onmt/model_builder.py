@@ -62,7 +62,8 @@ def build_encoder(opt, embeddings):
         opt: the option in current environment.
         embeddings (Embeddings): vocab embeddings for this encoder.
     """
-    enc_type = opt.encoder_type if opt.model_type == "text" else opt.model_type
+    # enc_type = opt.encoder_type if opt.model_type == "text" else opt.model_type
+    enc_type = opt.encoder_type
     return str2enc[enc_type].from_opt(opt, embeddings)
 
 
@@ -205,7 +206,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
                 if p.dim() > 1:
                     xavier_uniform_(p)
 
-        if hasattr(model.encoder, 'embeddings'):
+        if hasattr(model.encoder, 'embeddings') and model.encoder.embeddings is not None:
             model.encoder.embeddings.load_pretrained_vectors(
                 model_opt.pre_word_vecs_enc)
         if hasattr(model.decoder, 'embeddings'):

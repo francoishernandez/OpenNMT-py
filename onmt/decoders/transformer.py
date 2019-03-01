@@ -56,6 +56,8 @@ class TransformerDecoderLayer(nn.Module):
             * attn ``(batch_size, 1, src_len)``
 
         """
+        # print("IN DECODER LAYER")
+        # print("inputs", inputs.size())
         dec_mask = None
         if step is None:
             tgt_len = tgt_pad_mask.size(-1)
@@ -66,6 +68,7 @@ class TransformerDecoderLayer(nn.Module):
             future_mask = future_mask.triu_(1).view(1, tgt_len, tgt_len)
             dec_mask = torch.gt(tgt_pad_mask + future_mask, 0)
 
+        # print("inputs", inputs.size())
         input_norm = self.layer_norm_1(inputs)
 
         if isinstance(self.self_attn, MultiHeadedAttention):
@@ -180,6 +183,9 @@ class TransformerDecoder(DecoderBase):
         """Decode, possibly stepwise."""
         if step == 0:
             self._init_cache(memory_bank)
+        # print("IN FORWARD DECODER")
+        # print("tgt", tgt.size())
+        # print("memory_bank", memory_bank.size())
 
         src = self.state["src"]
         src_words = src[:, :, 0].transpose(0, 1)
@@ -196,6 +202,8 @@ class TransformerDecoder(DecoderBase):
         pad_idx = self.embeddings.word_padding_idx
         src_pad_mask = src_words.data.eq(pad_idx).unsqueeze(1)  # [B, 1, T_src]
         tgt_pad_mask = tgt_words.data.eq(pad_idx).unsqueeze(1)  # [B, 1, T_tgt]
+
+        # print("output", output.size())
 
         for i, layer in enumerate(self.transformer_layers):
             layer_cache = self.state["cache"]["layer_{}".format(i)] \

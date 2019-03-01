@@ -87,6 +87,13 @@ class TransformerEncoder(EncoderBase):
         super(TransformerEncoder, self).__init__()
 
         self.embeddings = embeddings
+        # HERE WE NEED TO ADD SOME CNN LAYERS FOR AUDIO
+        self.cnn1 = nn.Conv2d(1, 1, 3, stride=2)
+        self.cnn2 = nn.Conv2d(1, 1, 3, stride=2)
+        # self.cnn3 = nn.Conv2d(1, 1, 2, stride=2)
+        # self.audio_embeddings = nn.Linear(39, d_model)
+        self.audio_embeddings = nn.Linear(39, d_model)
+
         self.transformer = nn.ModuleList(
             [TransformerEncoderLayer(
                 d_model, heads, d_ff, dropout,
@@ -109,17 +116,42 @@ class TransformerEncoder(EncoderBase):
     def forward(self, src, lengths=None):
         """See :func:`EncoderBase.forward()`"""
         self._check_args(src, lengths)
+        
+        # print("src before conv", src.size())
+        
+        src = src.unsqueeze(1)
+        # print("src unsqueeze", src.size())
+        src = src.permute(2, 1, 3, 0)
+        # print("src permute", src.size())
 
-        emb = self.embeddings(src)
+        conv1 = self.cnn1(src)
+        # print("conv1", conv1.size())
+        relu1 = nn.functional.relu(conv1)
+        # print("relu1", relu1.size())
+        conv2 = self.cnn2(relu1)
+        # print("conv2", conv2.size())
+        flat_conv2 = conv2.reshape(conv2.size(3), conv2.size(0), -1)
+        # print("flat_conv2", flat_conv2.size())
+        emb = self.audio_embeddings(flat_conv2)
 
-        out = emb.transpose(0, 1).contiguous()
-        words = src[:, :, 0].transpose(0, 1)
+        words = flat_conv2[:, :, 0].transpose(0, 1)
         w_batch, w_len = words.size()
-        padding_idx = self.embeddings.word_padding_idx
+        # padding_idx = self.embeddings.word_padding_idx
+        padding_idx = 1
         mask = words.data.eq(padding_idx).unsqueeze(1)  # [B, 1, T]
+
+        # print("src", src.size())
+        # emb = self.audio_embeddings(src)
+        # print("emb", emb.size())
+        out = emb.transpose(0, 1).contiguous()
+        # print("out", out.size())
+
+        # print("mask", mask.size())
         # Run the forward pass of every layer of the tranformer.
         for layer in self.transformer:
             out = layer(out, mask)
         out = self.layer_norm(out)
 
-        return emb, out.transpose(0, 1).contiguous(), lengths
+        # print("out decoder", out.size())
+
+        return emb, out.transpose(0, 1).contiguous(), lengths, flat_conv2

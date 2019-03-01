@@ -514,6 +514,10 @@ class Translator(object):
         src, src_lengths = batch.src if isinstance(batch.src, tuple) \
                            else (batch.src, None)
 
+        src = src.permute(3, 0, 1, 2)
+        src = src.reshape(src.size(0), src.size(1), -1)
+        print("src", src.size())
+
         enc_states, memory_bank, src_lengths = self.model.encoder(
             src, src_lengths)
         if src_lengths is None:

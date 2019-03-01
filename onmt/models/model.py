@@ -38,10 +38,22 @@ class NMTModel(nn.Module):
             * dictionary attention dists of ``(tgt_len, batch, src_len)``
         """
         tgt = tgt[:-1]  # exclude last target from inputs
-
-        enc_state, memory_bank, lengths = self.encoder(src, lengths)
+        # print("##### FORWARD MODEL")
+        # print("src", src.size())
+        # print("tgt", tgt.size())
+        if str(type(self.encoder)) == "<class 'onmt.encoders.audio_encoder.AudioEncoder'>":
+            enc_state, memory_bank, lengths = self.encoder(src, lengths)
+            src_conv = src
+        else:
+            src = src.permute(3, 0, 1, 2)
+            src = src.reshape(src.size(0), src.size(1), -1)
+            enc_state, memory_bank, lengths, src_conv = self.encoder(src, lengths)
+        # print("permuted reshaped src", src.size())
+        # print("enc_state", enc_state.size())
+        # print("memory_bank", memory_bank.size())
+        # print("lengths", lengths)
         if bptt is False:
-            self.decoder.init_state(src, memory_bank, enc_state)
+            self.decoder.init_state(src_conv, memory_bank, enc_state)
         dec_out, attns = self.decoder(tgt, memory_bank,
                                       memory_lengths=lengths)
         return dec_out, attns

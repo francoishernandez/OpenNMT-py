@@ -11,6 +11,69 @@ from onmt.utils.logging import logger
 from onmt.train_single import main as single_main
 from onmt.utils.parse import ArgumentParser
 
+from onmt.inputters.inputter import build_dataset_iter, \
+    load_old_vocab, old_style_vocab
+
+from multiprocessing import Pipe, Process
+import torch.multiprocessing as mp
+
+REQUEST_GET_NEXT = '__request_next__'
+REQUEST_BREAK = '__request_break__'
+RESPONSE_DATA = '__response_data__'
+RESPONSE_DONE = '__response_done__'
+
+def generator_proxy(pipe_to_generator_server):
+    """
+    Acts like a generator, but sends next() requests through the pipe to the
+    generator server.
+    """
+    while True:
+        pipe_to_generator_server.send((REQUEST_GET_NEXT,))
+        response = pipe_to_generator_server.recv()
+        if response[0] == RESPONSE_DATA:
+            yield response[1]
+        elif response[0] == RESPONSE_DONE:
+            raise StopIteration
+        else:
+            raise ValueError('Invalid message cmd')
+
+def proxy_break(pipe_to_generator_server):
+    """
+    Informs the generator server that the given pipe will no longer be querying
+    the generator.  It's "break"ing out of it's local loop.
+    """
+    pipe_to_generator_server.send((REQUEST_BREAK,))
+
+def generator_server(generator_to_serve, pipes_to_proxy_processes):
+    """
+    Recieves requests from generator_proxy instances and calls the generator
+    on their behalf, sending the next() responses back to the proxys.
+    """
+    generator_to_serve = iter(generator_to_serve)
+    running_pipes = list(pipes_to_proxy_processes)
+    while len(running_pipes) > 0:
+        pipes_to_remove = []
+        for pipe in running_pipes:
+            if pipe.poll():
+                msg = pipe.recv()
+                if msg[0] == REQUEST_BREAK:
+                    pipes_to_remove.append(pipe)
+                elif msg[0] == REQUEST_GET_NEXT:
+                    try:
+                        val = next(generator_to_serve)
+                        # print("STUFF WE WANT TO SEND")
+                        # print(type(val))
+                        # print(val)
+                        picklable_val = [val.src, val.tgt, val.indices]
+                        # print(picklable_val)
+                        pipe.send((RESPONSE_DATA, picklable_val))
+                    except StopIteration:
+                        pipes_to_remove.append(pipe)
+                        pipe.send((RESPONSE_DONE,))
+                else:
+                    raise ValueError('Invalid message cmd')
+        for p in pipes_to_remove:
+            running_pipes.remove(p)
 
 def main(opt):
     ArgumentParser.validate_train_opts(opt)
@@ -19,8 +82,49 @@ def main(opt):
 
     nb_gpu = len(opt.gpu_ranks)
 
+    # IDEA:
+    # Spawn a generator process, that will be called by each process to retrieve their batch
+
+    # Load checkpoint if we resume from a previous training.
+    if opt.train_from:
+        logger.info('Loading checkpoint from %s' % opt.train_from)
+        checkpoint = torch.load(opt.train_from,
+                                map_location=lambda storage, loc: storage)
+
+        model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
+        ArgumentParser.update_model_opts(model_opt)
+        ArgumentParser.validate_model_opts(model_opt)
+        logger.info('Loading vocab from checkpoint at %s.' % opt.train_from)
+        vocab = checkpoint['vocab']
+    else:
+        checkpoint = None
+        model_opt = opt
+        vocab = torch.load(opt.data + '.vocab.pt')
+
+    # check for code where vocab is saved instead of fields
+    # (in the future this will be done in a smarter way)
+    if old_style_vocab(vocab):
+        fields = load_old_vocab(
+            vocab, opt.model_type, dynamic_dict=opt.copy_attn)
+    else:
+        fields = vocab
+    train_iter = build_dataset_iter("train", fields, opt)
+
+
+    # for stuff in generator_proxy(pipes[0][0]):
+    #     print(stuff)
+
+    mp.set_start_method('spawn', force=True)
+    pipes = [mp.Pipe() for x in range(opt.world_size)]
+    server_pipes = [p[1] for p in pipes]
+
+    batch_server = mp.Process(target=generator_server,
+        args=(train_iter, server_pipes))
+
+    batch_server.start()
+
     if opt.world_size > 1:
-        mp = torch.multiprocessing.get_context('spawn')
+        # mp = torch.multiprocessing.get_context('spawn')
         # Create a thread to listen for errors in the child processes.
         error_queue = mp.SimpleQueue()
         error_handler = ErrorHandler(error_queue)
@@ -28,7 +132,7 @@ def main(opt):
         procs = []
         for device_id in range(nb_gpu):
             procs.append(mp.Process(target=run, args=(
-                opt, device_id, error_queue, ), daemon=True))
+                opt, device_id, error_queue, pipes[device_id][0]), daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
@@ -36,19 +140,19 @@ def main(opt):
             p.join()
 
     elif nb_gpu == 1:  # case 1 GPU only
-        single_main(opt, 0)
+        single_main(opt, 0, pipes[0][0])
     else:   # case only CPU
         single_main(opt, -1)
 
 
-def run(opt, device_id, error_queue):
+def run(opt, device_id, error_queue, server_pipe):
     """ run process """
     try:
         gpu_rank = onmt.utils.distributed.multi_init(opt, device_id)
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
-        single_main(opt, device_id)
+        single_main(opt, device_id, server_pipe)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing
     except Exception:

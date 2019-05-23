@@ -39,7 +39,7 @@ def configure_process(opt, device_id):
     set_random_seed(opt.seed, device_id >= 0)
 
 
-def main(opt, device_id):
+def main(opt, device_id, server_pipe):
     # NOTE: It's important that ``opt`` has been validated and updated
     # at this point.
     configure_process(opt, device_id)
@@ -98,7 +98,8 @@ def main(opt, device_id):
     trainer = build_trainer(
         opt, device_id, model, fields, optim, model_saver=model_saver)
 
-    train_iter = build_dataset_iter("train", fields, opt)
+    # train_iter = build_dataset_iter("train", fields, opt)
+    train_iter = None
     valid_iter = build_dataset_iter(
         "valid", fields, opt, is_train=False)
 
@@ -113,6 +114,7 @@ def main(opt, device_id):
     trainer.train(
         train_iter,
         train_steps,
+        server_pipe,
         save_checkpoint_steps=opt.save_checkpoint_steps,
         valid_iter=valid_iter,
         valid_steps=opt.valid_steps)

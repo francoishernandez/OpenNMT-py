@@ -17,6 +17,28 @@ import traceback
 import onmt.utils
 from onmt.utils.logging import logger
 
+import torchtext
+
+REQUEST_GET_NEXT = '__request_next__'
+REQUEST_BREAK = '__request_break__'
+RESPONSE_DATA = '__response_data__'
+RESPONSE_DONE = '__response_done__'
+
+def generator_proxy(pipe_to_generator_server):
+    """
+    Acts like a generator, but sends next() requests through the pipe to the
+    generator server.
+    """
+    while True:
+        pipe_to_generator_server.send((REQUEST_GET_NEXT,))
+        response = pipe_to_generator_server.recv()
+        if response[0] == RESPONSE_DATA:
+            yield response[1]
+        elif response[0] == RESPONSE_DONE:
+            raise StopIteration
+        else:
+            raise ValueError('Invalid message cmd')
+
 
 def build_trainer(opt, device_id, model, fields, optim, model_saver=None):
     """
@@ -143,11 +165,19 @@ class Trainer(object):
                 _accum = self.accum_count_l[i]
         return _accum
 
-    def _accum_batches(self, iterator):
+
+    def _accum_batches(self, iterator, server_pipe):
         batches = []
         normalization = 0
         self.accum_count = self._accum_count(self.optim.training_step)
-        for batch in iterator:
+        # for batch in iterator:
+        for pickled_batch in generator_proxy(server_pipe):
+            device = torch.device(self.gpu_rank)
+            batch = torchtext.data.Batch(device=self.gpu_rank)
+            batch.src = (pickled_batch[0][0].to(device),
+                         pickled_batch[0][1].to(device))
+            batch.tgt = pickled_batch[1].to(device)
+            batch.indices = pickled_batch[2].to(device)
             batches.append(batch)
             if self.norm_method == "tokens":
                 num_tokens = batch.tgt[1:, :, 0].ne(
@@ -180,6 +210,7 @@ class Trainer(object):
     def train(self,
               train_iter,
               train_steps,
+              server_pipe,
               save_checkpoint_steps=5000,
               valid_iter=None,
               valid_steps=10000):
@@ -208,12 +239,12 @@ class Trainer(object):
         report_stats = onmt.utils.Statistics()
         self._start_report_manager(start_time=total_stats.start_time)
 
-        if self.n_gpu > 1:
-            train_iter = itertools.islice(
-                train_iter, self.gpu_rank, None, self.n_gpu)
+        # if self.n_gpu > 1:
+        #     train_iter = itertools.islice(
+        #         train_iter, self.gpu_rank, None, self.n_gpu)
 
         for i, (batches, normalization) in enumerate(
-                self._accum_batches(train_iter)):
+                self._accum_batches(train_iter, server_pipe)):
             step = self.optim.training_step
 
             if self.gpu_verbose_level > 1:

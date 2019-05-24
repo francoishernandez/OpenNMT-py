@@ -18,6 +18,7 @@ import onmt.utils
 from onmt.utils.logging import logger
 
 import torchtext
+import time
 
 REQUEST_GET_NEXT = '__request_next__'
 REQUEST_BREAK = '__request_break__'
@@ -31,7 +32,12 @@ def generator_proxy(pipe_to_generator_server):
     """
     while True:
         pipe_to_generator_server.send((REQUEST_GET_NEXT,))
+        # print("BEFORE recv")
+        # time.sleep(10)
         response = pipe_to_generator_server.recv()
+        # print("AFTER recv")
+        # print(response)
+        # time.sleep(10)
         if response[0] == RESPONSE_DATA:
             yield response[1]
         elif response[0] == RESPONSE_DONE:
@@ -167,18 +173,39 @@ class Trainer(object):
 
 
     def _accum_batches(self, iterator, server_pipe):
+        import time
+        # print("BEFORE SLEEP")
+        # time.sleep(10)
+        # print("AFTER SLEEP")
         batches = []
         normalization = 0
         self.accum_count = self._accum_count(self.optim.training_step)
         # for batch in iterator:
+        # print("my_server_pipe", server_pipe)
+        device = torch.device(self.gpu_rank)
         for pickled_batch in generator_proxy(server_pipe):
-            device = torch.device(self.gpu_rank)
-            batch = torchtext.data.Batch(device=self.gpu_rank)
+            # print(pickled_batch)
+            # print("BEFORE SLEEP")
+            # time.sleep(10)
+            # print("AFTER SLEEP")
+            # print("RECEIVED some stuff")
+            device = torch.cuda.current_device()
+            # print("MOVING BATCH TO DEVICE", device)
+            # print("DEVICE", device, "MODEL", next(self.model.parameters()).device, "TRAINER", device)
+            # batch = torchtext.data.Batch(pickled_batch[0], dataset=pickled_batch[1], device=device)
+            batch = torchtext.data.Batch(device=device)
+            # time.sleep(30)
+            # print("moving src")
             batch.src = (pickled_batch[0][0].to(device),
                          pickled_batch[0][1].to(device))
+            # time.sleep(5)
+            # print("moving tgt", device)
             batch.tgt = pickled_batch[1].to(device)
+            # time.sleep(5)
             batch.indices = pickled_batch[2].to(device)
             batches.append(batch)
+            # print("START SLEEPING NOW")
+            # time.sleep(30)
             if self.norm_method == "tokens":
                 num_tokens = batch.tgt[1:, :, 0].ne(
                     self.train_loss.padding_idx).sum()

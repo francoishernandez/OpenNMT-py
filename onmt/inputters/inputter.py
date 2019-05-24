@@ -506,6 +506,7 @@ class OrderedIterator(torchtext.data.Iterator):
                  **kwargs):
         super(OrderedIterator, self).__init__(dataset, batch_size, **kwargs)
         self.batch_size_multiple = batch_size_multiple
+        self._next_device = 0
 
     def create_batches(self):
         if self.train:
@@ -528,6 +529,31 @@ class OrderedIterator(torchtext.data.Iterator):
                     batch_size_fn=self.batch_size_fn,
                     batch_size_multiple=self.batch_size_multiple):
                 self.batches.append(sorted(b, key=self.sort_key))
+
+    def __iter__(self):
+        while True:
+            self.init_epoch()
+            for idx, minibatch in enumerate(self.batches):
+                # fast-forward if loaded from state
+                if self._iterations_this_epoch > idx:
+                    continue
+                self.iterations += 1
+                self._iterations_this_epoch += 1
+                if self.sort_within_batch:
+                    # NOTE: `rnn.pack_padded_sequence` requires that a minibatch
+                    # be sorted by decreasing order, which requires reversing
+                    # relative to typical sort keys
+                    if self.sort:
+                        minibatch.reverse()
+                    else:
+                        minibatch.sort(key=self.sort_key, reverse=True)
+                # yield torchtext.data.Batch(minibatch, self.dataset, self.device)
+                yield torchtext.data.Batch(minibatch, self.dataset, self._next_device)
+            if not self.repeat:
+                return
+
+    # def __next__(self, device):
+    #     self.__iter__(device)
 
 
 class DatasetLazyIter(object):
@@ -559,6 +585,8 @@ class DatasetLazyIter(object):
     def _iter_dataset(self, path):
         cur_dataset = torch.load(path)
         logger.info('Loading dataset from %s, number of examples: %d' %
+                    (path, len(cur_dataset)))
+        print('Loading dataset from %s, number of examples: %d' %
                     (path, len(cur_dataset)))
         cur_dataset.fields = self.fields
         cur_iter = OrderedIterator(

@@ -14,7 +14,8 @@ from onmt.utils.parse import ArgumentParser
 from onmt.inputters.inputter import build_dataset_iter, \
     load_old_vocab, old_style_vocab
 
-from multiprocessing import Pipe, Process
+# import multiprocessing
+# from multiprocessing import Pipe, Process
 import torch.multiprocessing as mp
 
 REQUEST_GET_NEXT = '__request_next__'
@@ -53,18 +54,32 @@ def generator_server(generator_to_serve, pipes_to_proxy_processes):
     running_pipes = list(pipes_to_proxy_processes)
     while len(running_pipes) > 0:
         pipes_to_remove = []
-        for pipe in running_pipes:
+        for device_id, pipe in enumerate(running_pipes):
             if pipe.poll():
                 msg = pipe.recv()
                 if msg[0] == REQUEST_BREAK:
                     pipes_to_remove.append(pipe)
                 elif msg[0] == REQUEST_GET_NEXT:
                     try:
+                        device = torch.device(1)
+                        generator_to_serve._next_device = device
                         val = next(generator_to_serve)
                         # print("STUFF WE WANT TO SEND")
                         # print(type(val))
                         # print(val)
+                        # picklable_val = val
                         picklable_val = [val.src, val.tgt, val.indices]
+                        # print("SRC", type(val.src))
+                        # print("TGT", type(val.tgt))
+                        # print("Indices", type(val.indices))
+                        # for pv in picklable_val:
+                        #     if type(pv) is tuple:
+                        #         for item in pv:
+                        #             item.to(torch.device(device_id))
+                        #     else:
+                        #         pv.to(torch.device(device_id))
+                        
+                        
                         # print(picklable_val)
                         pipe.send((RESPONSE_DATA, picklable_val))
                     except StopIteration:
@@ -110,10 +125,6 @@ def main(opt):
         fields = vocab
     train_iter = build_dataset_iter("train", fields, opt)
 
-
-    # for stuff in generator_proxy(pipes[0][0]):
-    #     print(stuff)
-
     mp.set_start_method('spawn', force=True)
     pipes = [mp.Pipe() for x in range(opt.world_size)]
     server_pipes = [p[1] for p in pipes]
@@ -121,7 +132,9 @@ def main(opt):
     batch_server = mp.Process(target=generator_server,
         args=(train_iter, server_pipes))
 
+
     batch_server.start()
+    print("BATCH SERVER PROCID", batch_server.pid)
 
     if opt.world_size > 1:
         # mp = torch.multiprocessing.get_context('spawn')
@@ -137,6 +150,7 @@ def main(opt):
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
         for p in procs:
+            print("SOME GPU PROCID", p.pid, 0)
             p.join()
 
     elif nb_gpu == 1:  # case 1 GPU only
@@ -149,9 +163,12 @@ def run(opt, device_id, error_queue, server_pipe):
     """ run process """
     try:
         gpu_rank = onmt.utils.distributed.multi_init(opt, device_id)
+        print(gpu_rank)
+        print(opt.gpu_ranks[device_id])
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
+
         single_main(opt, device_id, server_pipe)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing

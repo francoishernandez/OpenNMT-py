@@ -37,7 +37,7 @@ def build_loss_compute(model, tgt_field, opt, train=True):
     elif isinstance(model.generator[-1], LogSparsemax):
         criterion = SparsemaxLoss(ignore_index=padding_idx, reduction='sum')
     else:
-        criterion = nn.NLLLoss(ignore_index=padding_idx, reduction='sum')
+        criterion = nn.NLLLoss(ignore_index=padding_idx, reduction='none')
 
     # if the loss function operates on vectors of raw logits instead of
     # probabilities, only the first part of the generator needs to be
@@ -151,8 +151,10 @@ class LossComputeBase(nn.Module):
         trunc_range = (trunc_start, trunc_start + trunc_size)
         shard_state = self._make_shard_state(batch, output, trunc_range, attns)
         if shard_size == 0:
-            loss, stats = self._compute_loss(batch, **shard_state)
-            return loss / float(normalization), stats
+            loss, stats, sent_loss = self._compute_loss(batch, **shard_state)
+            # print("normalization", normalization)
+            # print("loss in __call__", loss)
+            return loss / float(normalization), stats, sent_loss
         batch_stats = onmt.utils.Statistics()
         for shard in shards(shard_state, shard_size):
             loss, stats = self._compute_loss(batch, **shard)
@@ -228,15 +230,22 @@ class NMTLossCompute(LossComputeBase):
         }
 
     def _compute_loss(self, batch, output, target):
+
+        batch_size = output.size(1)
         bottled_output = self._bottle(output)
 
         scores = self.generator(bottled_output)
         gtruth = target.view(-1)
 
         loss = self.criterion(scores, gtruth)
+        unbottled_loss = self._unbottle(loss.unsqueeze(-1), batch_size)
+        sent_loss = unbottled_loss.sum(dim=0)[:, 0]
+        loss = loss.sum()
+
         stats = self._stats(loss.clone(), scores, gtruth)
 
-        return loss, stats
+        # print("loss in NMTLossCompute", loss)
+        return loss, stats, sent_loss
 
 
 def filter_shard_state(state, shard_size=None):

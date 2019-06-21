@@ -8,7 +8,7 @@ from copy import copy
 from math import sqrt
 
 
-def build_torch_optimizer(model, opt):
+def build_torch_optimizer(model, opt, device_id):
     """Builds the PyTorch optimizer.
 
     We use the default parameters for Adam that are suggested by
@@ -92,6 +92,11 @@ def build_torch_optimizer(model, opt):
             opt_level=opt.apex_opt_level,
             loss_scale=loss_scale,
             keep_batchnorm_fp32=False if opt.optim == "fusedadam" else None)
+        # from torch.nn.parallel import DistributedDataParallel
+        # model = [DistributedDataParallel(m, device_ids=[device_id], output_device=device_id)
+        #          for m in model]
+        from apex.parallel import DistributedDataParallel
+        model = [DistributedDataParallel(m) for m in model]
 
     return optimizer
 
@@ -226,7 +231,7 @@ class Optimizer(object):
             optimizer.__class__.__name__ == "FP16_Optimizer")
 
     @classmethod
-    def from_opt(cls, model, opt, checkpoint=None):
+    def from_opt(cls, model, opt, device_id, checkpoint=None):
         """Builds the optimizer from options.
 
         Args:
@@ -269,7 +274,7 @@ class Optimizer(object):
                 optim_state_dict = ckpt_state_dict
 
         optimizer = cls(
-            build_torch_optimizer(model, optim_opt),
+            build_torch_optimizer(model, optim_opt, device_id),
             optim_opt.learning_rate,
             learning_rate_decay_fn=make_learning_rate_decay_fn(optim_opt),
             max_grad_norm=optim_opt.max_grad_norm)

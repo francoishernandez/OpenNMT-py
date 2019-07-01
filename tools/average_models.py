@@ -2,7 +2,6 @@
 import argparse
 import torch
 
-
 def average_models(model_files):
     vocab = None
     opt = None

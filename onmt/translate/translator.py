@@ -300,6 +300,28 @@ class Translator(object):
             filter_pred=self._filter_pred
         )
 
+        def max_tok_len(new, count, sofar):
+            """
+            In token batching scheme, the number of sequences is limited
+            such that the total number of src/tgt tokens (including padding)
+            in a batch <= batch_size
+            """
+            # Maintains the longest src and tgt length in the current batch
+            global max_src_in_batch  # this is a hack
+            # Reset current longest length at a new batch (count=1)
+            if count == 1:
+                max_src_in_batch = 0
+                # max_tgt_in_batch = 0
+            # Src: [<bos> w1 ... wN <eos>]
+            max_src_in_batch = max(max_src_in_batch, len(new.src[0]) + 2)
+            # Tgt: [w1 ... wM <eos>]
+            # max_tgt_in_batch = max(max_tgt_in_batch, len(new.tgt[0]) + 1)
+            src_elements = count * max_src_in_batch
+            # tgt_elements = count * max_tgt_in_batch
+            return src_elements
+
+
+            # batch_size_fn=max_tok_len,
         data_iter = inputters.OrderedIterator(
             dataset=data,
             device=self._dev,
@@ -326,6 +348,7 @@ class Translator(object):
         start_time = time.time()
 
         for batch in data_iter:
+            # print(batch)
             batch_data = self.translate_batch(
                 batch, data.src_vocabs, attn_debug
             )

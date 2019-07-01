@@ -276,6 +276,7 @@ class ServerModel(object):
         timer.start()
 
         try:
+            print(self.opt)
             self.translator = build_translator(self.opt,
                                                report_score=False,
                                                out_file=codecs.open(
@@ -361,6 +362,7 @@ class ServerModel(object):
                 self.to_gpu()
                 timer.tick(name="to_gpu")
 
+        begin = time.time()
         texts = []
         head_spaces = []
         tail_spaces = []
@@ -388,13 +390,22 @@ class ServerModel(object):
         empty_indices = [i for i, x in enumerate(texts) if x == ""]
         texts_to_translate = [x for x in texts if x != ""]
 
+        duration = time.time() - begin
+        print("preprocess", duration)
+
         scores = []
         predictions = []
         if len(texts_to_translate) > 0:
             try:
+                print(len(texts_to_translate))
+                # print(self.opt.batch_size)
+                begin = time.time()
                 scores, predictions = self.translator.translate(
                     texts_to_translate,
-                    batch_size=self.opt.batch_size)
+                    batch_size=len(texts_to_translate))
+                    # batch_size=self.opt.batch_size)
+                duration = time.time() - begin
+                print("translate", duration)
             except (RuntimeError, Exception) as e:
                 err = "Error: %s" % str(e)
                 self.logger.error(err)

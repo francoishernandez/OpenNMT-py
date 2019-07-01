@@ -24,8 +24,8 @@ class AverageAttention(nn.Module):
 
         super(AverageAttention, self).__init__()
 
-        self.average_layer = PositionwiseFeedForward(model_dim, model_dim,
-                                                     dropout)
+        # self.average_layer = PositionwiseFeedForward(model_dim, model_dim,
+                                                     # dropout)
         self.gating_layer = nn.Linear(model_dim * 2, model_dim * 2)
 
     def cumulative_average_mask(self, batch_size, inputs_len):
@@ -102,7 +102,7 @@ class AverageAttention(nn.Module):
           inputs, self.cumulative_average_mask(batch_size,
                                                inputs_len).to(device).float()
           if layer_cache is None else step, layer_cache=layer_cache)
-        average_outputs = self.average_layer(average_outputs)
+        # average_outputs = self.average_layer(average_outputs)
         gating_outputs = self.gating_layer(torch.cat((inputs,
                                                       average_outputs), -1))
         input_gate, forget_gate = torch.chunk(gating_outputs, 2, dim=2)

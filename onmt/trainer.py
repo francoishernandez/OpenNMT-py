@@ -59,8 +59,8 @@ def build_trainer(opt, device_id, model, fields, optim, model_saver=None):
         if opt.early_stopping > 0 else None
 
     report_manager = onmt.utils.build_report_manager(opt, gpu_rank)
-    trainer = onmt.Trainer(model, train_loss, valid_loss, optim, trunc_size,
-                           shard_size, norm_method,
+    trainer = onmt.Trainer(model, train_loss, valid_loss, optim, fields,
+                           trunc_size, shard_size, norm_method,
                            accum_count, accum_steps,
                            n_gpu, gpu_rank,
                            gpu_verbose_level, report_manager,
@@ -100,7 +100,7 @@ class Trainer(object):
                 Thus nothing will be saved if this parameter is None
     """
 
-    def __init__(self, model, train_loss, valid_loss, optim,
+    def __init__(self, model, train_loss, valid_loss, optim, fields,
                  trunc_size=0, shard_size=32,
                  norm_method="sents", accum_count=[1],
                  accum_steps=[0],
@@ -131,6 +131,7 @@ class Trainer(object):
         self.earlystopper = earlystopper
         self.dropout = dropout
         self.dropout_steps = dropout_steps
+        self.fields = fields
 
         for i in range(len(self.accum_count_l)):
             assert self.accum_count_l[i] > 0
@@ -318,6 +319,21 @@ class Trainer(object):
 
                 # Update statistics.
                 stats.update(batch_stats)
+
+        #TODO: add translation step here to produce bleu?
+
+        # build some translator
+        # scorer = onmt.translate.GNMTGlobalScorer(
+        #     opt.alpha, opt.beta, opt.coverage_penalty, opt.length_penalty)
+        # import io
+        # out_file = io.StringIO()
+        # translator = Translator(valid_model, self.fields,
+        #                         global_scorer=scorer,
+        #                         out_file=out_file, report_score=False,
+        #                         copy_attn=False, logger=logger,
+        #                         beam_size=4, fast=True)
+        # translator.translate("")
+
 
         if moving_average:
             del valid_model

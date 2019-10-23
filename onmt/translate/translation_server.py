@@ -13,7 +13,7 @@ import importlib
 import torch
 import onmt.opts
 
-from eventlet import Timeout
+import eventlet
 eventlet.monkey_patch()
 
 from onmt.utils.logging import init_logger
@@ -420,14 +420,14 @@ class ServerModel(object):
         scores = []
         predictions = []
         if len(texts_to_translate) > 0:
-            timeout = Timeout(20)
+            timeout = eventlet.Timeout(20)
             try:
                 scores, predictions = self.translator.translate(
                     texts_to_translate,
                     batch_size=len(texts_to_translate)
                     if self.opt.batch_size == 0
                     else self.opt.batch_size)
-            except Timeout as t:
+            except eventlet.Timeout as t:
                 if t is timeout:
                     self.logger.error("Timeout raised")
                     self.logger.error("repr(text_to_translate): "

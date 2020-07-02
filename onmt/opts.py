@@ -71,10 +71,10 @@ def model_opts(parser):
               help='Data type of the model.')
 
     group.add('--encoder_type', '-encoder_type', type=str, default='rnn',
-              choices=['rnn', 'brnn', 'mean', 'transformer', 'cnn'],
+              choices=['rnn', 'brnn', 'ggnn', 'mean', 'transformer', 'cnn'],
               help="Type of encoder layer to use. Non-RNN layers "
                    "are experimental. Options are "
-                   "[rnn|brnn|mean|transformer|cnn].")
+                   "[rnn|brnn|ggnn|mean|transformer|cnn].")
     group.add('--decoder_type', '-decoder_type', type=str, default='rnn',
               choices=['rnn', 'transformer', 'cnn'],
               help="Type of decoder layer to use. Non-RNN layers "
@@ -129,6 +129,27 @@ def model_opts(parser):
               choices=['source', 'target', 'both'],
               help="Type of context gate to use. "
                    "Do not select for no context gate.")
+
+    # The following options (bridge_extra_node to src_vocab) are used
+    # for training with --encoder_type ggnn (Gated Graph Neural Network).
+    group.add('--bridge_extra_node', '-bridge_extra_node',
+              type=bool, default=True,
+              help='Graph encoder bridges only extra node to decoder as input')
+    group.add('--bidir_edges', '-bidir_edges', type=bool, default=True,
+              help='Graph encoder autogenerates bidirectional edges')
+    group.add('--state_dim', '-state_dim', type=int, default=512,
+              help='Number of state dimensions in the graph encoder')
+    group.add('--n_edge_types', '-n_edge_types', type=int, default=2,
+              help='Number of edge types in the graph encoder')
+    group.add('--n_node', '-n_node', type=int, default=2,
+              help='Number of nodes in the graph encoder')
+    group.add('--n_steps', '-n_steps', type=int, default=2,
+              help='Number of steps to advance graph encoder')
+    # The ggnn uses src_vocab during training because the graph is built
+    # using edge information which requires parsing the input sequence.
+    group.add('--src_vocab', '-src_vocab', default="",
+              help="Path to an existing source vocabulary. Format: "
+                   "one word per line.")
 
     # Attention options
     group = parser.add_argument_group('Model- Attention')
@@ -444,6 +465,9 @@ def train_opts(parser):
               help='Examples per dynamically generated torchtext Dataset')
     group.add('--batch_size', '-batch_size', type=int, default=64,
               help='Maximum batch size for training')
+    group.add('--batch_size_multiple', '-batch_size_multiple',
+              type=int, default=None,
+              help='Batch size multiple for token batches.')
     group.add('--batch_type', '-batch_type', default='sents',
               choices=["sents", "tokens"],
               help="Batch grouping for batch_size. Standard "
@@ -647,6 +671,8 @@ def translate_opts(parser):
               help='Source directory for image or audio files')
     group.add('--tgt', '-tgt',
               help='True target sequence (optional)')
+    group.add('--tgt_prefix', '-tgt_prefix', action='store_true',
+              help='Generate predictions using provided `-tgt` as prefix.')
     group.add('--shard_size', '-shard_size', type=int, default=10000,
               help="Divide src and tgt (if applicable) into "
                    "smaller multiple src and tgt files, then "

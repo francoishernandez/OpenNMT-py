@@ -11,7 +11,7 @@ setup(
     description='A python implementation of OpenNMT',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='1.0.0',
+    version='1.0.2',
     packages=find_packages(),
     project_urls={
         "Documentation": "http://opennmt.net/OpenNMT-py/",
@@ -22,7 +22,7 @@ setup(
     install_requires=[
         "six",
         "tqdm~=4.30.0",
-        "torch>=1.3.1",
+        "torch>=1.4.0",
         "torchtext==0.4.0",
         "future",
         "configargparse",
@@ -37,6 +37,7 @@ setup(
             "onmt_train=onmt.bin.train:main",
             "onmt_translate=onmt.bin.translate:main",
             "onmt_preprocess=onmt.bin.preprocess:main",
+            "onmt_release_model=onmt.bin.release_model:main",
             "onmt_average_models=onmt.bin.average_models:main",
             "onmt_preprocess_dynamicdata=onmt.bin.preprocess_dynamicdata:main",
             "onmt_train_dynamicdata=onmt.bin.train_dynamicdata:main",

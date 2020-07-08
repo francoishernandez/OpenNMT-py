@@ -59,6 +59,7 @@ def build_dataset_adaptor_iter(mixer,
         train_iter = OrderedIterator(
             dataset,
             batch_size,
+            pool_factor=opt.pool_factor,
             batch_size_fn=batch_size_fn,
             batch_size_multiple=batch_size_multiple,
             device=device,

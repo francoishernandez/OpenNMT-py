@@ -22,6 +22,9 @@ from onmt.dynamicdata.dataset import DatasetAdaptor, build_dataset_adaptor_iter
 
 from itertools import cycle
 
+# Set sharing strategy manually instead of default based on the OS.
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 def train(opt):
     ArgumentParser.validate_train_opts(opt)
@@ -39,14 +42,17 @@ def train(opt):
         #fields = checkpoint['vocab']
         if 'data_loader_step' in checkpoint['opt']:
             data_loader_step = checkpoint['opt'].data_loader_step
-            print('Set data_loader_step {} from model_opt'.format(data_loader_step))
+            logger.info('Set data_loader_step {} from model_opt'.format(
+                data_loader_step))
         elif opt.data_loader_step is not None:
             data_loader_step = opt.data_loader_step
-            print('Overrode data_loader_step {} from opt'.format(data_loader_step))
+            logger.info('Overrode data_loader_step {} from opt'.format(
+                data_loader_step))
         else:
             data_loader_step = checkpoint['optim']['training_step']
-            print('Approximated data_loader_step {} from optim. '
-                  'Consider using --data_loader_step'.format(data_loader_step))
+            logger.info('Approximated data_loader_step {} from optim. '
+                        'Consider using --data_loader_step'.format(
+                            data_loader_step))
     else:
         data_loader_step = 0
 
@@ -65,14 +71,13 @@ def train(opt):
         q = mp.Queue(opt.queue_size)
         queues += [q]
         procs.append(mp.Process(target=run, args=(
-            opt, device_id, error_queue, q, semaphore,),
-            daemon=True))
+            opt, device_id, error_queue, q, semaphore,), daemon=True))
         procs[device_id].start()
         logger.info(" Starting process pid: %d  " % procs[device_id].pid)
         error_handler.add_child(procs[device_id].pid)
     producer = mp.Process(target=batch_producer,
-                            args=(queues, semaphore, opt, data_loader_step),
-                            daemon=True)
+                          args=(queues, semaphore, opt, data_loader_step),
+                          daemon=True)
     producer.start()
     error_handler.add_child(producer.pid)
 
@@ -101,6 +106,7 @@ def batch_producer(queues, semaphore, opt, data_loader_step):
     logger.info(pformat(transforms))
     mixer, task_epochs = build_mixer(data_config, transforms, is_train=True, bucket_size=opt.bucket_size)
     report_every = max(opt.queue_size, opt.report_every)
+
     def mb_callback(i):
         if i % report_every == 0:
             logger.info('mb %s epochs %s',
@@ -110,6 +116,7 @@ def batch_producer(queues, semaphore, opt, data_loader_step):
                 for transform in transforms[task]:
                     for line in transform.stats():
                         logger.info('\t{}'.format(line))
+
     train_iter = build_dataset_adaptor_iter(
         mixer, dataset_adaptor, opt, mb_callback, data_loader_step, is_train=True)
 
@@ -135,10 +142,12 @@ def run(opt, device_id, error_queue, batch_queue, semaphore):
     try:
         if device_id == 0:
             data_config, transforms, dataset_adaptor = build_data_loader(opt)
-            valid_mixer, valid_task_epochs = build_mixer(data_config, transforms,
-                                                         is_train=False, bucket_size=opt.bucket_size)
-            valid_iter = build_dataset_adaptor_iter(valid_mixer, dataset_adaptor, opt,
-                                                    mb_callback=None, data_loader_step=0, is_train=False)
+            valid_mixer, valid_task_epochs = build_mixer(
+                data_config, transforms, is_train=False,
+                bucket_size=opt.bucket_size)
+            valid_iter = build_dataset_adaptor_iter(
+                valid_mixer, dataset_adaptor, opt, mb_callback=None,
+                data_loader_step=0, is_train=False)
             valid_iter = list(valid_iter)
         else:
             valid_iter = None

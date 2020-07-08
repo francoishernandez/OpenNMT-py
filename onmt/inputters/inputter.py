@@ -4,7 +4,7 @@ import os
 import codecs
 import math
 
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, OrderedDict
 from itertools import chain, cycle
 
 import torch
@@ -196,6 +196,25 @@ def patch_fields(opt, fields):
         fields.update({'corpus_id': maybe_cid_field})
 
 
+def batch_to(batch, device_id):
+    """Move `batch` to `device_id`."""
+    if isinstance(batch.src, tuple):
+        batch.src = tuple([_.to(torch.device(device_id))
+                           for _ in batch.src])
+    else:
+        batch.src = batch.src.to(torch.device(device_id))
+    batch.tgt = batch.tgt.to(torch.device(device_id))
+    batch.indices = batch.indices.to(torch.device(device_id))
+    batch.alignment = batch.alignment.to(torch.device(device_id)) \
+        if hasattr(batch, 'alignment') else None
+    batch.src_map = batch.src_map.to(torch.device(device_id)) \
+        if hasattr(batch, 'src_map') else None
+    batch.align = batch.align.to(torch.device(device_id)) \
+        if hasattr(batch, 'align') else None
+    batch.corpus_id = batch.corpus_id.to(torch.device(device_id)) \
+        if hasattr(batch, 'corpus_id') else None
+
+
 def load_old_vocab(vocab, data_type="text", dynamic_dict=False):
     """Update a legacy vocab/field format.
 
@@ -339,10 +358,12 @@ def _pad_vocab_to_multiple(vocab, multiple):
 
 def _build_field_vocab(field, counter, size_multiple=1, **kwargs):
     # this is basically copy-pasted from torchtext.
-    all_specials = [
+    all_special = [
         field.unk_token, field.pad_token, field.init_token, field.eos_token
     ]
-    specials = [tok for tok in all_specials if tok is not None]
+    all_special.extend(list(kwargs.pop('specials', [])))
+    specials = list(OrderedDict.fromkeys(
+        tok for tok in all_special if tok is not None))
     field.vocab = field.vocab_cls(counter, specials=specials, **kwargs)
     if size_multiple > 1:
         _pad_vocab_to_multiple(field.vocab, size_multiple)
@@ -360,14 +381,14 @@ def _load_vocab(vocab_path, name, counters, min_freq):
     return vocab, vocab_size
 
 
-def _build_fv_from_multifield(multifield, counters, build_fv_args,
+def _build_fv_from_multifield(multifield, counters, build_fv_kwargs,
                               size_multiple=1):
     for name, field in multifield:
         _build_field_vocab(
             field,
             counters[name],
             size_multiple=size_multiple,
-            **build_fv_args[name])
+            **build_fv_kwargs[name])
         logger.info(" * %s vocab size: %d." % (name, len(field.vocab)))
 
 
@@ -377,16 +398,16 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
                         tgt_vocab_size, tgt_words_min_frequency,
                         subword_prefix="▁",
                         subword_prefix_is_joiner=False):
-    build_fv_args = defaultdict(dict)
-    build_fv_args["src"] = dict(
+    build_fv_kwargs = defaultdict(dict)
+    build_fv_kwargs["src"] = dict(
         max_size=src_vocab_size, min_freq=src_words_min_frequency)
-    build_fv_args["tgt"] = dict(
+    build_fv_kwargs["tgt"] = dict(
         max_size=tgt_vocab_size, min_freq=tgt_words_min_frequency)
     tgt_multifield = fields["tgt"]
     _build_fv_from_multifield(
         tgt_multifield,
         counters,
-        build_fv_args,
+        build_fv_kwargs,
         size_multiple=vocab_size_multiple if not share_vocab else 1)
 
     if fields.get("corpus_id", False):
@@ -398,7 +419,7 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
         _build_fv_from_multifield(
             src_multifield,
             counters,
-            build_fv_args,
+            build_fv_kwargs,
             size_multiple=vocab_size_multiple if not share_vocab else 1)
 
         if share_vocab:

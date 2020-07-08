@@ -5,7 +5,7 @@ import os
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, patch_fields, \
-    load_old_vocab, old_style_vocab, build_dataset_iter_multiple
+    load_old_vocab, old_style_vocab, build_dataset_iter_multiple, batch_to
 from onmt.model_builder import build_model
 from onmt.utils.optimizers import Optimizer
 from onmt.utils.misc import set_random_seed
@@ -16,6 +16,7 @@ from onmt.utils.parse import ArgumentParser
 
 from onmt.dynamicdata.config import read_data_config
 from onmt.dynamicdata.vocab import load_fields
+
 
 def _check_save_model_path(opt):
     save_model_path = os.path.abspath(opt.save_model)
@@ -149,14 +150,13 @@ def main(opt, device_id, batch_queue=None, semaphore=None):
 
     if trainer.report_manager.tensorboard_writer is not None:
         trainer.report_manager.tensorboard_writer.close()
-        trainer.report_manager.tensorboard_writer.close()
+
 
 def main_dynamicdata(opt, device_id, batch_queue=None, semaphore=None, valid_iter=None):
     # NOTE: It's important that ``opt`` has been validated and updated
     # at this point.
     configure_process(opt, device_id)
     init_logger(opt.log_file)
-    logger.info('Set random seed to %s' % opt.seed)
     assert len(opt.accum_count) == len(opt.accum_steps), \
         'Number of accum_count values must match number of accum_steps'
     # Load checkpoint if we resume from a previous training.
@@ -213,19 +213,7 @@ def main_dynamicdata(opt, device_id, batch_queue=None, semaphore=None, valid_ite
         while True:
             batch = batch_queue.get()
             # the training process has the gpu, and is responsible for calling torch.device
-            if isinstance(batch.src, tuple):
-                batch.src = tuple([x.to(torch.device(device_id))
-                            for x in batch.src])
-            else:
-                batch.src = batch.src.to(torch.device(device_id))
-            batch.tgt = batch.tgt.to(torch.device(device_id))
-            batch.indices = batch.indices.to(torch.device(device_id))
-            batch.alignment = batch.alignment.to(torch.device(device_id)) \
-                if hasattr(batch, 'alignment') else None
-            batch.src_map = batch.src_map.to(torch.device(device_id)) \
-                if hasattr(batch, 'src_map') else None
-            batch.align = batch.align.to(torch.device(device_id)) \
-                if hasattr(batch, 'align') else None
+            batch_to(batch, device_id)
 
             semaphore.release()
             yield batch
@@ -249,5 +237,4 @@ def main_dynamicdata(opt, device_id, batch_queue=None, semaphore=None, valid_ite
         valid_steps=opt.valid_steps)
 
     if trainer.report_manager.tensorboard_writer is not None:
-        trainer.report_manager.tensorboard_writer.close()
         trainer.report_manager.tensorboard_writer.close()

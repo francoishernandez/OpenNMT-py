@@ -3,9 +3,8 @@ import itertools
 import os
 import re
 import random
-from glob import glob
 
-from .utils import *
+from onmt.dynamicdata.utils import weighted_roundrobin
 
 from onmt.utils.logging import logger
 
@@ -198,8 +197,8 @@ class MixingWeightSchedule():
             if len(self.mixing_weights[key]) != len(self.schedule_steps):
                 raise Exception('task "{}" has {} mixing weights,'
                                 'expecting {}'.format(
-                                key, len(self.mixing_weights[key]),
-                                len(self.schedule_steps)))
+                                    key, len(self.mixing_weights[key]),
+                                    len(self.schedule_steps)))
         self.next_threshold = 0
 
     def _list(self, val, repeat=None):

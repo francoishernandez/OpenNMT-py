@@ -5,7 +5,7 @@ UNDER = '▁'
 
 
 def safe_zip(*iterables):
-    iters = [iter(x) for x in iterables]
+    #iters = [iter(x) for x in iterables]
     sentinel = object()
     for (j, tpl) in enumerate(itertools.zip_longest(*iterables,
                                                     fillvalue=sentinel)):

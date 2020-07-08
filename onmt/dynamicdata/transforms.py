@@ -1,13 +1,6 @@
-import collections
-import functools
-import gzip
-import itertools
 import math
 import numpy as np
-import onmt.inputters
-import os
 import random
-import torchtext
 
 from scipy.special import softmax
 

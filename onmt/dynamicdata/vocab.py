@@ -1,9 +1,6 @@
 import collections
-import gzip
-import itertools
 import os
 import torch
-import torchtext
 import onmt.inputters
 
 
@@ -108,26 +105,6 @@ def no_tokenize(pretokenized):
     return pretokenized
 
 
-def _build_field_vocab(field,
-                       counter,
-                       size_multiple=1,
-                       specials=None,
-                       **kwargs):
-    # this is basically copy-pasted from torchtext via onmt.
-    all_specials = [
-        field.unk_token, field.pad_token, field.init_token, field.eos_token
-    ]
-    if specials is not None:
-        all_specials.extend(list(specials))
-    filtered_specials = [tok for tok in all_specials if tok is not None]
-    field.vocab = field.vocab_cls(counter,
-                                  specials=filtered_specials,
-                                  **kwargs)
-    if size_multiple > 1:
-        onmt.inputters.inputter._pad_vocab_to_multiple(
-            field.vocab, size_multiple)
-
-
 def load_vocabulary(data_config):
     tokencounter = Vocabulary(data_config)
     counters = {}
@@ -150,10 +127,12 @@ def prepare_fields(data_config, counters, specials):
     tgt_base_field = fields['tgt'].base_field
     src_base_field.tokenize = no_tokenize
     tgt_base_field.tokenize = no_tokenize
+    _size_multiple = data_config['meta']['train'].get(
+        'vocab_size_multiple', 1)
     if data_config['meta']['shard']['share_vocab']:
-        _build_field_vocab(tgt_base_field,
-                           counters['shared'],
-                           specials=specials)
+        onmt.inputters.inputter._build_field_vocab(
+            tgt_base_field, counters['shared'],
+            size_multiple=_size_multiple, specials=specials)
         src_base_field.vocab = tgt_base_field.vocab
     else:
         raise NotImplementedError()

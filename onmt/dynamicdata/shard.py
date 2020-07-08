@@ -1,14 +1,12 @@
-import collections
 import gzip
 import itertools
 import math
 import os
 import random
 
-from .vocab import SimpleSharedVocabulary
-from .utils import *
-
 from onmt.utils.logging import logger
+from onmt.dynamicdata.utils import weighted_roundrobin, UNDER
+
 
 def open_for_reading(path):
     if path.endswith('.gz'):

@@ -197,22 +197,24 @@ def patch_fields(opt, fields):
 
 
 def batch_to(batch, device_id):
-    """Move `batch` to `device_id`."""
-    if isinstance(batch.src, tuple):
-        batch.src = tuple([_.to(torch.device(device_id))
-                           for _ in batch.src])
-    else:
-        batch.src = batch.src.to(torch.device(device_id))
-    batch.tgt = batch.tgt.to(torch.device(device_id))
-    batch.indices = batch.indices.to(torch.device(device_id))
-    batch.alignment = batch.alignment.to(torch.device(device_id)) \
-        if hasattr(batch, 'alignment') else None
-    batch.src_map = batch.src_map.to(torch.device(device_id)) \
-        if hasattr(batch, 'src_map') else None
-    batch.align = batch.align.to(torch.device(device_id)) \
-        if hasattr(batch, 'align') else None
-    batch.corpus_id = batch.corpus_id.to(torch.device(device_id)) \
-        if hasattr(batch, 'corpus_id') else None
+    """Move `batch` to `device_id`, cpu if `device_id` < 0."""
+    curr_device = batch.indices.device
+    device = torch.device(device_id) if device_id >= 0 else torch.device('cpu')
+    if curr_device != device:
+        if isinstance(batch.src, tuple):
+            batch.src = tuple([_.to(device) for _ in batch.src])
+        else:
+            batch.src = batch.src.to(device)
+        batch.tgt = batch.tgt.to(device)
+        batch.indices = batch.indices.to(device)
+        batch.alignment = batch.alignment.to(device) \
+            if hasattr(batch, 'alignment') else None
+        batch.src_map = batch.src_map.to(device) \
+            if hasattr(batch, 'src_map') else None
+        batch.align = batch.align.to(device) \
+            if hasattr(batch, 'align') else None
+        batch.corpus_id = batch.corpus_id.to(device) \
+            if hasattr(batch, 'corpus_id') else None
 
 
 def load_old_vocab(vocab, data_type="text", dynamic_dict=False):
@@ -719,7 +721,6 @@ class OrderedIterator(torchtext.data.Iterator):
                 if self.yield_raw_example:
                     yield minibatch[0]
                 else:
-                    # creating a Batch causes process function to be run
                     yield torchtext.data.Batch(
                         minibatch,
                         self.dataset,

@@ -5,17 +5,9 @@ import yaml
 
 from .utils import external_linecount
 
-# import jsonschema
 
-# def validate_schema(data_config):
-#     # FIXME: use package resources
-#     schema_path = 'data_config.schema.yaml'
-#     with open(schema_path, 'r') as fobj:
-#         schema = yaml.safe_load(fobj)
-#     jsonschema.validate(data, schema)
-
-
-def _inverse_tasks(data_config):
+def _group_input_by_task_(data_config):
+    """In-place group all input to its task as `_inputs`."""
     for input in data_config['inputs']:
         task = data_config['inputs'][input]['task']
         if '_inputs' not in data_config['tasks'][task]:
@@ -70,14 +62,15 @@ def normalize_sizes(data_config):
         data_config['tasks'][task]['_size'] = size_per_task[task]
 
 
-def _all_transforms(data_config):
+def _get_all_transforms(data_config):
+    """Return all transforms that specified in each task."""
     all_transforms = set()
     for task in data_config['tasks']:
         all_transforms.update(data_config['tasks'][task].get('transforms', []))
-    data_config['_transforms'] = list(sorted(all_transforms))
+    return list(sorted(all_transforms))
 
 
-def _task_defaults(data_config):
+def _task_defaults_(data_config):
     for task in data_config['tasks']:
         if 'split' not in data_config['tasks'][task]:
             data_config['tasks'][task]['split'] = 'train'
@@ -97,10 +90,10 @@ def data_config_from_string(string):
 
 
 def process_config(data_config, template=False):
-    _inverse_tasks(data_config)
+    _group_input_by_task_(data_config)
     if not template:
-        _all_transforms(data_config)
-    _task_defaults(data_config)
+        data_config['_transforms'] = _get_all_transforms(data_config)
+    _task_defaults_(data_config)
     # validate_schema(data_config)
     return data_config
 

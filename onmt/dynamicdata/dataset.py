@@ -2,6 +2,10 @@ import torchtext
 from onmt.inputters import str2sortkey
 from onmt.inputters.inputter import max_tok_len, OrderedIterator
 
+from .config import read_data_config, verify_shard_config
+from .transforms import set_train_opts
+from .vocab import load_fields, load_transforms
+
 
 class DatasetAdaptor():
     """ creates torchtext Datasets from TaskMixer buckets """
@@ -34,6 +38,18 @@ class DatasetAdaptor():
         dataset = torchtext.data.Dataset(
             examples, self.field_list)
         return dataset
+
+
+def build_data_loader(opt):
+    # because generators cannot be pickled,
+    # the data loader components should be built in the producer process
+    data_config = read_data_config(opt.data_config)
+    verify_shard_config(data_config)
+    transform_models, transforms = load_transforms(data_config)
+    set_train_opts(data_config, transforms)
+    fields = load_fields(data_config)
+    dataset_adaptor = DatasetAdaptor(fields)
+    return data_config, transforms, dataset_adaptor
 
 
 def build_dataset_adaptor_iter(mixer,

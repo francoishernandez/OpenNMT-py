@@ -11,14 +11,12 @@ import onmt.utils.distributed
 
 from onmt.utils.misc import set_random_seed
 from onmt.utils.logging import init_logger, logger
-from onmt.train_single import main_dynamicdata as single_main
+from onmt.train_single import main as single_main
 from onmt.utils.parse import ArgumentParser
 
-from onmt.dynamicdata.config import read_data_config, verify_shard_config
-from onmt.dynamicdata.transforms import set_train_opts
-from onmt.dynamicdata.vocab import load_fields, load_transforms
 from onmt.dynamicdata.iterators import build_mixer
-from onmt.dynamicdata.dataset import DatasetAdaptor, build_dataset_adaptor_iter
+from onmt.dynamicdata.dataset import build_data_loader, \
+    build_dataset_adaptor_iter
 
 from itertools import cycle
 
@@ -85,17 +83,6 @@ def train(opt):
         p.join()
     producer.terminate()
 
-def build_data_loader(opt):
-    # because generators cannot be pickled,
-    # the data loader components should be built in the producer process
-    data_config = read_data_config(opt.data_config)
-    verify_shard_config(data_config)
-    transform_models, transforms = load_transforms(data_config)
-    set_train_opts(data_config, transforms)
-    fields = load_fields(data_config)
-    dataset_adaptor = DatasetAdaptor(fields)
-    return data_config, transforms, dataset_adaptor
-
 
 def batch_producer(queues, semaphore, opt, data_loader_step):
     init_logger(opt.log_file)
@@ -140,23 +127,11 @@ def batch_producer(queues, semaphore, opt, data_loader_step):
 def run(opt, device_id, error_queue, batch_queue, semaphore):
     """ run process """
     try:
-        if device_id == 0:
-            data_config, transforms, dataset_adaptor = build_data_loader(opt)
-            valid_mixer, valid_task_epochs = build_mixer(
-                data_config, transforms, is_train=False,
-                bucket_size=opt.bucket_size)
-            valid_iter = build_dataset_adaptor_iter(
-                valid_mixer, dataset_adaptor, opt, mb_callback=None,
-                data_loader_step=0, is_train=False)
-            valid_iter = list(valid_iter)
-        else:
-            valid_iter = None
-
         gpu_rank = onmt.utils.distributed.multi_init(opt, device_id)
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
-        single_main(opt, device_id, batch_queue, semaphore, valid_iter)
+        single_main(opt, device_id, batch_queue, semaphore, dynamic=True)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing
     except Exception:

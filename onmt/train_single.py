@@ -16,6 +16,9 @@ from onmt.utils.parse import ArgumentParser
 
 from onmt.dynamicdata.config import read_data_config
 from onmt.dynamicdata.vocab import load_fields
+from onmt.dynamicdata.iterators import build_mixer
+from onmt.dynamicdata.dataset import build_data_loader, \
+    build_dataset_adaptor_iter
 
 
 def _check_save_model_path(opt):
@@ -42,14 +45,9 @@ def configure_process(opt, device_id):
     set_random_seed(opt.seed, device_id >= 0)
 
 
-def main(opt, device_id, batch_queue=None, semaphore=None):
-    # NOTE: It's important that ``opt`` has been validated and updated
-    # at this point.
-    configure_process(opt, device_id)
-    init_logger(opt.log_file)
-    assert len(opt.accum_count) == len(opt.accum_steps), \
-        'Number of accum_count values must match number of accum_steps'
-    # Load checkpoint if we resume from a previous training.
+def maybe_train_from(opt):
+    """Maybe load checkpoint & model_opt."""
+    checkpoint, model_opt = None, opt
     if opt.train_from:
         logger.info('Loading checkpoint from %s' % opt.train_from)
         checkpoint = torch.load(opt.train_from,
@@ -57,24 +55,66 @@ def main(opt, device_id, batch_queue=None, semaphore=None):
         model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
         ArgumentParser.update_model_opts(model_opt)
         ArgumentParser.validate_model_opts(model_opt)
-        logger.info('Loading vocab from checkpoint at %s.' % opt.train_from)
-        vocab = checkpoint['vocab']
+    return checkpoint, model_opt
+
+
+def _load_fields(opt, checkpoint, dynamic=False):
+    """Load fields from preprocess file/checkpoint."""
+    if dynamic:
+        data_config = read_data_config(opt.data_config)
+        # already verified shard_config
+        fields = load_fields(data_config)
     else:
-        checkpoint = None
-        model_opt = opt
-        vocab = torch.load(opt.data + '.vocab.pt')
+        if checkpoint is not None:
+            logger.info(f'Loading vocab from checkpoint at {opt.train_from}.')
+            vocab = checkpoint['vocab']
+        else:
+            vocab = torch.load(opt.data + '.vocab.pt')
+        # check for code where vocab is saved instead of fields
+        # (in the future this will be done in a smarter way)
+        if old_style_vocab(vocab):
+            fields = load_old_vocab(
+                vocab, opt.model_type, dynamic_dict=opt.copy_attn)
+        else:
+            fields = vocab
+        # patch for fields that may be missing in old data/model
+        patch_fields(opt, fields)
+    return fields
 
-    # check for code where vocab is saved instead of fields
-    # (in the future this will be done in a smarter way)
-    if old_style_vocab(vocab):
-        fields = load_old_vocab(
-            vocab, opt.model_type, dynamic_dict=opt.copy_attn)
+
+def get_valid_iter(opt, fields, device_id, dynamic=False):
+    """Return iterator used for validation."""
+    if dynamic:
+        if device_id == 0:
+            data_config, transforms, dataset_adaptor = build_data_loader(opt)
+            valid_mixer, valid_task_epochs = build_mixer(
+                data_config, transforms, is_train=False,
+                bucket_size=opt.bucket_size)
+            valid_iter = build_dataset_adaptor_iter(
+                valid_mixer, dataset_adaptor, opt, mb_callback=None,
+                data_loader_step=0, is_train=False)
+            valid_iter = list(valid_iter)
+        else:
+            valid_iter = None
     else:
-        fields = vocab
+        valid_iter = build_dataset_iter(
+            "valid", fields, opt, is_train=False)
+    return valid_iter
 
-    # patch for fields that may be missing in old data/model
-    patch_fields(opt, fields)
 
+def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
+    """Start training on `device_id`."""
+    # NOTE: It's important that ``opt`` has been validated and updated
+    # at this point.
+    configure_process(opt, device_id)
+    init_logger(opt.log_file)
+    assert len(opt.accum_count) == len(opt.accum_steps), \
+        'Number of accum_count values must match number of accum_steps'
+
+    # Load checkpoint if we resume from a previous training.
+    checkpoint, model_opt = maybe_train_from(opt)
+
+    fields = _load_fields(opt, checkpoint, dynamic=dynamic)
     # Report src and tgt vocab sizes, including for features
     for side in ['src', 'tgt']:
         f = fields[side]
@@ -124,101 +164,14 @@ def main(opt, device_id, batch_queue=None, semaphore=None):
         def _train_iter():
             while True:
                 batch = batch_queue.get()
+                # Maybe move batch to specified device
+                batch_to(batch, device_id)
                 semaphore.release()
                 yield batch
 
         train_iter = _train_iter()
 
-    valid_iter = build_dataset_iter(
-        "valid", fields, opt, is_train=False)
-
-    if len(opt.gpu_ranks):
-        logger.info('Starting training on GPU: %s' % opt.gpu_ranks)
-    else:
-        logger.info('Starting training on CPU, could be very slow')
-    train_steps = opt.train_steps
-    if opt.single_pass and train_steps > 0:
-        logger.warning("Option single_pass is enabled, ignoring train_steps.")
-        train_steps = 0
-
-    trainer.train(
-        train_iter,
-        train_steps,
-        save_checkpoint_steps=opt.save_checkpoint_steps,
-        valid_iter=valid_iter,
-        valid_steps=opt.valid_steps)
-
-    if trainer.report_manager.tensorboard_writer is not None:
-        trainer.report_manager.tensorboard_writer.close()
-
-
-def main_dynamicdata(opt, device_id, batch_queue=None, semaphore=None, valid_iter=None):
-    # NOTE: It's important that ``opt`` has been validated and updated
-    # at this point.
-    configure_process(opt, device_id)
-    init_logger(opt.log_file)
-    assert len(opt.accum_count) == len(opt.accum_steps), \
-        'Number of accum_count values must match number of accum_steps'
-    # Load checkpoint if we resume from a previous training.
-    if opt.train_from:
-        logger.info('Loading checkpoint from %s' % opt.train_from)
-        checkpoint = torch.load(opt.train_from,
-                                map_location=lambda storage, loc: storage)
-        model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
-        ArgumentParser.update_model_opts(model_opt)
-        ArgumentParser.validate_model_opts(model_opt)
-        #logger.info('Loading vocab from checkpoint at %s.' % opt.train_from)
-        #fields = checkpoint['vocab']
-    else:
-        checkpoint = None
-        model_opt = opt
-
-    data_config = read_data_config(opt.data_config)
-    # already verified shard_config
-    fields = load_fields(data_config)
-
-    # Report src and tgt vocab sizes, including for features
-    for side in ['src', 'tgt']:
-        f = fields[side]
-        try:
-            f_iter = iter(f)
-        except TypeError:
-            f_iter = [(side, f)]
-        for sn, sf in f_iter:
-            if sf.use_vocab:
-                logger.info(' * %s vocab size = %d' % (sn, len(sf.vocab)))
-
-    # Build model.
-    model = build_model(model_opt, opt, fields, checkpoint)
-    n_params, enc, dec = _tally_parameters(model)
-    logger.info('encoder: %d' % enc)
-    logger.info('decoder: %d' % dec)
-    logger.info('* number of parameters: %d' % n_params)
-    _check_save_model_path(opt)
-
-    # Build optimizer.
-    optim = Optimizer.from_opt(model, opt, checkpoint=checkpoint)
-
-    # Build model saver
-    model_saver = build_model_saver(model_opt, opt, model, fields, optim)
-
-    trainer = build_trainer(
-        opt, device_id, model, fields, optim, model_saver=model_saver)
-
-    # always using batch queue
-    assert semaphore is not None, \
-        "Using batch_queue requires semaphore as well"
-
-    def _train_iter():
-        while True:
-            batch = batch_queue.get()
-            # the training process has the gpu, and is responsible for calling torch.device
-            batch_to(batch, device_id)
-
-            semaphore.release()
-            yield batch
-
-    train_iter = _train_iter()
+    valid_iter = get_valid_iter(opt, fields, device_id, dynamic=dynamic)
 
     if len(opt.gpu_ranks):
         logger.info('Starting training on GPU: %s' % opt.gpu_ranks)

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 import argparse
-import collections
 import random
-import torchtext
 
 from onmt.dynamicdata.config import read_data_config, sharding_only, \
     save_shard_config, verify_shard_config, normalize_sizes
-from onmt.dynamicdata.shard import SimpleSharedVocabulary, DataSharder
+from onmt.dynamicdata.shard import DataSharder
 from onmt.dynamicdata.transforms import make_transform_models, \
-    make_transforms, get_specials, set_train_opts
+    make_transforms, get_specials
 from onmt.dynamicdata.vocab import load_vocabulary, prepare_fields, \
-    save_fields, load_fields, save_transforms, load_transforms
+    save_fields, save_transforms, SimpleSharedVocabulary
+
 
 def shard_main(config_file):
     data_config = read_data_config(config_file)
@@ -43,6 +42,7 @@ def shard_main(config_file):
     data_sharder()
     vocab.save_all()
 
+
 def vocab_main(config_file):
     data_config = read_data_config(config_file)
     verify_shard_config(data_config)
@@ -53,12 +53,14 @@ def vocab_main(config_file):
     save_fields(data_config, fields)
     save_transforms(data_config, transform_models, transforms)
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('subcommand', choices=['shard', 'vocab'])
     parser.add_argument('config')
     parser.add_argument('--seed', default=1)
     return parser
+
 
 def main():
     parser = get_parser()
@@ -69,6 +71,6 @@ def main():
     elif args.subcommand == 'vocab':
         vocab_main(args.config)
 
+
 if __name__ == '__main__':
     main()
-

@@ -13,7 +13,8 @@ def convert(lines):
             continue
         c = math.exp(float(c)) * 1000000
         c = int(c) + 1
-        yield c, w 
+        # yield c, w
+        yield w, c
 
 if __name__ == '__main__':
     for c, w in convert(sys.stdin):

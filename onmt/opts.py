@@ -366,23 +366,15 @@ def preprocess_opts(parser):
               help="mask will need to be inverted if prefix is joiner")
 
 
-def train_opts(parser):
-    """ Training and saving options """
-
-    group = parser.add_argument_group('General')
+def _train_bin_data(parser):
+    """ training options for preprocessed data """
+    group = parser.add_argument_group('Binary data')
     group.add('--data', '-data',
               help='Path prefix to the ".train.pt" and '
-                   '".valid.pt" file path from preprocess.py')
-    group.add('--data_config', '-data_config',
-              help='Path to data config yaml file. '
-                   'Turns on dynamic data loader.')
-    group.add('--data_type', '-data_type', default="text",
-              help="Type of the source input. "
-                   "Options are [text|img|audio|vec].")
-    group.add('--data_loader_step', '-data_loader_step', type=int, default=None,
-              help='Override the data loader step. '
-                   'Useful for old models and messing with the mixing schedule.')
-
+              '".valid.pt" file path from preprocess.py')
+    # group.add('--data_type', '-data_type', default="text",
+    #           help="Type of the source input. "
+    #                "Options are [text|img|audio|vec].")
     group.add('--data_ids', '-data_ids', nargs='+', default=[None],
               help="In case there are several corpora.")
     group.add('--data_weights', '-data_weights', type=int, nargs='+',
@@ -390,6 +382,31 @@ def train_opts(parser):
               should follow the same order as in -data_ids.""")
     group.add('--data_to_noise', '-data_to_noise', nargs='+', default=[],
               help="IDs of datasets on which to apply noise.")
+
+
+def _train_general_opts(parser):
+    """ General options for training """
+    group = parser.add_argument_group('General')
+    # group.add('--data', '-data',
+    #           help='Path prefix to the ".train.pt" and '
+    #                '".valid.pt" file path from preprocess.py')
+    # group.add('--data_config', '-data_config',
+    #           help='Path to data config yaml file. '
+    #                'Turns on dynamic data loader.')
+    group.add('--data_type', '-data_type', default="text",
+              help="Type of the source input. "
+                   "Options are [text|img|audio|vec].")
+    # group.add('--data_loader_step', '-data_loader_step', type=int, default=None,
+    #           help='Override the data loader step. '
+    #                'Useful for old models and messing with the mixing schedule.')
+
+    # group.add('--data_ids', '-data_ids', nargs='+', default=[None],
+    #           help="In case there are several corpora.")
+    # group.add('--data_weights', '-data_weights', type=int, nargs='+',
+    #           default=[1], help="""Weights of different corpora,
+    #           should follow the same order as in -data_ids.""")
+    # group.add('--data_to_noise', '-data_to_noise', nargs='+', default=[],
+    #           help="IDs of datasets on which to apply noise.")
 
     group.add('--save_model', '-save_model', default='model',
               help="Model filename (the model will be saved as "
@@ -461,8 +478,8 @@ def train_opts(parser):
 
     # Optimization options
     group = parser.add_argument_group('Optimization- Type')
-    group.add('--bucket_size', '-bucket_size', type=int, default=2048,
-              help='Examples per dynamically generated torchtext Dataset')
+    # group.add('--bucket_size', '-bucket_size', type=int, default=2048,
+    #           help='Examples per dynamically generated torchtext Dataset')
     group.add('--batch_size', '-batch_size', type=int, default=64,
               help='Maximum batch size for training')
     group.add('--batch_size_multiple', '-batch_size_multiple',
@@ -633,6 +650,12 @@ def train_opts(parser):
               type=int, default=3, choices=[3, 1],
               help="Using grayscale image can training "
                    "model faster and smaller")
+
+
+def train_opts(parser):
+    """ Training and saving options """
+    _train_bin_data(parser)
+    _train_general_opts(parser)
 
 
 def translate_opts(parser):

@@ -111,8 +111,9 @@ class ArgumentParser(cfargparse.ArgumentParser):
             raise AssertionError(
                   "-gpu_ranks should have master(=0) rank "
                   "unless -world_size is greater than len(gpu_ranks).")
-        assert len(opt.data_ids) == len(opt.data_weights), \
-            "Please check -data_ids and -data_weights options!"
+        if hasattr(opt, 'data_ids'):
+            assert len(opt.data_ids) == len(opt.data_weights), \
+                "Please check -data_ids and -data_weights options!"
 
         assert len(opt.dropout) == len(opt.dropout_steps), \
             "Number of dropout values must match accum_steps values"

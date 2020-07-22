@@ -14,11 +14,8 @@ from onmt.models import build_model_saver
 from onmt.utils.logging import init_logger, logger
 from onmt.utils.parse import ArgumentParser
 
-from onmt.dynamicdata.config import read_data_config
-from onmt.dynamicdata.vocab import load_fields
-from onmt.dynamicdata.iterators import build_mixer
-from onmt.dynamicdata.dataset import build_data_loader, \
-    build_dataset_adaptor_iter
+from onmt.dynamic.vocab import load_fields
+from onmt.dynamic.iterator import build_dynamic_dataset_iter
 
 
 def _check_save_model_path(opt):
@@ -45,25 +42,21 @@ def configure_process(opt, device_id):
     set_random_seed(opt.seed, device_id >= 0)
 
 
-def maybe_train_from(opt):
-    """Maybe load checkpoint & model_opt."""
-    checkpoint, model_opt = None, opt
+def _load_checkpoint(opt):
+    """Load checkpoint if any."""
+    checkpoint = None
     if opt.train_from:
         logger.info('Loading checkpoint from %s' % opt.train_from)
         checkpoint = torch.load(opt.train_from,
                                 map_location=lambda storage, loc: storage)
-        model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
-        ArgumentParser.update_model_opts(model_opt)
-        ArgumentParser.validate_model_opts(model_opt)
-    return checkpoint, model_opt
+    return checkpoint
 
 
 def _load_fields(opt, checkpoint, dynamic=False):
     """Load fields from preprocess file/checkpoint."""
     if dynamic:
-        data_config = read_data_config(opt.data_config)
-        # already verified shard_config
-        fields = load_fields(data_config)
+        # should already verified data_config
+        fields = load_fields(opt)
     else:
         if checkpoint is not None:
             logger.info(f'Loading vocab from checkpoint at {opt.train_from}.')
@@ -82,24 +75,49 @@ def _load_fields(opt, checkpoint, dynamic=False):
     return fields
 
 
-def get_valid_iter(opt, fields, device_id, dynamic=False):
+def _get_model_opts(opt, checkpoint=None):
+    """Get `model_opt` to build model, may load from `checkpoint` if any."""
+    if checkpoint is not None:
+        model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
+        ArgumentParser.update_model_opts(model_opt)
+        ArgumentParser.validate_model_opts(model_opt)
+    else:
+        model_opt = opt
+    return model_opt
+
+
+def _get_valid_iter(opt, fields, device_id, dynamic=False):
     """Return iterator used for validation."""
     if dynamic:
         if device_id == 0:
-            data_config, transforms, dataset_adaptor = build_data_loader(opt)
-            valid_mixer, valid_task_epochs = build_mixer(
-                data_config, transforms, is_train=False,
-                bucket_size=opt.bucket_size)
-            valid_iter = build_dataset_adaptor_iter(
-                valid_mixer, dataset_adaptor, opt, mb_callback=None,
-                data_loader_step=0, is_train=False)
-            valid_iter = list(valid_iter)
+            valid_iter = build_dynamic_dataset_iter(
+                fields, opt, is_train=False)
         else:
             valid_iter = None
     else:
         valid_iter = build_dataset_iter(
             "valid", fields, opt, is_train=False)
     return valid_iter
+
+
+def get_train_iter(opt, fields, dynamic=False):
+    """Return training iterator."""
+    if dynamic:
+        train_iter = build_dynamic_dataset_iter(fields, opt, is_train=True)
+    else:
+        if len(opt.data_ids) > 1:
+            train_shards = []
+            for train_id in opt.data_ids:
+                shard_base = "train_" + train_id
+                train_shards.append(shard_base)
+            train_iter = build_dataset_iter_multiple(train_shards, fields, opt)
+        else:
+            if opt.data_ids[0] is not None:
+                shard_base = "train_" + opt.data_ids[0]
+            else:
+                shard_base = "train"
+            train_iter = build_dataset_iter(shard_base, fields, opt)
+    return train_iter
 
 
 def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
@@ -112,7 +130,8 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         'Number of accum_count values must match number of accum_steps'
 
     # Load checkpoint if we resume from a previous training.
-    checkpoint, model_opt = maybe_train_from(opt)
+    checkpoint = _load_checkpoint(opt)
+    model_opt = _get_model_opts(opt, checkpoint=checkpoint)
 
     fields = _load_fields(opt, checkpoint, dynamic=dynamic)
     # Report src and tgt vocab sizes, including for features
@@ -144,19 +163,7 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         opt, device_id, model, fields, optim, model_saver=model_saver)
 
     if batch_queue is None:
-        if len(opt.data_ids) > 1:
-            train_shards = []
-            for train_id in opt.data_ids:
-                shard_base = "train_" + train_id
-                train_shards.append(shard_base)
-            train_iter = build_dataset_iter_multiple(train_shards, fields, opt)
-        else:
-            if opt.data_ids[0] is not None:
-                shard_base = "train_" + opt.data_ids[0]
-            else:
-                shard_base = "train"
-            train_iter = build_dataset_iter(shard_base, fields, opt)
-
+        train_iter = get_train_iter(opt, fields, dynamic=dynamic)
     else:
         assert semaphore is not None, \
             "Using batch_queue requires semaphore as well"
@@ -164,14 +171,14 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         def _train_iter():
             while True:
                 batch = batch_queue.get()
+                semaphore.release()
                 # Maybe move batch to specified device
                 batch_to(batch, device_id)
-                semaphore.release()
                 yield batch
 
         train_iter = _train_iter()
 
-    valid_iter = get_valid_iter(opt, fields, device_id, dynamic=dynamic)
+    valid_iter = _get_valid_iter(opt, fields, device_id, dynamic=dynamic)
 
     if len(opt.gpu_ranks):
         logger.info('Starting training on GPU: %s' % opt.gpu_ranks)

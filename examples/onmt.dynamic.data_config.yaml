@@ -1,0 +1,38 @@
+# Meta opts:
+## shard:
+save_data: generated/sharded.ex0
+shard_size: 1500
+
+## vocab:
+src_vocab: examples/subword_share/efcjk_shared_50k.spm-onmt_dynamic.vocab
+src_vocab_size: 60000
+tgt_vocab_size: 60000
+vocab_size_multiple: 8
+src_words_min_frequency: 10
+tgt_words_min_frequency: 10
+share_vocab: True
+### Transform related opts:
+src_subword_type: sentencepiece
+tgt_subword_type: sentencepiece
+src_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.model
+tgt_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.model
+n_samples_subword: 4
+theta_subword: 0.5
+max_len: 300
+drop_temperature: 2
+
+# Corpus opts:
+data:
+    corpus_1:
+        path_src: data/src-train.txt
+        path_tgt: data/tgt-train.txt
+        transforms: [simple, switchout, sentencepiece]
+        weight: 5
+        src_lang: en
+        tgt_lang: fr
+    valid:
+        path_src: data/src-val.txt
+        path_tgt: data/tgt-val.txt
+        transforms: [switchout]
+        src_lang: en
+        tgt_lang: fr

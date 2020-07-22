@@ -117,8 +117,8 @@ class ModelSaver(ModelSaverBase):
                 for key in keys_to_pop:
                     vocab[side].fields[0][1].vocab.stoi.pop(key, None)
 
-        if hasattr(model, 'data_loader_step'):
-            self.model_opt.data_loader_step = model.data_loader_step
+        # if hasattr(model, 'data_loader_step'):
+        #     self.model_opt.data_loader_step = model.data_loader_step
 
         checkpoint = {
             'model': model_state_dict,

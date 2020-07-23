@@ -75,11 +75,13 @@ def save_fields(opts, fields):
     """Dump `fields` object."""
     fields_path = "{}.vocab.pt".format(opts.save_data)
     os.makedirs(os.path.dirname(fields_path), exist_ok=True)
+    logger.info(f"Saving fields to {fields_path}...")
     torch.save(fields, fields_path)
 
 
 def load_fields(opts):
     """Load dumped `fields` object."""
     fields_path = "{}.vocab.pt".format(opts.save_data)
+    logger.info(f"Loading fields from {fields_path}...")
     fields = torch.load(fields_path)
     return fields

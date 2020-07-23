@@ -14,7 +14,6 @@ import traceback
 
 import onmt.utils
 from onmt.utils.logging import logger
-from onmt.inputters.inputter import batch_to
 
 
 def build_trainer(opt, device_id, model, fields, optim, model_saver=None):
@@ -331,9 +330,6 @@ class Trainer(object):
             stats = onmt.utils.Statistics()
 
             for batch in valid_iter:
-                # sent batch to `self.gpu_rank`
-                batch_to(batch, self.gpu_rank)
-
                 src, src_lengths = batch.src if isinstance(batch.src, tuple) \
                     else (batch.src, None)
                 tgt = batch.tgt

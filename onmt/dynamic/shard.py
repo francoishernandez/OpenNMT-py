@@ -64,10 +64,9 @@ class ParallelShard(object):
         import codecs
         with codecs.open(self.src, mode='rb') as fs,\
                 codecs.open(self.tgt, mode='rb') as ft:
-            print(f"Loading {repr(self)}...")
+            logger.info(f"Loading {repr(self)}...")
             slines = fs.readlines()
             tlines = ft.readlines()
-        print(f"Shard loaded, close file: {repr(self)}.")
         if len(slines) != len(tlines):
             raise ValueError("src & tgt should be same length!")
         for sline, tline in zip(slines, tlines):
@@ -77,7 +76,7 @@ class ParallelShard(object):
 
     def __repr__(self):
         cls_name = type(self).__name__
-        return '{}({},{})'.format(cls_name, self.src, self.tgt)
+        return '{}({}, {})'.format(cls_name, self.src, self.tgt)
 
 
 def get_named_shards(shards_dir, shards_prefix, corpus_name):
@@ -178,7 +177,6 @@ class ShardedCorpusIterator(object):
         if self.infinitely:
             paths = cycle(paths)
         for path in paths:
-            print("Iterate:" + repr(path))
             yield from self._iter_shard(path)
 
 
@@ -188,7 +186,7 @@ def build_sharded_corpora_iters(corpora_shards, transforms, corpora_info, train=
     for c_id, corpus_shards in corpora_shards.items():
         c_transform_names = corpora_info[c_id].get('transforms', [])
         corpus_transform = [transforms[name] for name in c_transform_names]
-        print(f"{c_id}'s transforms: {corpus_transform}")
+        logger.info(f"{c_id}'s transforms: {corpus_transform}")
         corpus_iter = ShardedCorpusIterator(
             corpus_shards, corpus_transform, infinitely=train)
         corpora_iters[c_id] = corpus_iter

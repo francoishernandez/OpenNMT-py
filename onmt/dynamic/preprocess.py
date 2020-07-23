@@ -16,7 +16,6 @@ def shard_main(opts):
 def vocab_main(opts):
     DynamicArgumentParser.valid_dynamic_corpus(opts)
     DynamicArgumentParser.get_all_transform(opts)
-    print(opts)
     transforms_cls = get_transforms_cls(opts._all_transform)
     specials = get_specials(opts, transforms_cls)
 

@@ -1,6 +1,7 @@
 """Module for dynamic data transfrom."""
 import os
 import torch
+from onmt.utils.logging import logger
 from onmt.dynamic.vocab import get_vocabs
 
 
@@ -162,6 +163,7 @@ def get_specials(opts, transforms_cls_dict):
         src_specials, tgt_specials = transform_cls.get_specials(opts)
         all_specials['src'].update(src_specials)
         all_specials['tgt'].update(tgt_specials)
+    logger.info(f"Get special vocabs from Transforms: {all_specials}.")
     return all_specials
 
 
@@ -169,6 +171,7 @@ def save_transforms(opts, transforms):
     """Dump `transforms` object."""
     transforms_path = "{}.transforms.pt".format(opts.save_data)
     os.makedirs(os.path.dirname(transforms_path), exist_ok=True)
+    logger.info(f"Saving Transforms to {transforms_path}.")
     torch.save(transforms, transforms_path)
 
 
@@ -176,5 +179,5 @@ def load_transforms(opts):
     """Load dumped `transforms` object."""
     transforms_path = "{}.transforms.pt".format(opts.save_data)
     transforms = torch.load(transforms_path)
-    # Logger for transforms
+    logger.info("Transforms loaded.")
     return transforms

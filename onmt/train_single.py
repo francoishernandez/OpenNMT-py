@@ -120,6 +120,13 @@ def get_train_iter(opt, fields, dynamic=False):
     return train_iter
 
 
+def _iter_on_device(_iterable, device_id):
+    """Move every batch generated in `_iterable` to `device_id`."""
+    for batch in _iterable:
+        batch_to(batch, device_id)
+        yield batch
+
+
 def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
     """Start training on `device_id`."""
     # NOTE: It's important that ``opt`` has been validated and updated
@@ -163,7 +170,8 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         opt, device_id, model, fields, optim, model_saver=model_saver)
 
     if batch_queue is None:
-        train_iter = get_train_iter(opt, fields, dynamic=dynamic)
+        _train_iter = get_train_iter(opt, fields, dynamic=dynamic)
+        train_iter = _iter_on_device(_train_iter, device_id)
     else:
         assert semaphore is not None, \
             "Using batch_queue requires semaphore as well"
@@ -179,6 +187,8 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         train_iter = _train_iter()
 
     valid_iter = _get_valid_iter(opt, fields, device_id, dynamic=dynamic)
+    if valid_iter is not None:
+        valid_iter = _iter_on_device(valid_iter, device_id)
 
     if len(opt.gpu_ranks):
         logger.info('Starting training on GPU: %s' % opt.gpu_ranks)

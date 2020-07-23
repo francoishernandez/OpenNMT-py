@@ -5,7 +5,6 @@ from torchtext.data import Dataset as TorchtextDataset, \
     Example as TorchtextExample, batch as torchtext_batch
 from onmt.inputters import str2sortkey
 from onmt.inputters.inputter import max_tok_len, OrderedIterator
-from onmt.utils.logging import logger
 
 from onmt.dynamic.shard import get_corpora_shards, build_sharded_corpora_iters
 from onmt.dynamic.transform import load_transforms
@@ -121,7 +120,6 @@ class DynamicDatasetIter(object):
 def build_dynamic_dataset_iter(fields, opts, is_train=True):
     """Build `DynamicDatasetIter` from fields & opts."""
     transforms = load_transforms(opts)
-    logger.info("Transforms loaded.")
     corpora_shards = get_corpora_shards(opts, is_train)
     if corpora_shards is None:
         assert not is_train, "only valid corpus is ignorable."

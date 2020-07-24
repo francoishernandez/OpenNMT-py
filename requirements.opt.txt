@@ -10,7 +10,6 @@ pyrouge
 opencv-python
 git+https://github.com/NVIDIA/apex
 pretrainedmodels
-git+https://github.com/Waino/morfessor-emprune
 pyyaml
 scipy
 sentencepiece

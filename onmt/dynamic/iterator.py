@@ -46,7 +46,6 @@ class DynamicDatasetIter(object):
         self.fields = fields
         self.corpora_info = opts.data
         self.is_train = is_train
-        self._init_datasets()
 
         self.batch_size = opts.batch_size if is_train \
             else opts.valid_batch_size
@@ -93,6 +92,7 @@ class DynamicDatasetIter(object):
         yield from buckets
 
     def __iter__(self):
+        self._init_datasets()
         while True:
             for bucket in self._bucketing():
                 dataset = self.dataset_adapter(bucket)

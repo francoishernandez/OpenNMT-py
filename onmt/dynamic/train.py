@@ -3,7 +3,7 @@
 import torch
 
 # import onmt.opts as opts
-from onmt.utils.distributed import ErrorHandler, consumer  # batch_producer
+from onmt.utils.distributed import ErrorHandler, consumer, batch_producer
 from onmt.utils.misc import set_random_seed
 from onmt.utils.logging import logger
 
@@ -29,7 +29,7 @@ def train(opt):
 
     if opt.world_size > 1:
         # Get the iterator to generate from
-        # train_iter = get_train_iter(opt, dynamic=True)
+        train_iter = get_train_iter(opt, dynamic=True)
 
         queues = []
         mp = torch.multiprocessing.get_context('spawn')
@@ -49,8 +49,7 @@ def train(opt):
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
         producer = mp.Process(target=batch_producer,
-                              # args=(train_iter, queues, semaphore, opt,),
-                              args=(queues, semaphore, opt,),
+                              args=(train_iter, queues, semaphore, opt,),
                               daemon=True)
         producer.start()
         error_handler.add_child(producer.pid)
@@ -63,47 +62,6 @@ def train(opt):
         single_main(opt, 0, dynamic=True)
     else:   # case only CPU
         single_main(opt, -1, dynamic=True)
-
-
-def batch_producer(queues, semaphore, opt):
-    """Produce batches to `queues`."""
-    from itertools import cycle
-    from onmt.utils.logging import init_logger
-
-    init_logger(opt.log_file)
-    set_random_seed(opt.seed, False)
-    # generator_to_serve = iter(generator_to_serve)
-
-    generator_to_serve = get_train_iter(opt, dynamic=True)
-
-    def pred(x):
-        """
-        Filters batches that belong only
-        to gpu_ranks of current node
-        """
-        for rank in opt.gpu_ranks:
-            if x[0] % opt.world_size == rank:
-                return True
-
-    generator_to_serve = filter(
-        pred, enumerate(generator_to_serve))
-
-    def next_batch(device_id):
-        new_batch = next(generator_to_serve)
-        semaphore.acquire()
-        return new_batch[1]
-
-    b = next_batch(0)
-
-    for device_id, q in cycle(enumerate(queues)):
-        b.dataset = None
-        # Move batch to correspond device_id
-        # batch_to(b, device_id)
-
-        # hack to dodge unpicklable `dict_keys`
-        b.fields = list(b.fields)
-        q.put(b)
-        b = next_batch(device_id)
 
 
 def _get_parser():

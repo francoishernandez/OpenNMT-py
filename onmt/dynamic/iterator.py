@@ -77,7 +77,6 @@ class DynamicDatasetIter(object):
 
     def _iter_datasets(self):
         """Yield a bucket of examples from weighted datasets."""
-        # import pdb; pdb.set_trace()
         for ds_name, ds_weight in self.datasets_weights.items():
             for _ in range(ds_weight):
                 yield self.datasets_iters[ds_name]

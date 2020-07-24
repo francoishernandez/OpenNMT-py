@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 """Train models with dynamic data."""
-import os
-import signal
 import torch
 
-from itertools import cycle
-
 # import onmt.opts as opts
-import onmt.utils.distributed
-
+from onmt.utils.distributed import ErrorHandler, consumer  # batch_producer
 from onmt.utils.misc import set_random_seed
-from onmt.utils.logging import init_logger, logger
-from onmt.train_single import main as single_main, _load_fields, \
-    _load_checkpoint, get_train_iter
+from onmt.utils.logging import logger
+
+from onmt.train_single import main as single_main, get_train_iter
 
 from onmt.dynamic.parse import DynamicArgumentParser
 from onmt.dynamic.opts import dynamic_train_opts
@@ -30,27 +25,12 @@ def train(opt):
 
     set_random_seed(opt.seed, False)
 
-    # get_fields also move to batch producer
-
-    """
-        if len(opt.data_ids) > 1:
-            train_shards = []
-            for train_id in opt.data_ids:
-                shard_base = "train_" + train_id
-                train_shards.append(shard_base)
-            train_iter = build_dataset_iter_multiple(train_shards, fields, opt)
-        else:
-            if opt.data_ids[0] is not None:
-                shard_base = "train_" + opt.data_ids[0]
-            else:
-                shard_base = "train"
-            train_iter = build_dataset_iter(shard_base, fields, opt)
-    """
-    # move to batch producer
-
     nb_gpu = len(opt.gpu_ranks)
 
     if opt.world_size > 1:
+        # Get the iterator to generate from
+        # train_iter = get_train_iter(opt, dynamic=True)
+
         queues = []
         mp = torch.multiprocessing.get_context('spawn')
         semaphore = mp.Semaphore(opt.world_size * opt.queue_size)
@@ -62,12 +42,14 @@ def train(opt):
         for device_id in range(nb_gpu):
             q = mp.Queue(opt.queue_size)
             queues += [q]
-            procs.append(mp.Process(target=run, args=(
-                opt, device_id, error_queue, q, semaphore), daemon=True))
+            procs.append(mp.Process(target=consumer, args=(
+                single_main, opt, device_id, error_queue, q, semaphore, True),
+                daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
         producer = mp.Process(target=batch_producer,
+                              # args=(train_iter, queues, semaphore, opt,),
                               args=(queues, semaphore, opt,),
                               daemon=True)
         producer.start()
@@ -83,88 +65,45 @@ def train(opt):
         single_main(opt, -1, dynamic=True)
 
 
-def get_fields(opt, dynamic=False):
-    """Get fields from opt."""
-    checkpoint = _load_checkpoint(opt)
-    fields = _load_fields(opt, checkpoint, dynamic=dynamic)
-    return fields
-
-
 def batch_producer(queues, semaphore, opt):
+    """Produce batches to `queues`."""
+    from itertools import cycle
+    from onmt.utils.logging import init_logger
+
     init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
+    # generator_to_serve = iter(generator_to_serve)
 
-    fields = get_fields(opt, dynamic=True)
+    generator_to_serve = get_train_iter(opt, dynamic=True)
 
-    train_iter = get_train_iter(opt, fields, dynamic=True)
+    def pred(x):
+        """
+        Filters batches that belong only
+        to gpu_ranks of current node
+        """
+        for rank in opt.gpu_ranks:
+            if x[0] % opt.world_size == rank:
+                return True
 
-    def next_batch():
-        new_batch = next(train_iter)
+    generator_to_serve = filter(
+        pred, enumerate(generator_to_serve))
+
+    def next_batch(device_id):
+        new_batch = next(generator_to_serve)
         semaphore.acquire()
-        return new_batch
+        return new_batch[1]
 
-    b = next_batch()
+    b = next_batch(0)
 
     for device_id, q in cycle(enumerate(queues)):
         b.dataset = None
-        # Move batch to correspond device_id: this will be done in each proc
+        # Move batch to correspond device_id
         # batch_to(b, device_id)
+
         # hack to dodge unpicklable `dict_keys`
         b.fields = list(b.fields)
         q.put(b)
-        b = next_batch()
-
-
-def run(opt, device_id, error_queue, batch_queue, semaphore):
-    """ run process """
-    try:
-        gpu_rank = onmt.utils.distributed.multi_init(opt, device_id)
-        if gpu_rank != opt.gpu_ranks[device_id]:
-            raise AssertionError("An error occurred in \
-                  Distributed initialization")
-        single_main(opt, device_id, batch_queue, semaphore, dynamic=True)
-    except KeyboardInterrupt:
-        pass  # killed by parent, do nothing
-    except Exception:
-        # propagate exception to parent process, keeping original traceback
-        import traceback
-        error_queue.put((opt.gpu_ranks[device_id], traceback.format_exc()))
-
-
-class ErrorHandler(object):
-    """A class that listens for exceptions in children processes and propagates
-    the tracebacks to the parent process."""
-
-    def __init__(self, error_queue):
-        """ init error handler """
-        import signal
-        import threading
-        self.error_queue = error_queue
-        self.children_pids = []
-        self.error_thread = threading.Thread(
-            target=self.error_listener, daemon=True)
-        self.error_thread.start()
-        signal.signal(signal.SIGUSR1, self.signal_handler)
-
-    def add_child(self, pid):
-        """ error handler """
-        self.children_pids.append(pid)
-
-    def error_listener(self):
-        """ error listener """
-        (rank, original_trace) = self.error_queue.get()
-        self.error_queue.put((rank, original_trace))
-        os.kill(os.getpid(), signal.SIGUSR1)
-
-    def signal_handler(self, signalnum, stackframe):
-        """ signal handler """
-        for pid in self.children_pids:
-            os.kill(pid, signal.SIGINT)  # kill children processes
-        (rank, original_trace) = self.error_queue.get()
-        msg = """\n\n-- Tracebacks above this line can probably
-                 be ignored --\n\n"""
-        msg += original_trace
-        raise Exception(msg)
+        b = next_batch(device_id)
 
 
 def _get_parser():
@@ -180,7 +119,6 @@ def main():
     parser = _get_parser()
 
     opt, unknown = parser.parse_known_args()
-    import pdb; pdb.set_trace()
     train(opt)
 
 

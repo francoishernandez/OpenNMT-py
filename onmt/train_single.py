@@ -86,22 +86,22 @@ def _get_model_opts(opt, checkpoint=None):
     return model_opt
 
 
-def _get_valid_iter(opt, fields, device_id, dynamic=False):
-    """Return iterator used for validation."""
-    if dynamic:
-        if device_id == 0:
+def _build_valid_iter(opt, fields, device_id, dynamic=False):
+    """Build iterator used for validation."""
+    if device_id <= 0:  # GPU0 or CPU
+        if dynamic:
             valid_iter = build_dynamic_dataset_iter(
                 fields, opt, is_train=False)
         else:
-            valid_iter = None
+            valid_iter = build_dataset_iter(
+                "valid", fields, opt, is_train=False)
     else:
-        valid_iter = build_dataset_iter(
-            "valid", fields, opt, is_train=False)
+        valid_iter = None
     return valid_iter
 
 
-def get_train_iter(opt, fields, dynamic=False):
-    """Return training iterator."""
+def _build_train_iter(opt, fields, dynamic=False):
+    """Build training iterator."""
     if dynamic:
         train_iter = build_dynamic_dataset_iter(fields, opt, is_train=True)
     else:
@@ -117,6 +117,14 @@ def get_train_iter(opt, fields, dynamic=False):
             else:
                 shard_base = "train"
             train_iter = build_dataset_iter(shard_base, fields, opt)
+    return train_iter
+
+
+def get_train_iter(opt, dynamic=False):
+    """Return training iterator."""
+    checkpoint = _load_checkpoint(opt)
+    fields = _load_fields(opt, checkpoint, dynamic=dynamic)
+    train_iter = _build_train_iter(opt, fields, dynamic=dynamic)
     return train_iter
 
 
@@ -170,7 +178,7 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
         opt, device_id, model, fields, optim, model_saver=model_saver)
 
     if batch_queue is None:
-        _train_iter = get_train_iter(opt, fields, dynamic=dynamic)
+        _train_iter = _build_train_iter(opt, fields, dynamic=dynamic)
         train_iter = _iter_on_device(_train_iter, device_id)
     else:
         assert semaphore is not None, \
@@ -186,7 +194,7 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
 
         train_iter = _train_iter()
 
-    valid_iter = _get_valid_iter(opt, fields, device_id, dynamic=dynamic)
+    valid_iter = _build_valid_iter(opt, fields, device_id, dynamic=dynamic)
     if valid_iter is not None:
         valid_iter = _iter_on_device(valid_iter, device_id)
 

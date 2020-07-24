@@ -1,4 +1,4 @@
-data_config: examples/dynamicdata.train.ural.lowres18k.bt.jtokemprune16k.faster.mono3.noise3.seq2.yaml
+# data_config: examples/onmt.dynamic.data_config.yaml
 save_model: foo
 
 train_steps: 100000

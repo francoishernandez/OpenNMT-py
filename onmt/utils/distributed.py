@@ -167,7 +167,6 @@ def batch_producer(generator_to_serve, queues, semaphore, opt):
     """Produce batches to `queues` from `generator_to_serve`."""
     init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
-    # generator_to_serve = iter(generator_to_serve)
 
     def pred(x):
         """

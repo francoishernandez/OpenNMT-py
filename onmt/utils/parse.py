@@ -121,6 +121,9 @@ class ArgumentParser(cfargparse.ArgumentParser):
         assert len(opt.attention_dropout) == len(opt.dropout_steps), \
             "Number of attention_dropout values must match accum_steps values"
 
+        assert len(opt.accum_count) == len(opt.accum_steps), \
+            'Number of accum_count values must match number of accum_steps'
+
     @classmethod
     def validate_translate_opts(cls, opt):
         if opt.beam_size != 1 and opt.random_sampling_topk != 1:

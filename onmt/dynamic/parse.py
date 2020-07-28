@@ -9,7 +9,7 @@ class DynamicArgumentParser(ArgumentParser):
     def valid_dynamic_corpus(cls, opt):
         """Parse corpus specified in data field of YAML file."""
         import yaml
-        corpora = yaml.load(opt.data)
+        corpora = yaml.safe_load(opt.data)
         for cname, corpus in corpora.items():
             path_src = corpus.get('path_src', None)
             path_tgt = corpus.get('path_tgt', None)

@@ -18,15 +18,17 @@ src_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.mo
 tgt_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.model
 n_samples_subword: 4
 theta_subword: 0.5
-max_len: 300
-drop_temperature: 2
+switchout_temperature: 1
+worddrop_temperature: 2
+src_seq_length: 300
+tgt_seq_length: 300
 
 # Corpus opts:
 data:
     corpus_1:
         path_src: data/src-train.txt
         path_tgt: data/tgt-train.txt
-        transforms: [simple, switchout, sentencepiece]
+        transforms: [tokendrop, tokenmask, switchout, sentencepiece, prefix, filtertoolong]
         weight: 5
         src_lang: en
         tgt_lang: fr

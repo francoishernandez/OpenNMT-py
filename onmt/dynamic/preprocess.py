@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from onmt.utils.logging import init_logger
+
 from onmt.dynamic.parse import DynamicArgumentParser
 from onmt.dynamic.opts import dynamic_preprocess_shard_opts,\
     dynamic_preprocess_vocab_opts
@@ -16,6 +18,7 @@ def shard_main(opts):
 def vocab_main(opts):
     DynamicArgumentParser.valid_dynamic_corpus(opts)
     DynamicArgumentParser.get_all_transform(opts)
+    init_logger()
     transforms_cls = get_transforms_cls(opts._all_transform)
     specials = get_specials(opts, transforms_cls)
 

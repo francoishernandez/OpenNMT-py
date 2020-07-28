@@ -84,6 +84,19 @@ def _dynamic_transform_opts(parser):
     group.add('-theta_subword', '--theta_subword', type=float, default=0,
               help="theta argument for subword regularization.")
     # TODO
+    group.add('-switchout_temperature', '--switchout_temperature',
+              type=float, default=0,
+              help="sampling temperature for switchout.")
+    group.add('-tokendrop_temperature', '--tokendrop_temperature',
+              type=float, default=0,
+              help="sampling temperature for token deletion.")
+    group.add('-tokenmask_temperature', '--tokenmask_temperature',
+              type=float, default=0,
+              help="sampling temperature for token masking.")
+    group.add('--src_seq_length', '-src_seq_length', type=int, default=200,
+              help="Maximum source sequence length")
+    group.add('--tgt_seq_length', '-tgt_seq_length', type=int, default=200,
+              help="Maximum target sequence length")
 
 
 def dynamic_preprocess_shard_opts(parser):

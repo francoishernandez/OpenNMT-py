@@ -142,8 +142,9 @@ def get_corpora_shards(opts, is_train=False):
 
 class ShardedCorpusIterator(object):
     """Generate examples from Sharded corpus."""
-    def __init__(self, shards, transforms, infinitely=False):
+    def __init__(self, cid, shards, transforms, infinitely=False):
         """Initialize."""
+        self.cid = cid
         self.shards = shards
         self.infinitely = infinitely
         self.transforms = transforms
@@ -157,8 +158,14 @@ class ShardedCorpusIterator(object):
     def _transform(self, stream):
         for item in stream:
             for transform in self.transforms:
-                item = transform.apply(*item)
-            yield item
+                item = transform.apply(*item, corpus_name=self.cid)
+                if item is None:
+                    break
+            if item is not None:
+                yield item
+            else:
+                # TODO: add statistics
+                pass
 
     def _add_index(self, stream):
         for i, item in enumerate(stream):
@@ -188,6 +195,6 @@ def build_sharded_corpora_iters(corpora_shards, transforms, corpora_info, train=
         corpus_transform = [transforms[name] for name in c_transform_names]
         logger.info(f"{c_id}'s transforms: {corpus_transform}")
         corpus_iter = ShardedCorpusIterator(
-            corpus_shards, corpus_transform, infinitely=train)
+            c_id, corpus_shards, corpus_transform, infinitely=train)
         corpora_iters[c_id] = corpus_iter
     return corpora_iters

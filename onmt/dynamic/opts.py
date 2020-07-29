@@ -18,15 +18,8 @@ def _dynamic_corpus_opts(parser):
               help='data configuration list.')
     group.add('-save_data', '--save_data', required=True,
               help='Output directory for data saving path.')
-
-
-def _dynamic_shard_opts(parser):
-    """Options related to sharding."""
-    group = parser.add_argument_group('sharding')
-    group.add('-shard_size', '--shard_size', type=int, default=1000000,
-              help="Divide corpus into smaller multiple shard files, "
-                   "each shard will have opt.shard_size samples "
-                   "except last shard. ")
+    group.add('--overwrite', '-overwrite', action="store_true",
+              help="Overwrite existing shards if any.")
 
 
 def _dynamic_vocab_opts(parser):
@@ -99,15 +92,8 @@ def _dynamic_transform_opts(parser):
               help="Maximum target sequence length")
 
 
-def dynamic_preprocess_shard_opts(parser):
-    """All options used in sharding phrase of preprocess."""
-    data_config_opts(parser)
-    _dynamic_corpus_opts(parser)
-    _dynamic_shard_opts(parser)
-
-
-def dynamic_preprocess_vocab_opts(parser):
-    """All options used in vocab phrase of preprocess."""
+def dynamic_preprocess_opts(parser):
+    """All options used in dynamic preprocess."""
     data_config_opts(parser)
     _dynamic_corpus_opts(parser)
     _dynamic_vocab_opts(parser)

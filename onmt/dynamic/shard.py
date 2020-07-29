@@ -3,52 +3,45 @@ import os
 import re
 from collections import defaultdict
 from itertools import cycle
-from onmt.utils.misc import split_corpus
 from onmt.utils.logging import logger
 
 
 VALID_CORPUS_NAME = 'valid'
 
 
-def save_file(lines, dest):
-    """Save `lines` into `dest`."""
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    with open(dest, 'wb') as f:
-        for line in lines:
-            f.write(line)
-
-
-def make_link(filepath, link):
+def make_link(filepath, link, overwrite=False):
     """Make a soft link with name `link` to `filepath`."""
     root = os.getcwd()
     filepath = os.path.join(root, filepath)
     link = os.path.join(root, link)
+    if not os.path.exists(filepath):
+        raise OSError(f"File not found at {filepath}.")
+    if os.path.exists(link):
+        if not overwrite:
+            logger.warning(f"Link {link} already exist. Skipping")
+            return
+        else:
+            logger.warning(f"Link {link} exist. overwriting it.")
+            os.remove(link)
     os.symlink(filepath, link)
 
 
-def sharding(corpora, shard_size, save_data):
-    """Sharding `corpora` into smaller files to `save_data`.
+def save_dataset(corpora, save_data, overwrite=False):
+    """Save `corpora` to `save_data`.
 
     Args:
         corpora (list): a dictionary of corpus with name as keys;
-        shard_size (int): max size for each shard;
-        save_data (str): file prefix for saving shards.
-
+        save_data (str): file prefix for saving;
+        overwrite (bool): if overwrite existing corpus.
     """
     os.makedirs(os.path.dirname(save_data), exist_ok=True)
     for corpus_name, corpus_dict in corpora.items():
         if corpus_name == VALID_CORPUS_NAME:
             dest_base = "{}.{}".format(save_data, VALID_CORPUS_NAME)
-            make_link(corpus_dict['path_src'], dest_base + '.0.src')
-            make_link(corpus_dict['path_tgt'], dest_base + '.0.tgt')
         else:
             dest_base = "{}.train_{}".format(save_data, corpus_name)
-            src_shards = split_corpus(corpus_dict['path_src'], shard_size)
-            tgt_shards = split_corpus(corpus_dict['path_tgt'], shard_size)
-            for i, (s_s, t_s) in enumerate(zip(src_shards, tgt_shards)):
-                dest_shard = "{}.{}".format(dest_base, i)
-                save_file(s_s, dest_shard + '.src')
-                save_file(t_s, dest_shard + '.tgt')
+        make_link(corpus_dict['path_src'], dest_base + '.0.src', overwrite)
+        make_link(corpus_dict['path_tgt'], dest_base + '.0.tgt', overwrite)
 
 
 class ParallelShard(object):
@@ -65,14 +58,10 @@ class ParallelShard(object):
         with codecs.open(self.src, mode='rb') as fs,\
                 codecs.open(self.tgt, mode='rb') as ft:
             logger.info(f"Loading {repr(self)}...")
-            slines = fs.readlines()
-            tlines = ft.readlines()
-        if len(slines) != len(tlines):
-            raise ValueError("src & tgt should be same length!")
-        for sline, tline in zip(slines, tlines):
-            sline = sline.decode('utf-8')
-            tline = tline.decode('utf-8')
-            yield (sline, tline)
+            for sline, tline in zip(fs, ft):
+                sline = sline.decode('utf-8')
+                tline = tline.decode('utf-8')
+                yield (sline, tline)
 
     def __repr__(self):
         cls_name = type(self).__name__

@@ -2,23 +2,18 @@
 from onmt.utils.logging import init_logger
 
 from onmt.dynamic.parse import DynamicArgumentParser
-from onmt.dynamic.opts import dynamic_preprocess_shard_opts,\
-    dynamic_preprocess_vocab_opts
-from onmt.dynamic.shard import sharding
+from onmt.dynamic.opts import dynamic_preprocess_opts
+from onmt.dynamic.shard import save_dataset
 from onmt.dynamic.vocab import build_dynamic_fields, save_fields
 from onmt.dynamic.transform import make_transforms, save_transforms, \
     get_specials, get_transforms_cls
 
 
-def shard_main(opts):
-    DynamicArgumentParser.valid_dynamic_corpus(opts)
-    sharding(opts.data, opts.shard_size, opts.save_data)
-
-
-def vocab_main(opts):
+def preprocess_main(opts):
     DynamicArgumentParser.valid_dynamic_corpus(opts)
     DynamicArgumentParser.get_all_transform(opts)
     init_logger()
+
     transforms_cls = get_transforms_cls(opts._all_transform)
     specials = get_specials(opts, transforms_cls)
 
@@ -28,30 +23,20 @@ def vocab_main(opts):
 
     transfroms = make_transforms(opts, transforms_cls, fields)
     save_transforms(opts, transfroms)
+    # Gather corpus to preprocess directory
+    save_dataset(opts.data, opts.save_data, opts.overwrite)
 
 
 def get_parser():
     parser = DynamicArgumentParser(description='dynamic_preprocess.py')
-    subparsers = parser.add_subparsers(
-        help="Choose subcommand to execute.", dest="subcommand")
-
-    shard_parser = subparsers.add_parser(
-        "shard", help="Build shards for parallel corpus.")
-    dynamic_preprocess_shard_opts(shard_parser)
-
-    vocab_parser = subparsers.add_parser(
-        "vocab", help="Build fields & transform.")
-    dynamic_preprocess_vocab_opts(vocab_parser)
+    dynamic_preprocess_opts(parser)
     return parser
 
 
 def main():
     parser = get_parser()
     opts, unknown = parser.parse_known_args()
-    if opts.subcommand == 'shard':
-        shard_main(opts)
-    elif opts.subcommand == 'vocab':
-        vocab_main(opts)
+    preprocess_main(opts)
 
 
 if __name__ == '__main__':

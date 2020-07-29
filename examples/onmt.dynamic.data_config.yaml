@@ -1,9 +1,9 @@
 # Meta opts:
-## shard:
+## preprocess:
 save_data: generated/sharded.ex0
-shard_size: 1500
+overwrite: False
 
-## vocab:
+### vocab:
 src_vocab: examples/subword_share/efcjk_shared_50k.spm-onmt_dynamic.vocab
 src_vocab_size: 60000
 tgt_vocab_size: 60000
@@ -28,13 +28,13 @@ data:
     corpus_1:
         path_src: data/src-train.txt
         path_tgt: data/tgt-train.txt
-        transforms: [tokendrop, tokenmask, switchout, sentencepiece, prefix, filtertoolong]
+        transforms: [switchout, sentencepiece, prefix, filtertoolong]
         weight: 5
         src_lang: en
         tgt_lang: fr
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
-        transforms: [switchout]
+        transforms: [sentencepiece, prefix]
         src_lang: en
         tgt_lang: fr

@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from itertools import cycle
 from onmt.utils.logging import logger
+from onmt.dynamic.transform import TransformPipe
 
 
 VALID_CORPUS_NAME = 'valid'
@@ -130,13 +131,28 @@ def get_corpora_shards(opts, is_train=False):
 
 
 class ShardedCorpusIterator(object):
-    """Generate examples from Sharded corpus."""
-    def __init__(self, cid, shards, transforms, infinitely=False):
-        """Initialize."""
+    """Generate examples from Sharded corpus.
+
+    Corpus file will be opened, every lines will be passed to a
+    [tokenize -> transform -> indexlize] pipeline.
+
+    Args:
+        cid (str): a string representing corpus id;
+        shards (list): a list containing paths of the corpus;
+        transform (onmt.dynamic.Transform): transforms to be applied to corpus;
+        infinitely (bool): loop over corpus only once if False.
+
+    Yield:
+        (tuple): corpus examples been dynamicly transformed
+
+    """
+
+    def __init__(self, cid, shards, transform, infinitely=False):
+        """Initialize a dynamic corpus iterator."""
         self.cid = cid
         self.shards = shards
         self.infinitely = infinitely
-        self.transforms = transforms
+        self.transform = transform
 
     def _tokenize(self, stream):
         for (sline, tline) in stream:
@@ -146,15 +162,13 @@ class ShardedCorpusIterator(object):
 
     def _transform(self, stream):
         for item in stream:
-            for transform in self.transforms:
-                item = transform.apply(*item, corpus_name=self.cid)
-                if item is None:
-                    break
+            item = self.transform.apply(*item, corpus_name=self.cid)
             if item is not None:
                 yield item
-            else:
-                # TODO: add statistics
-                pass
+        report_msg = self.transform.stats()
+        if report_msg != '':
+            logger.info("Transform statistics for {}:\n{}".format(
+                self.cid, report_msg))
 
     def _add_index(self, stream):
         for i, item in enumerate(stream):
@@ -182,8 +196,9 @@ def build_sharded_corpora_iters(corpora_shards, transforms, corpora_info, train=
     for c_id, corpus_shards in corpora_shards.items():
         c_transform_names = corpora_info[c_id].get('transforms', [])
         corpus_transform = [transforms[name] for name in c_transform_names]
-        logger.info(f"{c_id}'s transforms: {corpus_transform}")
+        transform_pipe = TransformPipe.build_from(corpus_transform)
+        logger.info(f"{c_id}'s transforms: {str(transform_pipe)}")
         corpus_iter = ShardedCorpusIterator(
-            c_id, corpus_shards, corpus_transform, infinitely=train)
+            c_id, corpus_shards, transform_pipe, infinitely=train)
         corpora_iters[c_id] = corpus_iter
     return corpora_iters

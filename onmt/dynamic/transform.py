@@ -18,18 +18,19 @@ class Transform(object):
     def get_specials(cls, opts):
         return (set(), set())
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Apply transform to `src` & `tgt`.
 
         Args:
             src (list): a list of str, representing tokens;
             tgt (list): a list of str, representing tokens;
+            stats (TransformStatistics): a statistic object.
         """
         raise NotImplementedError
 
     def stats(self):
         """Return statistic message."""
-        return None
+        return ''
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
@@ -82,7 +83,7 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
         self.vocab = vocabs
         self.temperature = self.opts.switchout_temperature
 
-    def _switchout(self, tokens, vocab):
+    def _switchout(self, tokens, vocab, stats=None):
         # 1. sample number of tokens to corrupt
         n_chosen = self._sample_distance(tokens, self.temperature)
         # 2. sample positions to corrput
@@ -95,21 +96,19 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
                 out.append(tok)
             else:
                 out.append(tok)
+        if stats is not None:
+            stats.switchout(n_switchout=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Apply switchout to both src and tgt side tokens."""
-        # import pdb; pdb.set_trace()
-        src = self._switchout(src, self.vocab['src'])
-        tgt = self._switchout(tgt, self.vocab['tgt'])
+        src = self._switchout(src, self.vocab['src'], stats)
+        tgt = self._switchout(tgt, self.vocab['tgt'], stats)
         return src, tgt
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
         return '{}={}'.format('switchout_temperature', self.temperature)
-
-    def stats(self):
-        pass
 
 
 class TokenDropTransform(Transform, HammingDistanceSampling):
@@ -119,7 +118,7 @@ class TokenDropTransform(Transform, HammingDistanceSampling):
         super().__init__(opts)
         self.temperature = self.opts.tokendrop_temperature
 
-    def _token_drop(self, tokens):
+    def _token_drop(self, tokens, stats=None):
         # 1. sample number of tokens to corrupt
         n_chosen = self._sample_distance(tokens, self.temperature)
         # 2. sample positions to corrput
@@ -127,20 +126,19 @@ class TokenDropTransform(Transform, HammingDistanceSampling):
         # 3. Drop token on chosen position
         out = [tok for (i, tok) in enumerate(tokens)
                if i not in chosen_indices]
+        if stats is not None:
+            stats.token_drop(n_dropped=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Apply token drop to both src and tgt side tokens."""
-        src = self._token_drop(src)
-        tgt = self._token_drop(tgt)
+        src = self._token_drop(src, stats)
+        tgt = self._token_drop(tgt, stats)
         return src, tgt
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
         return '{}={}'.format('worddrop_temperature', self.temperature)
-
-    def stats(self):
-        pass
 
 
 class TokenMaskTransform(Transform, HammingDistanceSampling):
@@ -157,7 +155,7 @@ class TokenMaskTransform(Transform, HammingDistanceSampling):
         """Get special vocabs added by prefix transform."""
         return ({cls.MASK_TOK}, set())
 
-    def _token_mask(self, tokens):
+    def _token_mask(self, tokens, stats=None):
         # 1. sample number of tokens to corrupt
         n_chosen = self._sample_distance(tokens, self.temperature)
         # 2. sample positions to corrput
@@ -167,11 +165,13 @@ class TokenMaskTransform(Transform, HammingDistanceSampling):
         for (i, tok) in enumerate(tokens):
             tok = self.MASK_TOK if i in chosen_indices else tok
             out.append(tok)
+        if stats is not None:
+            stats.token_mask(n_masked=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Apply word drop to both src and tgt side tokens."""
-        src = self._token_mask(src)
+        src = self._token_mask(src, stats)
         return src, tgt
 
     def _repr_args(self):
@@ -222,7 +222,7 @@ class PrefixSrcTransform(Transform):
             raise ValueError('corpus_name does not exist.')
         return [corpus_prefix] + tokens
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Prepend prefix to src side tokens."""
         corpus_name = kwargs.get('corpus_name', None)
         if corpus_name is None:
@@ -273,11 +273,15 @@ class SentencePieceTransform(Transform):
             sentence, nbest_size=self.n_samples, alpha=self.theta)
         return segmented
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Apply sentencepiece subword encode to src & tgt."""
-        src = self._sentencepiece(src, 'src')
-        tgt = self._sentencepiece(tgt, 'tgt')
-        return src, tgt
+        src_out = self._sentencepiece(src, 'src')
+        tgt_out = self._sentencepiece(tgt, 'tgt')
+        if stats is not None:
+            n_words = len(src) + len(tgt)
+            n_subwords = len(src_out) + len(tgt_out)
+            stats.sentencepiece(n_subwords, n_words)
+        return src_out, tgt_out
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
@@ -317,9 +321,11 @@ class FilterTooLongTransform(Transform):
         self.src_seq_length = opts.src_seq_length
         self.tgt_seq_length = opts.tgt_seq_length
 
-    def apply(self, src, tgt, **kwargs):
+    def apply(self, src, tgt, stats=None, **kwargs):
         """Return None if too long else return as is."""
         if len(src) > self.src_seq_length or len(tgt) > self.tgt_seq_length:
+            if stats is not None:
+                stats.filter_too_long()
             return None
         else:
             return src, tgt
@@ -340,6 +346,121 @@ AVAILABLE_TRANSFORMS = {
     'prefix': PrefixSrcTransform,
     'filtertoolong': FilterTooLongTransform
 }
+
+
+class TransformStatistics(object):
+    """Return a statistic counter for Transform."""
+
+    def __init__(self):
+        """Initialize statistic counter."""
+        self.reset()
+
+    def reset(self):
+        """Statistic counters for all transforms."""
+        self.filtered = 0
+        self.words, self.subwords = 0, 0
+        self.n_switchouted, self.so_total = 0, 0
+        self.n_dropped, self.td_total = 0, 0
+        self.n_masked, self.tm_total = 0, 0
+
+    def filter_too_long(self):
+        """update filtered sentence counter."""
+        self.filtered += 1
+
+    def sentencepiece(self, subwords, words):
+        """update sentencepiece counter."""
+        self.words += words
+        self.subwords += subwords
+
+    def switchout(self, n_switchout, n_total):
+        """update switchout counter."""
+        self.n_switchouted += n_switchout
+        self.so_total += n_total
+
+    def token_drop(self, n_dropped, n_total):
+        """update token drop counter."""
+        self.n_dropped += n_dropped
+        self.td_total += n_total
+
+    def token_mask(self, n_masked, n_total):
+        """update token mask counter."""
+        self.n_masked += n_masked
+        self.tm_total += n_total
+
+    def report(self):
+        """Return transform statistics report and reset counter."""
+        msg = ''
+        if self.filtered > 0:
+            msg += f'Filtred sentence: {self.filtered} sent\n'
+        if self.words > 0:
+            msg += f'SentencePiece: {self.words} -> {self.subwords} tok\n'
+        if self.so_total > 0:
+            msg += f'SwitchOut: {self.n_switchouted}/{self.so_total} tok\n'
+        if self.td_total > 0:
+            msg += f'Token dropped: {self.n_dropped}/{self.td_total} tok\n'
+        if self.tm_total > 0:
+            msg += f'Token masked: {self.n_masked}/{self.tm_total} tok\n'
+        self.reset()
+        return msg
+
+
+class TransformPipe(Transform):
+    """A Transfrom Pipeline built by a list of Transform instance."""
+    def __init__(self, opts, transform_list):
+        """Initialize pipeline by a list of transform instance."""
+        self.opts = opts
+        self.transforms = transform_list
+        self.statistics = TransformStatistics()
+
+    @classmethod
+    def build_from(cls, transform_list):
+        """Return a `TransformPipe` instance build from `transform_list`."""
+        for transform in transform_list:
+            assert isinstance(transform, Transform), \
+                "transform should be a instance of Transform."
+        opts = transform.opts
+        transform_pipe = cls(opts, transform_list)
+        return transform_pipe
+
+    def warm_up(self, vocabs):
+        """warm up Pipeline by iterate over all transfroms."""
+        for transform in self.transforms:
+            transform.warm_up(vocabs)
+
+    @classmethod
+    def get_specials(cls, opts, transforms):
+        """Return all specials introduced by `transforms`."""
+        src_specials, tgt_specials = set(), set()
+        for transform in transforms:
+            _src_special, _tgt_special = transform.get_specials(transform.opts)
+            src_specials.update(_src_special)
+            tgt_specials.update(tgt_specials)
+        return (src_specials, tgt_specials)
+
+    def apply(self, src, tgt, **kwargs):
+        """Apply transform pipe to `src` & `tgt`.
+
+        Args:
+            src (list): a list of str, representing tokens;
+            tgt (list): a list of str, representing tokens;
+        """
+        item = (src, tgt)
+        for transform in self.transforms:
+            item = transform.apply(*item, stats=self.statistics, **kwargs)
+            if item is None:
+                break
+        return item
+
+    def stats(self):
+        """Return statistic message."""
+        return self.statistics.report()
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        info_args = []
+        for transform in self.transforms:
+            info_args.append(repr(transform))
+        return ', '.join(info_args)
 
 
 def make_transforms(opts, transforms_cls, fields):

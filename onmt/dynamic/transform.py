@@ -1,5 +1,6 @@
 """Module for dynamic data transfrom."""
 import os
+import random
 import numpy as np
 import torch
 from onmt.utils.logging import logger
@@ -53,7 +54,7 @@ class HammingDistanceSampling(object):
         """Sample a token from `vocab` other than `reject`."""
         token = reject
         while token == reject:
-            token = np.random.choice(vocab)
+            token = random.choice(vocab)
         return token
 
     def _sample_distance(self, tokens, temperature):
@@ -67,9 +68,7 @@ class HammingDistanceSampling(object):
 
     def _sample_position(self, tokens, distance):
         n_tokens = len(tokens)
-        indices = np.arange(n_tokens)
-        chosen_indices = np.random.choice(
-            indices, size=distance, replace=False)
+        chosen_indices = random.sample(range(n_tokens), k=distance)
         return chosen_indices
 
 

@@ -12,4 +12,4 @@ git+https://github.com/NVIDIA/apex
 pretrainedmodels
 pyyaml
 scipy
-sentencepiece
+sentencepiece>=0.1.90

@@ -12,7 +12,7 @@ class Transform(object):
     def __init__(self, opts):
         self.opts = opts
 
-    def warm_up(self, vocabs):
+    def warm_up(self, vocabs=None):
         pass
 
     @classmethod
@@ -41,6 +41,218 @@ class Transform(object):
         cls_name = type(self).__name__
         cls_args = self._repr_args()
         return '{}({})'.format(cls_name, cls_args)
+
+
+class TokenizerTransform(Transform):
+    """Tokenizer transform abstract class."""
+
+    def __init__(self, opts):
+        """Initialize neccessary options for Tokenizer."""
+        super().__init__(opts)
+        self._parse_opts()
+
+    def _parse_opts(self):
+        raise NotImplementedError
+
+    def _set_subword_opts(self):
+        """Set all options relate to subword."""
+        self.share_vocab = self.opts.share_vocab
+        self.src_subword_type = self.opts.src_subword_type
+        self.tgt_subword_type = self.opts.tgt_subword_type
+        self.src_subword_model = self.opts.src_subword_model
+        self.tgt_subword_model = self.opts.tgt_subword_model
+        self.subword_nbest = self.opts.subword_nbest
+        self.alpha = self.opts.subword_alpha
+
+    def __getstate__(self):
+        """Pickling following for rebuild."""
+        return self.opts
+
+    def __setstate__(self, opts):
+        """Reload when unpickling from save file."""
+        self.opts = opts
+        self._parse_opts()
+        self.warm_up()
+
+
+class SentencePieceTransform(TokenizerTransform):
+    """SentencePiece subword transform class."""
+
+    def __init__(self, opts):
+        """Initialize neccessary options for sentencepiece."""
+        super().__init__(opts)
+        self._parse_opts()
+
+    def _parse_opts(self):
+        super()._set_subword_opts()
+
+    def warm_up(self, vocabs=None):
+        """Load subword models."""
+        import sentencepiece as spm
+        load_src_model = spm.SentencePieceProcessor()
+        load_src_model.Load(self.src_subword_model)
+        if self.share_vocab:
+            self.load_models = {
+                'src': load_src_model,
+                'tgt': load_src_model
+            }
+        else:
+            load_tgt_model = spm.SentencePieceProcessor()
+            load_tgt_model.Load(self.tgt_subword_model)
+            self.load_models = {
+                'src': load_src_model,
+                'tgt': load_tgt_model
+            }
+
+    def _tokenize(self, tokens, side='src'):
+        """Do sentencepiece subword tokenize."""
+        sp_model = self.load_models[side]
+        sentence = ' '.join(tokens)
+        if self.subword_nbest in [0, 1]:
+            # derterministic subwording
+            segmented = sp_model.encode(sentence, out_type=str)
+        else:
+            # subword sampling when subword_nbest > 1 or -1
+            # alpha should be 0.0 < alpha < 1.0
+            segmented = sp_model.encode(
+                sentence, out_type=str, enable_sampling=True,
+                alpha=self.alpha, nbest_size=self.subword_nbest)
+        return segmented
+
+    def apply(self, src, tgt, stats=None, **kwargs):
+        """Apply sentencepiece subword encode to src & tgt."""
+        src_out = self._tokenize(src, 'src')
+        tgt_out = self._tokenize(tgt, 'tgt')
+        if stats is not None:
+            n_words = len(src) + len(tgt)
+            n_subwords = len(src_out) + len(tgt_out)
+            stats.subword(n_subwords, n_words)
+        return src_out, tgt_out
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        return '{}={}, {}={}, {}={}, {}={}, {}={}'.format(
+            'share_vocab', self.share_vocab,
+            'subword_nbest', self.subword_nbest,
+            'alpha', self.alpha,
+            'src_subword_model', self.src_subword_model,
+            'tgt_subword_model', self.tgt_subword_model
+        )
+
+
+class ONMTTokenizerTransform(TokenizerTransform):
+    """OpenNMT Tokenizer transform class."""
+
+    def __init__(self, opts):
+        """Initialize neccessary options for OpenNMT Tokenizer."""
+        super().__init__(opts)
+        self._parse_opts()
+
+    def _parse_opts(self):
+        super()._set_subword_opts()
+        # Handle other kwargs
+        kwargs_opts = self.opts.onmttok_kwargs
+        kwargs_dict = eval(kwargs_opts)
+        if not isinstance(kwargs_dict, dict):
+            raise ValueError(
+                f"-tok_kwargs is not a dict valid string:{kwargs_opts}.")
+        logger.info("Parsed additional kwargs for OpenNMT Tokenizer {}".format(
+            kwargs_dict))
+        self.other_kwargs = kwargs_dict
+
+    def _get_subword_kwargs(self, side='src'):
+        """Return a dict containing kwargs relate to `side` subwords."""
+        subword_type = self.tgt_subword_type if side == 'tgt' \
+            else self.src_subword_type
+        subword_model = self.tgt_subword_model if side == 'tgt' \
+            else self.src_subword_model
+        kwopts = dict()
+        if subword_type == 'bpe':
+            kwopts['bpe_model_path'] = subword_model
+            logger.warning(
+                "OpenNMT Tokenizer do not support BPE dropout with bpe.")
+        elif subword_type == 'sentencepiece':
+            kwopts['sp_model_path'] = subword_model
+            kwopts['sp_nbest_size'] = self.subword_nbest
+            kwopts['sp_alpha'] = self.alpha
+        else:
+            raise ValueError(f'Unvalid subword_type: {subword_type}.')
+        return kwopts
+
+    def warm_up(self, vocab=None):
+        """Initilize Tokenizer models."""
+        import pyonmttok
+        src_subword_kwargs = self._get_subword_kwargs(side='src')
+        src_tokenizer = pyonmttok.Tokenizer(
+            **src_subword_kwargs, **self.other_kwargs
+        )
+        if self.share_vocab:
+            self.load_models = {
+                'src': src_tokenizer,
+                'tgt': src_tokenizer
+            }
+        else:
+            tgt_subword_kwargs = self._get_subword_kwargs(side='tgt')
+            tgt_tokenizer = pyonmttok.Tokenizer(
+                **tgt_subword_kwargs, **self.other_kwargs
+            )
+            self.load_models = {
+                'src': src_tokenizer,
+                'tgt': tgt_tokenizer
+            }
+
+    def _tokenize(self, tokens, side='src'):
+        """Do OpenNMT Tokenizer's tokenize."""
+        tokenizer = self.load_models[side]
+        sentence = ' '.join(tokens)
+        segmented, _ = tokenizer.tokenize(sentence)
+        return segmented
+
+    def apply(self, src, tgt, stats=None, **kwargs):
+        """Apply OpenNMT Tokenizer to src & tgt."""
+        src_out = self._tokenize(src, 'src')
+        tgt_out = self._tokenize(tgt, 'tgt')
+        if stats is not None:
+            n_words = len(src) + len(tgt)
+            n_subwords = len(src_out) + len(tgt_out)
+            stats.subword(n_subwords, n_words)
+        return src_out, tgt_out
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        repr_str = '{}={}'.format('share_vocab', self.share_vocab)
+        for key, value in self.other_kwargs.items():
+            repr_str += ', {}={}'.format(key, value)
+        repr_str += ', src_subword_kwargs={}'.format(
+            self._get_subword_kwargs(side='src'))
+        repr_str += ', tgt_subword_kwargs={}'.format(
+            self._get_subword_kwargs(side='tgt'))
+        return repr_str
+
+
+class FilterTooLongTransform(Transform):
+    """Filter out sentence that are too long."""
+
+    def __init__(self, opts):
+        super().__init__(opts)
+        self.src_seq_length = opts.src_seq_length
+        self.tgt_seq_length = opts.tgt_seq_length
+
+    def apply(self, src, tgt, stats=None, **kwargs):
+        """Return None if too long else return as is."""
+        if len(src) > self.src_seq_length or len(tgt) > self.tgt_seq_length:
+            if stats is not None:
+                stats.filter_too_long()
+            return None
+        else:
+            return src, tgt
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        return '{}={}, {}={}'.format(
+            'src_seq_length', self.src_seq_length,
+            'tgt_seq_length', self.tgt_seq_length
+        )
 
 
 class HammingDistanceSampling(object):
@@ -234,116 +446,14 @@ class PrefixSrcTransform(Transform):
         return '{}={}'.format('prefix_dict', self.prefix_dict)
 
 
-class SentencePieceTransform(Transform):
-    """A sentencepiece subword transform class."""
-
-    def __init__(self, opts):
-        """Initialize neccessary options for sentencepiece."""
-        super().__init__(opts)
-        self.share_vocab = opts.share_vocab
-        self.src_subword_model = opts.src_subword_model
-        self.tgt_subword_model = opts.tgt_subword_model
-        self.n_samples = opts.n_samples_subword
-        self.theta = opts.theta_subword
-
-    def warm_up(self, vocabs=None):
-        """Load subword models."""
-        import sentencepiece as spm
-        load_src_model = spm.SentencePieceProcessor()
-        load_src_model.Load(self.src_subword_model)
-        if self.share_vocab:
-            self.load_models = {
-                'src': load_src_model,
-                'tgt': load_src_model
-            }
-        else:
-            load_tgt_model = spm.SentencePieceProcessor()
-            load_tgt_model.Load(self.tgt_subword_model)
-            self.load_models = {
-                'src': load_src_model,
-                'tgt': load_tgt_model
-            }
-
-    def _sentencepiece(self, tokens, side='src'):
-        """Do sentencepiece subword encode."""
-        sp_model = self.load_models[side]
-        sentence = ' '.join(tokens)
-        segmented = sp_model.SampleEncodeAsPieces(
-            sentence, nbest_size=self.n_samples, alpha=self.theta)
-        return segmented
-
-    def apply(self, src, tgt, stats=None, **kwargs):
-        """Apply sentencepiece subword encode to src & tgt."""
-        src_out = self._sentencepiece(src, 'src')
-        tgt_out = self._sentencepiece(tgt, 'tgt')
-        if stats is not None:
-            n_words = len(src) + len(tgt)
-            n_subwords = len(src_out) + len(tgt_out)
-            stats.sentencepiece(n_subwords, n_words)
-        return src_out, tgt_out
-
-    def _repr_args(self):
-        """Return str represent key arguments for class."""
-        return '{}={}, {}={}, {}={}, {}={}, {}={}'.format(
-            'share_vocab', self.share_vocab,
-            'n_samples', self.n_samples,
-            'theta', self.theta,
-            'src_subword_model', self.src_subword_model,
-            'tgt_subword_model', self.tgt_subword_model
-        )
-
-    def __getstate__(self):
-        """Pickling following for rebuild."""
-        return {'opts': self.opts,
-                'share_vocab': self.share_vocab,
-                'src_subword_model': self.src_subword_model,
-                'tgt_subword_model': self.tgt_subword_model,
-                'n_samples': self.n_samples,
-                'theta': self.theta}
-
-    def __setstate__(self, d):
-        """Reload when unpickling from save file."""
-        self.opts = d['opts']
-        self.share_vocab = d['share_vocab']
-        self.src_subword_model = d['src_subword_model']
-        self.tgt_subword_model = d['tgt_subword_model']
-        self.n_samples = d['n_samples']
-        self.theta = d['theta']
-        self.warm_up()
-
-
-class FilterTooLongTransform(Transform):
-    """Filter out sentence that are too long."""
-
-    def __init__(self, opts):
-        super().__init__(opts)
-        self.src_seq_length = opts.src_seq_length
-        self.tgt_seq_length = opts.tgt_seq_length
-
-    def apply(self, src, tgt, stats=None, **kwargs):
-        """Return None if too long else return as is."""
-        if len(src) > self.src_seq_length or len(tgt) > self.tgt_seq_length:
-            if stats is not None:
-                stats.filter_too_long()
-            return None
-        else:
-            return src, tgt
-
-    def _repr_args(self):
-        """Return str represent key arguments for class."""
-        return '{}={}, {}={}'.format(
-            'src_seq_length', self.src_seq_length,
-            'tgt_seq_length', self.tgt_seq_length
-        )
-
-
 AVAILABLE_TRANSFORMS = {
     'sentencepiece': SentencePieceTransform,
+    'onmt_tokenize': ONMTTokenizerTransform,
+    'filtertoolong': FilterTooLongTransform,
     'switchout': SwitchOutTransform,
     'tokendrop': TokenDropTransform,
     'tokenmask': TokenMaskTransform,
-    'prefix': PrefixSrcTransform,
-    'filtertoolong': FilterTooLongTransform
+    'prefix': PrefixSrcTransform
 }
 
 
@@ -363,26 +473,26 @@ class TransformStatistics(object):
         self.n_masked, self.tm_total = 0, 0
 
     def filter_too_long(self):
-        """update filtered sentence counter."""
+        """Update filtered sentence counter."""
         self.filtered += 1
 
-    def sentencepiece(self, subwords, words):
-        """update sentencepiece counter."""
+    def subword(self, subwords, words):
+        """Update subword counter."""
         self.words += words
         self.subwords += subwords
 
     def switchout(self, n_switchout, n_total):
-        """update switchout counter."""
+        """Update switchout counter."""
         self.n_switchouted += n_switchout
         self.so_total += n_total
 
     def token_drop(self, n_dropped, n_total):
-        """update token drop counter."""
+        """Update token drop counter."""
         self.n_dropped += n_dropped
         self.td_total += n_total
 
     def token_mask(self, n_masked, n_total):
-        """update token mask counter."""
+        """Update token mask counter."""
         self.n_masked += n_masked
         self.tm_total += n_total
 
@@ -390,9 +500,9 @@ class TransformStatistics(object):
         """Return transform statistics report and reset counter."""
         msg = ''
         if self.filtered > 0:
-            msg += f'Filtred sentence: {self.filtered} sent\n'
+            msg += f'Filtred sentence: {self.filtered} sent\n'.format()
         if self.words > 0:
-            msg += f'SentencePiece: {self.words} -> {self.subwords} tok\n'
+            msg += f'Subword(SP/Tokenizer): {self.words} -> {self.subwords} tok\n'  # noqa: E501
         if self.so_total > 0:
             msg += f'SwitchOut: {self.n_switchouted}/{self.so_total} tok\n'
         if self.td_total > 0:
@@ -404,7 +514,8 @@ class TransformStatistics(object):
 
 
 class TransformPipe(Transform):
-    """A Transfrom Pipeline built by a list of Transform instance."""
+    """Pipeline built by a list of Transform instance."""
+
     def __init__(self, opts, transform_list):
         """Initialize pipeline by a list of transform instance."""
         self.opts = opts
@@ -422,7 +533,7 @@ class TransformPipe(Transform):
         return transform_pipe
 
     def warm_up(self, vocabs):
-        """warm up Pipeline by iterate over all transfroms."""
+        """Warm up Pipeline by iterate over all transfroms."""
         for transform in self.transforms:
             transform.warm_up(vocabs)
 
@@ -442,6 +553,7 @@ class TransformPipe(Transform):
         Args:
             src (list): a list of str, representing tokens;
             tgt (list): a list of str, representing tokens;
+
         """
         item = (src, tgt)
         for transform in self.transforms:

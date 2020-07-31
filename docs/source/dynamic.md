@@ -14,7 +14,7 @@ To train models with this dynamic feature, a `-data_config` yaml file is require
 
 As the data is supposed to be dynamicly processed when iterate, we can not build vocabulary automaticly by walking through the corpora as sequences may not be the same token level before/after transform. Therefore, a vocabulary file is required.
 
-To get the needed vocabulary, if sentencepiece is used as subword tokenizer, its learned vocab file can be used and feed to [spm_to_vocab](https://github.com/OpenNMT/OpenNMT-py/blob/master/tools/spm_to_vocab.py) to get the vocab file in OpenNMT-py format. While a vocab file for bpe can only be get by walking through the bpe tokenized corpora as there is no vocab file generated when learning.
+To get the needed vocabulary, if [sentencepiece](https://github.com/google/sentencepiece) is used as subword tokenizer, its learned vocab file can be used and feed to [spm_to_vocab](https://github.com/OpenNMT/OpenNMT-py/blob/master/tools/spm_to_vocab.py) to get the vocab file in OpenNMT-py format. While a vocab file for official bpe by [subword-nmt](https://github.com/rsennrich/subword-nmt) can only be get by walking through the bpe tokenized corpora as there is no vocab file generated when learning.
 
 ### Step 1: Preprocess the data
 

@@ -72,10 +72,16 @@ def _dynamic_transform_opts(parser):
               choices=['none', 'sentencepiece', 'bpe'],
               help="Type of subword model for tgt.")
 
-    group.add('-n_samples_subword', '--n_samples_subword', type=int, default=1,
-              help="number of sample (n_best) generated in subword.")
-    group.add('-theta_subword', '--theta_subword', type=float, default=0,
-              help="theta argument for subword regularization.")
+    group.add('-subword_nbest', '--subword_nbest', type=int, default=1,
+              help="number of (n_best) candidate in subword regularization."
+              "Valid for unigram sampling, invalid for BPE-dropout.")
+    group.add('-subword_alpha', '--subword_alpha', type=float, default=0,
+              help="Soothing parameter for sentencepiece unigram sampling,"
+              "and merge probability for BPE-dropout.")
+    group.add('-onmttok_kwargs', '--onmttok_kwargs', type=str,
+              default="{'mode': 'none'}",
+              help="Accept any OpenNMT Tokenizer's options in dict string,"
+              "except subword related options listed earlier.")
     # TODO
     group.add('-switchout_temperature', '--switchout_temperature',
               type=float, default=0,

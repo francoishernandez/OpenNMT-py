@@ -11,10 +11,22 @@ class DynamicArgumentParser(ArgumentParser):
         import yaml
         corpora = yaml.safe_load(opt.data)
         for cname, corpus in corpora.items():
+            # Check path
             path_src = corpus.get('path_src', None)
             path_tgt = corpus.get('path_tgt', None)
             if path_src is None or path_tgt is None:
-                raise ValueError(f'Corpus {cname} path should be specified.')
+                raise ValueError(f'Corpus {cname} path are required')
+            # Check language
+            src_lang = corpus.get('src_lang', None)
+            tgt_lang = corpus.get('tgt_lang', None)
+            if src_lang is None or tgt_lang is None:
+                raise ValueError(f'Corpus {cname} lang info are required.')
+            # Check weight
+            weight = corpus.get('weight', None)
+            if weight is None:
+                logger.warning(f"Corpus {cname}'s weight should be given."
+                               " We default it to 1 for you.")
+                corpus['weight'] = 1
         logger.info(f"Parsed {len(corpora)} corpora from -data.")
         opt.data = corpora
 

@@ -37,6 +37,70 @@ class DatasetAdapter(object):
         return dataset
 
 
+class MixingStrategy(object):
+    """Mixing strategy that should be used in Data Iterator."""
+
+    def __init__(self, iterables, weights):
+        """Initilize neccessary attr."""
+        self._valid_iterable(iterables, weights)
+        self.iterables = iterables
+        self.weights = weights
+
+    def _valid_iterable(self, iterables, weights):
+        iter_keys = iterables.keys()
+        weight_keys = weights.keys()
+        if iter_keys != weight_keys:
+            raise ValueError(
+                f"keys in {iterables} & {iterables} should be equal.")
+
+    def __iter__(self):
+        raise NotImplementedError
+
+
+class SequentialMixer(MixingStrategy):
+    """Generate data sequentially from `iterables` which is exhaustible."""
+
+    def _iter_datasets(self):
+        for ds_name, ds_weight in self.weights.items():
+            for _ in range(ds_weight):
+                yield self.iterables[ds_name]
+
+    def __iter__(self):
+        for iterable in self._iter_datasets():
+            yield from iterable
+
+
+class WeightedMixer(MixingStrategy):
+    """A mixing strategy that mix data weightedly and iterate infinitely."""
+
+    def __init__(self, iterables, weights):
+        super().__init__(iterables, weights)
+        self._iterators = {
+            ds_name: iter(generator)
+            for ds_name, generator in self.iterables.items()
+        }
+
+    def _reset_iter(self, ds_name):
+        self._iterators[ds_name] = iter(self.iterables[ds_name])
+
+    def _iter_datasets(self):
+        for ds_name, ds_weight in self.weights.items():
+            for _ in range(ds_weight):
+                yield ds_name
+
+    def __iter__(self):
+        for ds_name in cycle(self._iter_datasets()):
+            iterator = self._iterators[ds_name]
+            try:
+                item = next(iterator)
+            except StopIteration:
+                self._reset_iter(ds_name)
+                iterator = self._iterators[ds_name]
+                item = next(iterator)
+            finally:
+                yield item
+
+
 class DynamicDatasetIter(object):
     """Yield data from multiply sharded plain text files."""
 
@@ -50,7 +114,7 @@ class DynamicDatasetIter(object):
         self.batch_size = opts.batch_size if is_train \
             else opts.valid_batch_size
         self.batch_size_fn = max_tok_len \
-            if opts.batch_type == "tokens" else None
+            if is_train and opts.batch_type == "tokens" else None
         if opts.batch_size_multiple is not None:
             self.batch_size_multiple = opts.batch_size_multiple
         else:
@@ -61,59 +125,45 @@ class DynamicDatasetIter(object):
         self.pool_factor = opts.pool_factor
 
     def _init_datasets(self):
-        self.datasets_iterables = build_sharded_corpora_iters(
+        datasets_iterables = build_sharded_corpora_iters(
             self.corpora_shards, self.transforms,
             self.corpora_info, self.is_train)
         self.dataset_adapter = DatasetAdapter(self.fields)
-        self.datasets_weights = {
+        datasets_weights = {
             ds_name: int(self.corpora_info[ds_name]['weight'])
-            for ds_name in self.datasets_iterables.keys()
+            for ds_name in datasets_iterables.keys()
         }
-        self.datasets_iters = {
-            ds_name: iter(generator)
-            for ds_name, generator in self.datasets_iterables.items()
-        }
-
-    def _iter_datasets(self):
-        """Yield a bucket of examples from weighted datasets."""
-        for ds_name, ds_weight in self.datasets_weights.items():
-            for _ in range(ds_weight):
-                yield self.datasets_iters[ds_name]
-
-    def _iter_examples(self):
-        for iterator in cycle(self._iter_datasets()):
-            yield next(iterator)
+        if self.is_train:
+            self.mixer = WeightedMixer(datasets_iterables, datasets_weights)
+        else:
+            self.mixer = SequentialMixer(datasets_iterables, datasets_weights)
 
     def _bucketing(self):
         buckets = torchtext_batch(
-            self._iter_examples(),
+            self.mixer,
             batch_size=self.bucket_size,
             batch_size_fn=None)
         yield from buckets
 
     def __iter__(self):
         self._init_datasets()
-        while True:
-            for bucket in self._bucketing():
-                dataset = self.dataset_adapter(bucket)
-                train_iter = OrderedIterator(
-                    dataset,
-                    self.batch_size,
-                    pool_factor=self.pool_factor,
-                    batch_size_fn=self.batch_size_fn,
-                    batch_size_multiple=self.batch_size_multiple,
-                    device=self.device,
-                    train=self.is_train,
-                    sort=False,
-                    sort_within_batch=True,
-                    sort_key=self.sort_key,
-                    repeat=False,
-                )
-                for batch in train_iter:
-                    # if mb_callback is not None:
-                    #     mb_callback(i)
-                    yield batch
-                    # i += 1
+        for bucket in self._bucketing():
+            dataset = self.dataset_adapter(bucket)
+            train_iter = OrderedIterator(
+                dataset,
+                self.batch_size,
+                pool_factor=self.pool_factor,
+                batch_size_fn=self.batch_size_fn,
+                batch_size_multiple=self.batch_size_multiple,
+                device=self.device,
+                train=self.is_train,
+                sort=False,
+                sort_within_batch=True,
+                sort_key=self.sort_key,
+                repeat=False,
+            )
+            for batch in train_iter:
+                yield batch
 
 
 def build_dynamic_dataset_iter(fields, opts, is_train=True):

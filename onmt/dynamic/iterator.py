@@ -63,10 +63,11 @@ class SequentialMixer(MixingStrategy):
     def _iter_datasets(self):
         for ds_name, ds_weight in self.weights.items():
             for _ in range(ds_weight):
-                yield self.iterables[ds_name]
+                yield ds_name
 
     def __iter__(self):
-        for iterable in self._iter_datasets():
+        for ds_name in self._iter_datasets():
+            iterable = self.iterables[ds_name]
             yield from iterable
 
 
@@ -110,7 +111,7 @@ class DynamicDatasetIter(object):
         self.fields = fields
         self.corpora_info = opts.data
         self.is_train = is_train
-
+        self.init_iterators = False
         self.batch_size = opts.batch_size if is_train \
             else opts.valid_batch_size
         self.batch_size_fn = max_tok_len \
@@ -137,6 +138,7 @@ class DynamicDatasetIter(object):
             self.mixer = WeightedMixer(datasets_iterables, datasets_weights)
         else:
             self.mixer = SequentialMixer(datasets_iterables, datasets_weights)
+        self.init_iterators = True
 
     def _bucketing(self):
         buckets = torchtext_batch(
@@ -146,7 +148,8 @@ class DynamicDatasetIter(object):
         yield from buckets
 
     def __iter__(self):
-        self._init_datasets()
+        if self.init_iterators is False:
+            self._init_datasets()
         for bucket in self._bucketing():
             dataset = self.dataset_adapter(bucket)
             train_iter = OrderedIterator(

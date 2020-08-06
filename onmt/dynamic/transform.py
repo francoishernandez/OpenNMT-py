@@ -518,7 +518,7 @@ class TransformPipe(Transform):
 
     def __init__(self, opts, transform_list):
         """Initialize pipeline by a list of transform instance."""
-        self.opts = opts
+        self.opts = None  # opts is not required
         self.transforms = transform_list
         self.statistics = TransformStatistics()
 
@@ -528,8 +528,7 @@ class TransformPipe(Transform):
         for transform in transform_list:
             assert isinstance(transform, Transform), \
                 "transform should be a instance of Transform."
-        opts = transform.opts
-        transform_pipe = cls(opts, transform_list)
+        transform_pipe = cls(None, transform_list)
         return transform_pipe
 
     def warm_up(self, vocabs):

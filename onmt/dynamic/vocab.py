@@ -7,24 +7,12 @@ from onmt.inputters.inputter import get_fields, _load_vocab, \
     _build_fields_vocab
 
 
-def _no_tokenize(line):
-    """Return `line` as is.
-
-    Function used in _get_dynamic_fields, made first-level to be picklable.
-    """
-    return line
-
-
 def _get_dynamic_fields():
     # TODO: support for features & other opts
     src_nfeats = 0
     tgt_nfeats = 0
     fields = get_fields('text', src_nfeats, tgt_nfeats)
 
-    src_base_field = fields['src'].base_field
-    tgt_base_field = fields['tgt'].base_field
-    src_base_field.tokenize = _no_tokenize
-    tgt_base_field.tokenize = _no_tokenize
     # Do not support this in dynamic for now
     del fields['corpus_id']
     return fields
@@ -48,7 +36,6 @@ def build_dynamic_fields(opts, src_specials=None, tgt_specials=None):
     elif opts.share_vocab:
         logger.info("Sharing src vocab to tgt...")
         counters['tgt'] = counters['src']
-        # _tgt_vocab, _tgt_vocab_size = None, None
     else:
         raise ValueError("-tgt_vocab should be specified if not share_vocab.")
 

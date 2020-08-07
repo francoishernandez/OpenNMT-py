@@ -27,7 +27,11 @@ class DatasetAdapter(object):
     def _to_examples(self, bucket):
         examples = []
         for (src, tgt, index) in bucket:
-            ex = TorchtextExample.fromlist((src, tgt, index), self.fields_list)
+            # src, tgt from bucket are list of tokens
+            src_line = ' '.join(src)
+            tgt_line = ' '.join(tgt)
+            ex = TorchtextExample.fromlist(
+                (src_line, tgt_line, index), self.fields_list)
             examples.append(ex)
         return examples
 

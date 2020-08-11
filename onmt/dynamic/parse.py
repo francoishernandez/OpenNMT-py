@@ -9,6 +9,9 @@ class DynamicArgumentParser(ArgumentParser):
     def valid_dynamic_corpus(cls, opt):
         """Parse corpus specified in data field of YAML file."""
         import yaml
+        default_transforms = opt.transforms
+        if len(default_transforms) != 0:
+            logger.info(f"Default transforms: {default_transforms}.")
         corpora = yaml.safe_load(opt.data)
         for cname, corpus in corpora.items():
             # Check path
@@ -27,20 +30,21 @@ class DynamicArgumentParser(ArgumentParser):
                 logger.warning(f"Corpus {cname}'s weight should be given."
                                " We default it to 1 for you.")
                 corpus['weight'] = 1
+            # Check Transforms
+            _transforms = corpus.get('transforms', None)
+            if _transforms is None:
+                logger.info(f"Missing transforms field for {cname} data, "
+                            f"set to default: {default_transforms}.")
+                corpus['transforms'] = default_transforms
         logger.info(f"Parsed {len(corpora)} corpora from -data.")
         opt.data = corpora
 
     @classmethod
     def get_all_transform(self, opt):
         """Should only called after `valid_dynamic_corpus`."""
-        global_transform = opt.transforms
-        if len(global_transform) != 0:
-            logger.info(f"Global transforms: {global_transform}.")
-        all_transforms = set()
+        all_transforms = set(opt.transforms)
         for cname, corpus in opt.data.items():
-            _transforms = set(corpus.get('transforms', []))
-            if len(_transforms) == 0 and len(global_transform) != 0:
-                corpus['transforms'] = global_transform
-            all_transforms.update(_transforms)
-        all_transforms.update(global_transform)
+            _transforms = set(corpus['transforms'])
+            if len(_transforms) != 0:
+                all_transforms.update(_transforms)
         opt._all_transform = all_transforms

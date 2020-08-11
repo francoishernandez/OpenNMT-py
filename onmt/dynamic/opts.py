@@ -1,5 +1,6 @@
 """All options for dynamic running. Should be given in a yaml file."""
 from onmt.opts import _train_general_opts, config_opts, model_opts
+from onmt.dynamic.transform import AVAILABLE_TRANSFORMS
 
 
 def data_config_opts(parser):
@@ -55,8 +56,9 @@ def _dynamic_transform_opts(parser):
     """Options related to vocabulary."""
     group = parser.add_argument_group('transforms')
     group.add('-transforms', '--transforms', default=[], nargs='+',
-              help="Global transform pipeline applying to data."
-                   "Can be specified in each corpus.")
+              choices=AVAILABLE_TRANSFORMS.keys(),
+              help="Default transform pipeline applying to data."
+                   "Can be specified in each corpus to override.")
     # Subword
     group.add('-src_subword_model', '--src_subword_model',
               help="Path of subword model for src (or shared).")
@@ -84,13 +86,14 @@ def _dynamic_transform_opts(parser):
               "except subword related options listed earlier.")
     # TODO
     group.add('-switchout_temperature', '--switchout_temperature',
-              type=float, default=0,
-              help="sampling temperature for switchout.")
+              type=float, default=1.0,
+              help="sampling temperature for switchout. tau^(-1) in paper."
+              "Smaller value makes data more diverse.")
     group.add('-tokendrop_temperature', '--tokendrop_temperature',
-              type=float, default=0,
+              type=float, default=1.0,
               help="sampling temperature for token deletion.")
     group.add('-tokenmask_temperature', '--tokenmask_temperature',
-              type=float, default=0,
+              type=float, default=1.0,
               help="sampling temperature for token masking.")
     group.add('--src_seq_length', '-src_seq_length', type=int, default=200,
               help="Maximum source sequence length")

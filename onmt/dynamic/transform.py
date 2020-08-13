@@ -55,10 +55,8 @@ class TokenizerTransform(Transform):
         raise NotImplementedError
 
     def _set_subword_opts(self):
-        """Set all options relate to subword."""
+        """Set necessary options relate to subword."""
         self.share_vocab = self.opts.share_vocab
-        self.src_subword_type = self.opts.src_subword_type
-        self.tgt_subword_type = self.opts.tgt_subword_type
         self.src_subword_model = self.opts.src_subword_model
         self.tgt_subword_model = self.opts.tgt_subword_model
         self.subword_nbest = self.opts.subword_nbest
@@ -84,7 +82,7 @@ class SentencePieceTransform(TokenizerTransform):
         self._parse_opts()
 
     def _parse_opts(self):
-        super()._set_subword_opts()
+        self._set_subword_opts()
 
     def warm_up(self, vocabs=None):
         """Load subword models."""
@@ -140,6 +138,61 @@ class SentencePieceTransform(TokenizerTransform):
         )
 
 
+class BPETransform(TokenizerTransform):
+    def __init__(self, opts):
+        """Initialize neccessary options for subword_nmt."""
+        super().__init__(opts)
+        self._parse_opts()
+
+    def _parse_opts(self):
+        self._set_subword_opts()
+        self.dropout = 1 - self.alpha
+
+    def warm_up(self, vocabs=None):
+        """Load subword models."""
+        from subword_nmt.apply_bpe import BPE
+        import codecs
+        src_codes = codecs.open(self.src_subword_model, encoding='utf-8')
+        load_src_model = BPE(codes=src_codes)
+        if self.share_vocab:
+            self.load_models = {
+                'src': load_src_model,
+                'tgt': load_src_model
+            }
+        else:
+            tgt_codes = codecs.open(self.tgt_subword_model, encoding='utf-8')
+            load_tgt_model = BPE(codes=tgt_codes)
+            self.load_models = {
+                'src': load_src_model,
+                'tgt': load_tgt_model
+            }
+
+    def _tokenize(self, tokens, side='src'):
+        """Do bpe subword tokenize."""
+        bpe_model = self.load_models[side]
+        segmented = bpe_model.segment_tokens(tokens, self.dropout)
+        return segmented
+
+    def apply(self, src, tgt, stats=None, **kwargs):
+        """Apply bpe subword encode to src & tgt."""
+        src_out = self._tokenize(src, 'src')
+        tgt_out = self._tokenize(tgt, 'tgt')
+        if stats is not None:
+            n_words = len(src) + len(tgt)
+            n_subwords = len(src_out) + len(tgt_out)
+            stats.subword(n_subwords, n_words)
+        return src_out, tgt_out
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        return '{}={}, {}={}, {}={}, {}={}'.format(
+            'share_vocab', self.share_vocab,
+            'alpha', self.alpha,
+            'src_subword_model', self.src_subword_model,
+            'tgt_subword_model', self.tgt_subword_model
+        )
+
+
 class ONMTTokenizerTransform(TokenizerTransform):
     """OpenNMT Tokenizer transform class."""
 
@@ -156,8 +209,14 @@ class ONMTTokenizerTransform(TokenizerTransform):
                 f"-tok_kwargs is not a dict valid string:{kwargs_opts}.")
         return kwargs_dict
 
-    def _parse_opts(self):
+    def _set_subword_opts(self):
+        """Set all options relate to subword for OpenNMT/Tokenizer."""
         super()._set_subword_opts()
+        self.src_subword_type = self.opts.src_subword_type
+        self.tgt_subword_type = self.opts.tgt_subword_type
+
+    def _parse_opts(self):
+        self._set_subword_opts()
         # Handle other kwargs
         kwargs_dict = self._parse_other_kwargs(self.opts.onmttok_kwargs)
         logger.info("Parsed additional kwargs for OpenNMT Tokenizer {}".format(
@@ -464,6 +523,7 @@ class PrefixSrcTransform(Transform):
 
 AVAILABLE_TRANSFORMS = {
     'sentencepiece': SentencePieceTransform,
+    'bpe': BPETransform,
     'onmt_tokenize': ONMTTokenizerTransform,
     'filtertoolong': FilterTooLongTransform,
     'switchout': SwitchOutTransform,

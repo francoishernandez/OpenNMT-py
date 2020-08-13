@@ -10,7 +10,7 @@ from onmt.dynamic.transform import make_transforms, save_transforms, \
 
 
 def preprocess_main(opts):
-    DynamicArgumentParser.valid_dynamic_corpus(opts)
+    DynamicArgumentParser.validate_dynamic_corpus(opts)
     DynamicArgumentParser.get_all_transform(opts)
     init_logger()
 

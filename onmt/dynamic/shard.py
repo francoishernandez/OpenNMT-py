@@ -143,7 +143,7 @@ class ShardedCorpusIterator(object):
         infinitely (bool): loop over corpus only once if False.
 
     Yield:
-        (tuple): corpus examples been dynamicly transformed
+        (tuple): corpus tokenized examples been dynamicly transformed
 
     """
 

@@ -21,6 +21,10 @@ def _dynamic_corpus_opts(parser):
               help='Output directory for data saving path.')
     group.add('--overwrite', '-overwrite', action="store_true",
               help="Overwrite existing shards if any.")
+    group.add('-transforms', '--transforms', default=[], nargs='+',
+              choices=AVAILABLE_TRANSFORMS.keys(),
+              help="Default transform pipeline applying to data."
+                   "Can be specified in each corpus of data to override.")
 
 
 def _dynamic_vocab_opts(parser):
@@ -53,38 +57,34 @@ def _dynamic_vocab_opts(parser):
 
 
 def _dynamic_transform_opts(parser):
-    """Options related to vocabulary."""
+    """Options related to transforms."""
     group = parser.add_argument_group('transforms')
-    group.add('-transforms', '--transforms', default=[], nargs='+',
-              choices=AVAILABLE_TRANSFORMS.keys(),
-              help="Default transform pipeline applying to data."
-                   "Can be specified in each corpus to override.")
     # Subword
     group.add('-src_subword_model', '--src_subword_model',
               help="Path of subword model for src (or shared).")
-    group.add('-src_subword_type', '--src_subword_type',
-              type=str, default='none',
-              choices=['none', 'sentencepiece', 'bpe'],
-              help="Type of subword model for src (or shared).")
-
     group.add('-tgt_subword_model', '--tgt_subword_model',
               help="Path of subword model for tgt.")
-    group.add('-tgt_subword_type', '--tgt_subword_type',
-              type=str, default='none',
-              choices=['none', 'sentencepiece', 'bpe'],
-              help="Type of subword model for tgt.")
 
     group.add('-subword_nbest', '--subword_nbest', type=int, default=1,
               help="number of (n_best) candidate in subword regularization."
               "Valid for unigram sampling, invalid for BPE-dropout.")
     group.add('-subword_alpha', '--subword_alpha', type=float, default=0,
               help="Soothing parameter for sentencepiece unigram sampling,"
-              "and merge probability for BPE-dropout.")
+              "and merge probability (1-dropout) for BPE-dropout.")
+
+    group.add('-src_subword_type', '--src_subword_type',
+              type=str, default='none',
+              choices=['none', 'sentencepiece', 'bpe'],
+              help="Type of subword model for src (or shared) in onmttok.")
+    group.add('-tgt_subword_type', '--tgt_subword_type',
+              type=str, default='none',
+              choices=['none', 'sentencepiece', 'bpe'],
+              help="Type of subword model for tgt in onmttok.")
     group.add('-onmttok_kwargs', '--onmttok_kwargs', type=str,
               default="{'mode': 'none'}",
               help="Accept any OpenNMT Tokenizer's options in dict string,"
               "except subword related options listed earlier.")
-    # TODO
+    # Sampling
     group.add('-switchout_temperature', '--switchout_temperature',
               type=float, default=1.0,
               help="sampling temperature for switchout. tau^(-1) in paper."
@@ -95,6 +95,7 @@ def _dynamic_transform_opts(parser):
     group.add('-tokenmask_temperature', '--tokenmask_temperature',
               type=float, default=1.0,
               help="sampling temperature for token masking.")
+    # Filter
     group.add('--src_seq_length', '-src_seq_length', type=int, default=200,
               help="Maximum source sequence length")
     group.add('--tgt_seq_length', '-tgt_seq_length', type=int, default=200,

@@ -17,7 +17,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 def train(opt):
-    DynamicArgumentParser.valid_dynamic_corpus(opt)
+    DynamicArgumentParser.validate_dynamic_corpus(opt)
 
     DynamicArgumentParser.validate_train_opts(opt)
     DynamicArgumentParser.update_model_opts(opt)

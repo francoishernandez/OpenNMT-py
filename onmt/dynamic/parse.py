@@ -6,7 +6,7 @@ from onmt.utils.logging import logger
 class DynamicArgumentParser(ArgumentParser):
 
     @classmethod
-    def valid_dynamic_corpus(cls, opt):
+    def validate_dynamic_corpus(cls, opt):
         """Parse corpus specified in data field of YAML file."""
         import yaml
         default_transforms = opt.transforms
@@ -40,8 +40,18 @@ class DynamicArgumentParser(ArgumentParser):
         opt.data = corpora
 
     @classmethod
-    def get_all_transform(self, opt):
+    def _validate_transforms(cls, opt):
+        assert 0 < opt.subword_alpha < 1, \
+            "subword_alpha should be in the range [0, 1]"
+        kwargs_dict = eval(opt.onmttok_kwargs)
+        if not isinstance(kwargs_dict, dict):
+            raise ValueError(f"-onmttok_kwargs is not a dict valid string.")
+        opt.onmttok_kwargs = kwargs_dict
+
+    @classmethod
+    def get_all_transform(cls, opt):
         """Should only called after `valid_dynamic_corpus`."""
+        cls._validate_transforms(opt)
         all_transforms = set(opt.transforms)
         for cname, corpus in opt.data.items():
             _transforms = set(corpus['transforms'])

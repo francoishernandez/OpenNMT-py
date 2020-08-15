@@ -108,6 +108,9 @@ def dynamic_preprocess_opts(parser):
     _dynamic_corpus_opts(parser)
     _dynamic_vocab_opts(parser)
     _dynamic_transform_opts(parser)
+    parser.add_argument(
+        '--verbose', '-verbose', action="store_true",
+        help="Save transformed sample for each corpus.")
 
 
 def _train_dynamic_data(parser):

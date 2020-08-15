@@ -3,7 +3,7 @@ from onmt.utils.logging import init_logger
 
 from onmt.dynamic.parse import DynamicArgumentParser
 from onmt.dynamic.opts import dynamic_preprocess_opts
-from onmt.dynamic.shard import save_dataset
+from onmt.dynamic.shard import save_dataset, save_transformed_sample
 from onmt.dynamic.vocab import build_dynamic_fields, save_fields
 from onmt.dynamic.transform import make_transforms, save_transforms, \
     get_specials, get_transforms_cls
@@ -21,10 +21,12 @@ def preprocess_main(opts):
         opts, src_specials=specials['src'], tgt_specials=specials['tgt'])
     save_fields(opts, fields)
 
-    transfroms = make_transforms(opts, transforms_cls, fields)
-    save_transforms(opts, transfroms)
+    transforms = make_transforms(opts, transforms_cls, fields)
+    save_transforms(opts, transforms)
     # Gather corpus to preprocess directory
     save_dataset(opts.data, opts.save_data, opts.overwrite)
+    if opts.verbose:
+        save_transformed_sample(opts, transforms)
 
 
 def get_parser():

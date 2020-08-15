@@ -202,3 +202,27 @@ def build_sharded_corpora_iters(corpora_shards, transforms, corpora_info, train=
             c_id, corpus_shards, transform_pipe, infinitely=train)
         corpora_iters[c_id] = corpus_iter
     return corpora_iters
+
+
+def save_transformed_sample(opts, transforms, n_sample=3):
+    """Save transformed data sample as specified in opts."""
+    corpora_shards = get_corpora_shards(opts, is_train=True)
+    datasets_iterables = build_sharded_corpora_iters(
+        corpora_shards, transforms,
+        opts.data, train=True)
+    sample_path = os.path.join(
+        os.path.dirname(opts.save_data), 'sample')
+    os.makedirs(sample_path, exist_ok=True)
+    for c_name, c_iter in datasets_iterables.items():
+        dest_base = os.path.join(sample_path, "{}.sample".format(c_name))
+        with open(dest_base, 'w', encoding="utf-8") as f_sample:
+            for i, example in enumerate(c_iter):
+                item_list = []
+                for item in example:
+                    if isinstance(item, list):
+                        item = ' '.join(item)
+                    item_list.append(str(item))
+                line = '\t'.join(item_list)
+                f_sample.write(line + '\n')
+                if i > n_sample:
+                    break

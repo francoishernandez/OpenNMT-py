@@ -201,14 +201,6 @@ class ONMTTokenizerTransform(TokenizerTransform):
         super().__init__(opts)
         self._parse_opts()
 
-    @staticmethod
-    def _parse_other_kwargs(kwargs_opts):
-        kwargs_dict = eval(kwargs_opts)
-        if not isinstance(kwargs_dict, dict):
-            raise ValueError(
-                f"-tok_kwargs is not a dict valid string:{kwargs_opts}.")
-        return kwargs_dict
-
     def _set_subword_opts(self):
         """Set all options relate to subword for OpenNMT/Tokenizer."""
         super()._set_subword_opts()
@@ -217,17 +209,14 @@ class ONMTTokenizerTransform(TokenizerTransform):
 
     def _parse_opts(self):
         self._set_subword_opts()
-        # Handle other kwargs
-        kwargs_dict = self._parse_other_kwargs(self.opts.onmttok_kwargs)
         logger.info("Parsed additional kwargs for OpenNMT Tokenizer {}".format(
-            kwargs_dict))
-        self.other_kwargs = kwargs_dict
+            self.opts.onmttok_kwargs))
+        self.other_kwargs = self.opts.onmttok_kwargs
 
     @classmethod
     def get_specials(cls, opts):
         src_specials, tgt_specials = set(), set()
-        kwargs_dict = cls._parse_other_kwargs(opts.onmttok_kwargs)
-        if kwargs_dict.get("case_markup", False):
+        if opts.onmttok_kwargs.get("case_markup", False):
             _case_specials = ['｟mrk_case_modifier_C｠',
                               '｟mrk_begin_case_region_U｠',
                               '｟mrk_end_case_region_U｠']

@@ -6,7 +6,8 @@ from torchtext.data import Dataset as TorchtextDataset, \
 from onmt.inputters import str2sortkey
 from onmt.inputters.inputter import max_tok_len, OrderedIterator
 
-from onmt.dynamic.shard import get_corpora_shards, build_sharded_corpora_iters
+# from onmt.dynamic.shard import get_corpora_shards, build_sharded_corpora_iters
+from onmt.dynamic.shard import get_corpora, build_corpora_iters
 from onmt.dynamic.transform import load_transforms
 
 
@@ -109,8 +110,8 @@ class WeightedMixer(MixingStrategy):
 class DynamicDatasetIter(object):
     """Yield data from multiply sharded plain text files."""
 
-    def __init__(self, corpora_shards, transforms, fields, opts, is_train):
-        self.corpora_shards = corpora_shards
+    def __init__(self, corpora, transforms, fields, opts, is_train):
+        self.corpora = corpora
         self.transforms = transforms
         self.fields = fields
         self.corpora_info = opts.data
@@ -130,9 +131,11 @@ class DynamicDatasetIter(object):
         self.pool_factor = opts.pool_factor
 
     def _init_datasets(self):
-        datasets_iterables = build_sharded_corpora_iters(
-            self.corpora_shards, self.transforms,
+        datasets_iterables = build_corpora_iters(
+            self.corpora, self.transforms,
             self.corpora_info, self.is_train)
+        print("### DATASET ITERABLES", datasets_iterables)
+        # exit()
         self.dataset_adapter = DatasetAdapter(self.fields)
         datasets_weights = {
             ds_name: int(self.corpora_info[ds_name]['weight'])
@@ -176,9 +179,10 @@ class DynamicDatasetIter(object):
 def build_dynamic_dataset_iter(fields, opts, is_train=True):
     """Build `DynamicDatasetIter` from fields & opts."""
     transforms = load_transforms(opts)
-    corpora_shards = get_corpora_shards(opts, is_train)
-    if corpora_shards is None:
+    corpora = get_corpora(opts, is_train)
+    print("### CORPORA", corpora)
+    if corpora is None:
         assert not is_train, "only valid corpus is ignorable."
         return None
     return DynamicDatasetIter(
-        corpora_shards, transforms, fields, opts, is_train)
+        corpora, transforms, fields, opts, is_train)

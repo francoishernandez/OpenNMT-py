@@ -154,7 +154,7 @@ class ParallelCorpusIterator(object):
 
 
 def build_corpora_iters(corpora, transforms, corpora_info, train=False):  # noqa: E501
-    """Return `ShardedCorpusIterator` for all corpora defined in opts."""
+    """Return `ParallelCorpusIterator` for all corpora defined in opts."""
     corpora_iters = dict()
     for c_id, corpus in corpora.items():
         c_transform_names = corpora_info[c_id].get('transforms', [])

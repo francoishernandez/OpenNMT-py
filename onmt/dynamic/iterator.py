@@ -134,8 +134,6 @@ class DynamicDatasetIter(object):
         datasets_iterables = build_corpora_iters(
             self.corpora, self.transforms,
             self.corpora_info, self.is_train)
-        print("### DATASET ITERABLES", datasets_iterables)
-        # exit()
         self.dataset_adapter = DatasetAdapter(self.fields)
         datasets_weights = {
             ds_name: int(self.corpora_info[ds_name]['weight'])
@@ -180,7 +178,6 @@ def build_dynamic_dataset_iter(fields, opts, is_train=True):
     """Build `DynamicDatasetIter` from fields & opts."""
     transforms = load_transforms(opts)
     corpora = get_corpora(opts, is_train)
-    print("### CORPORA", corpora)
     if corpora is None:
         assert not is_train, "only valid corpus is ignorable."
         return None

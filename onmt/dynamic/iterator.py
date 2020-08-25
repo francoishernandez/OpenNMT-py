@@ -6,7 +6,6 @@ from torchtext.data import Dataset as TorchtextDataset, \
 from onmt.inputters import str2sortkey
 from onmt.inputters.inputter import max_tok_len, OrderedIterator
 
-# from onmt.dynamic.shard import get_corpora_shards, build_sharded_corpora_iters
 from onmt.dynamic.corpus import get_corpora, build_corpora_iters
 from onmt.dynamic.transform import load_transforms
 
@@ -108,7 +107,7 @@ class WeightedMixer(MixingStrategy):
 
 
 class DynamicDatasetIter(object):
-    """Yield data from multiply sharded plain text files."""
+    """Yield data from multiple parallel plain text corpora."""
 
     def __init__(self, corpora, transforms, fields, opts, is_train):
         self.corpora = corpora

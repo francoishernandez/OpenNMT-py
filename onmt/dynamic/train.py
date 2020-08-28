@@ -29,7 +29,7 @@ def train(opt):
 
     if opt.world_size > 1:
         # Get the iterator to generate from
-        train_iter = get_train_iter(opt, dynamic=True)
+        # train_iter = get_train_iter(opt, dynamic=True)
 
         queues = []
         mp = torch.multiprocessing.get_context('spawn')
@@ -48,15 +48,22 @@ def train(opt):
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
-        producer = mp.Process(target=batch_producer,
-                              args=(train_iter, queues, semaphore, opt,),
-                              daemon=True)
-        producer.start()
-        error_handler.add_child(producer.pid)
+        producers = []
+        # this does not work if we merge with the first loop, not sure why
+        for device_id in range(nb_gpu):
+            train_iter = get_train_iter(
+                opt, dynamic=True, stride=nb_gpu, offset=device_id)
+            producer = mp.Process(target=batch_producer,
+                                  args=(train_iter, queues, semaphore, opt,),
+                                  daemon=True)
+            producers.append(producer)
+            producers[device_id].start()
+            logger.info(" Starting producer process pid: %d  " % producers[device_id].pid)
+            error_handler.add_child(producers[device_id].pid)
 
-        for p in procs:
+        for p, prod in zip(procs, producers):
             p.join()
-        producer.terminate()
+            prod.join()
 
     elif nb_gpu == 1:  # case 1 GPU only
         single_main(opt, 0, dynamic=True)

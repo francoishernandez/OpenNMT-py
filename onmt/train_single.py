@@ -97,10 +97,11 @@ def _build_valid_iter(opt, fields, device_id, dynamic=False):
     return valid_iter
 
 
-def _build_train_iter(opt, fields, dynamic=False):
+def _build_train_iter(opt, fields, dynamic=False, stride=1, offset=0):
     """Build training iterator."""
     if dynamic:
-        train_iter = build_dynamic_dataset_iter(fields, opt, is_train=True)
+        train_iter = build_dynamic_dataset_iter(
+            fields, opt, is_train=True, stride=stride, offset=offset)
     else:
         if len(opt.data_ids) > 1:
             train_shards = []
@@ -117,11 +118,12 @@ def _build_train_iter(opt, fields, dynamic=False):
     return train_iter
 
 
-def get_train_iter(opt, dynamic=False):
+def get_train_iter(opt, dynamic=False, stride=1, offset=0):
     """Return training iterator."""
     checkpoint = _load_checkpoint(opt)
     fields = _load_fields(opt, checkpoint, dynamic=dynamic)
-    train_iter = _build_train_iter(opt, fields, dynamic=dynamic)
+    train_iter = _build_train_iter(
+        opt, fields, dynamic=dynamic, stride=stride, offset=offset)
     return train_iter
 
 

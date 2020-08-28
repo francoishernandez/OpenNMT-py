@@ -24,15 +24,28 @@ class DatasetAdapter(object):
             valid_fields.append((f_name, fields[f_name]))
         self.fields_list = valid_fields
 
+    @staticmethod
+    def _process(fields_list, item):
+        src, tgt, transform, cid, index = item
+        # this is a hack: appears quicker to apply it here
+        # than in the ParallelCorpusIterator
+        maybe_item = transform.apply(src, tgt, corpus_name=cid)
+        if maybe_item is not None:
+            src, tgt = maybe_item
+        else:
+            return None
+        src_line = ' '.join(src)
+        tgt_line = ' '.join(tgt)
+        ex = TorchtextExample.fromlist(
+                (src_line, tgt_line, index), fields_list)
+        return ex
+
     def _to_examples(self, bucket):
         examples = []
-        for (src, tgt, index) in bucket:
-            # src, tgt from bucket are list of tokens
-            src_line = ' '.join(src)
-            tgt_line = ' '.join(tgt)
-            ex = TorchtextExample.fromlist(
-                (src_line, tgt_line, index), self.fields_list)
-            examples.append(ex)
+        for item in bucket:
+            ex = self._process(self.fields_list, item)
+            if ex is not None:
+                examples.append(ex)
         return examples
 
     def __call__(self, bucket):
@@ -109,7 +122,8 @@ class WeightedMixer(MixingStrategy):
 class DynamicDatasetIter(object):
     """Yield data from multiple parallel plain text corpora."""
 
-    def __init__(self, corpora, transforms, fields, opts, is_train):
+    def __init__(self, corpora, transforms, fields, opts, is_train,
+                 stride=1, offset=0):
         self.corpora = corpora
         self.transforms = transforms
         self.fields = fields
@@ -128,11 +142,14 @@ class DynamicDatasetIter(object):
         self.sort_key = str2sortkey[opts.data_type]
         self.bucket_size = opts.bucket_size
         self.pool_factor = opts.pool_factor
+        self.stride = stride
+        self.offset = offset
 
     def _init_datasets(self):
         datasets_iterables = build_corpora_iters(
             self.corpora, self.transforms,
-            self.corpora_info, self.is_train)
+            self.corpora_info, self.is_train,
+            stride=self.stride, offset=self.offset)
         self.dataset_adapter = DatasetAdapter(self.fields)
         datasets_weights = {
             ds_name: int(self.corpora_info[ds_name]['weight'])
@@ -173,7 +190,8 @@ class DynamicDatasetIter(object):
                 yield batch
 
 
-def build_dynamic_dataset_iter(fields, opts, is_train=True):
+def build_dynamic_dataset_iter(fields, opts, is_train=True,
+                               stride=1, offset=0):
     """Build `DynamicDatasetIter` from fields & opts."""
     transforms = load_transforms(opts)
     corpora = get_corpora(opts, is_train)
@@ -181,4 +199,5 @@ def build_dynamic_dataset_iter(fields, opts, is_train=True):
         assert not is_train, "only valid corpus is ignorable."
         return None
     return DynamicDatasetIter(
-        corpora, transforms, fields, opts, is_train)
+        corpora, transforms, fields, opts, is_train,
+        stride=stride, offset=offset)

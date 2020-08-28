@@ -49,20 +49,25 @@ class ParallelCorpus(object):
     """A parallel corpus file pair that can be loaded to iterate."""
 
     def __init__(self, src, tgt):
-        """Initilize src & tgt side file path."""
+        """Initialize src & tgt side file path."""
         self.src = src
         self.tgt = tgt
 
-    def load(self):
-        """Load file and iterate by lines."""
+    def load(self, offset=0, stride=1):
+        """
+        Load file and iterate by lines.
+        `offset` and `stride` allow to iterate only on every
+        `stride` example, starting from `offset`.
+        """
         import codecs
         with codecs.open(self.src, mode='rb') as fs,\
                 codecs.open(self.tgt, mode='rb') as ft:
             logger.info(f"Loading {repr(self)}...")
-            for sline, tline in zip(fs, ft):
-                sline = sline.decode('utf-8')
-                tline = tline.decode('utf-8')
-                yield (sline, tline)
+            for i, (sline, tline) in enumerate(zip(fs, ft)):
+                if (i % stride) == offset:
+                    sline = sline.decode('utf-8')
+                    tline = tline.decode('utf-8')
+                    yield (sline, tline)
 
     def __repr__(self):
         cls_name = type(self).__name__
@@ -113,11 +118,14 @@ def get_corpora(opts, is_train=False):
 
 
 class ParallelCorpusIterator(object):
-    def __init__(self, cid, corpus, transform, infinitely=False):
+    def __init__(self, cid, corpus, transform, infinitely=False,
+                 stride=1, offset=0):
         self.cid = cid
         self.corpus = corpus
         self.transform = transform
         self.infinitely = infinitely
+        self.stride = stride
+        self.offset = offset
 
     def _tokenize(self, stream):
         for (sline, tline) in stream:
@@ -127,7 +135,8 @@ class ParallelCorpusIterator(object):
 
     def _transform(self, stream):
         for item in stream:
-            item = self.transform.apply(*item, corpus_name=self.cid)
+            # item = self.transform.apply(*item, corpus_name=self.cid)
+            item = (*item, self.transform, self.cid)
             if item is not None:
                 yield item
         report_msg = self.transform.stats()
@@ -140,7 +149,7 @@ class ParallelCorpusIterator(object):
             yield (*item, i)
 
     def _iter_corpus(self):
-        corpus_stream = self.corpus.load()
+        corpus_stream = self.corpus.load(stride=self.stride, offset=self.offset)
         tokenized_corpus = self._tokenize(corpus_stream)
         transformed_corpus = self._transform(tokenized_corpus)
         indexed_corpus = self._add_index(transformed_corpus)
@@ -153,7 +162,8 @@ class ParallelCorpusIterator(object):
             yield from self._iter_corpus()
 
 
-def build_corpora_iters(corpora, transforms, corpora_info, train=False):  # noqa: E501
+def build_corpora_iters(corpora, transforms, corpora_info, train=False,
+                        stride=1, offset=0):
     """Return `ParallelCorpusIterator` for all corpora defined in opts."""
     corpora_iters = dict()
     for c_id, corpus in corpora.items():
@@ -162,7 +172,8 @@ def build_corpora_iters(corpora, transforms, corpora_info, train=False):  # noqa
         transform_pipe = TransformPipe.build_from(corpus_transform)
         logger.info(f"{c_id}'s transforms: {str(transform_pipe)}")
         corpus_iter = ParallelCorpusIterator(
-            c_id, corpus, transform_pipe, infinitely=train)
+            c_id, corpus, transform_pipe, infinitely=train,
+            stride=stride, offset=offset)
         corpora_iters[c_id] = corpus_iter
     return corpora_iters
 

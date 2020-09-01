@@ -191,6 +191,11 @@ def save_transformed_sample(opts, transforms, n_sample=3):
         dest_base = os.path.join(sample_path, "{}.sample".format(c_name))
         with open(dest_base, 'w', encoding="utf-8") as f_sample:
             for i, example in enumerate(c_iter):
+                src, tgt, transform, cid, index = example
+                maybe_item = transform.apply(src, tgt, corpus_name=cid)
+                if maybe_item is not None:
+                    src, tgt = maybe_item
+                example = [src, tgt, index]
                 item_list = []
                 for item in example:
                     if isinstance(item, list):

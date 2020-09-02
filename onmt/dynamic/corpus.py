@@ -157,7 +157,9 @@ class ParallelCorpusIterator(object):
 
     def __iter__(self):
         if self.infinitely:
-            yield from cycle(self._iter_corpus())
+            while True:
+                _iter = self._iter_corpus()
+                yield from _iter
         else:
             yield from self._iter_corpus()
 

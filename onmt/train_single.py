@@ -17,6 +17,7 @@ from onmt.utils.parse import ArgumentParser
 from onmt.dynamic.vocab import load_fields
 from onmt.dynamic.iterator import build_dynamic_dataset_iter
 
+from itertools import cycle
 
 def _check_save_model_path(opt):
     save_model_path = os.path.abspath(opt.save_model)
@@ -175,11 +176,12 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
 
         def _train_iter():
             while True:
-                batch = batch_queue.get()
-                semaphore.release()
-                # Maybe move batch to specified device
-                IterOnDevice.batch_to_device(batch, device_id)
-                yield batch
+                for i in cycle(range(len(opt.gpu_ranks))):
+                    batch = batch_queue[i].get()
+                    semaphore.release()
+                    # Maybe move batch to specified device
+                    IterOnDevice.batch_to_device(batch, device_id)
+                    yield batch
 
         train_iter = _train_iter()
 

@@ -33,17 +33,17 @@ def train(opt):
 
         queues = []
         mp = torch.multiprocessing.get_context('spawn')
-        semaphore = mp.Semaphore(opt.world_size * opt.queue_size)
+        semaphore = mp.Semaphore(opt.world_size * opt.queue_size * opt.world_size)
         # Create a thread to listen for errors in the child processes.
         error_queue = mp.SimpleQueue()
         error_handler = ErrorHandler(error_queue)
         # Train with multiprocessing.
         procs = []
         for device_id in range(nb_gpu):
-            q = mp.Queue(opt.queue_size)
-            queues += [q]
+            qs = [mp.Queue(opt.queue_size) for i in range(nb_gpu)]
+            queues += [qs]
             procs.append(mp.Process(target=consumer, args=(
-                single_main, opt, device_id, error_queue, q, semaphore, True),
+                single_main, opt, device_id, error_queue, qs, semaphore, True),
                 daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
@@ -54,7 +54,7 @@ def train(opt):
             train_iter = get_train_iter(
                 opt, dynamic=True, stride=nb_gpu, offset=device_id)
             producer = mp.Process(target=batch_producer,
-                                  args=(train_iter, queues, semaphore, opt,),
+                                  args=(train_iter, queues, semaphore, opt, device_id,),
                                   daemon=True)
             producers.append(producer)
             producers[device_id].start()

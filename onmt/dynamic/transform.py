@@ -146,7 +146,7 @@ class BPETransform(TokenizerTransform):
 
     def _parse_opts(self):
         self._set_subword_opts()
-        self.dropout = 1 - self.alpha
+        self.dropout = self.alpha
 
     def warm_up(self, vocabs=None):
         """Load subword models."""
@@ -233,8 +233,7 @@ class ONMTTokenizerTransform(TokenizerTransform):
         kwopts = dict()
         if subword_type == 'bpe':
             kwopts['bpe_model_path'] = subword_model
-            logger.warning(
-                "OpenNMT Tokenizer do not support BPE dropout with bpe.")
+            kwopts['bpe_dropout'] = self.alpha
         elif subword_type == 'sentencepiece':
             kwopts['sp_model_path'] = subword_model
             kwopts['sp_nbest_size'] = self.subword_nbest

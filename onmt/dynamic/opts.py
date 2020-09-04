@@ -69,8 +69,8 @@ def _dynamic_transform_opts(parser):
               help="number of (n_best) candidate in subword regularization."
               "Valid for unigram sampling, invalid for BPE-dropout.")
     group.add('-subword_alpha', '--subword_alpha', type=float, default=0,
-              help="Soothing parameter for sentencepiece unigram sampling,"
-              "and merge probability (1-dropout) for BPE-dropout.")
+              help="Smoothing parameter for sentencepiece unigram sampling,"
+              "and dropout probability for BPE-dropout.")
 
     group.add('-src_subword_type', '--src_subword_type',
               type=str, default='none',

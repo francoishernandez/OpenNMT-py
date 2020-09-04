@@ -49,7 +49,7 @@ def train(opt):
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
         producers = []
-        # this does not work if we merge with the first loop, not sure why
+        # This does not work if we merge with the first loop, not sure why
         for device_id in range(nb_gpu):
             train_iter = get_train_iter(
                 opt, dynamic=True, stride=nb_gpu, offset=device_id)
@@ -61,9 +61,11 @@ def train(opt):
             logger.info(" Starting producer process pid: %d  " % producers[device_id].pid)
             error_handler.add_child(producers[device_id].pid)
 
-        for p, prod in zip(procs, producers):
+        for p in procs:
             p.join()
-            prod.join()
+        # Once training is done, we can terminate the producers
+        for p in producers:
+            p.terminate()
 
     elif nb_gpu == 1:  # case 1 GPU only
         single_main(opt, 0, dynamic=True)

@@ -163,7 +163,7 @@ class ErrorHandler(object):
         raise Exception(msg)
 
 
-def batch_producer(generator_to_serve, queues, semaphore, opt):
+def batch_producer(generator_to_serve, queue, semaphore, opt):
     """Produce batches to `queues` from `generator_to_serve`."""
     init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
@@ -180,22 +180,25 @@ def batch_producer(generator_to_serve, queues, semaphore, opt):
     generator_to_serve = filter(
         pred, enumerate(generator_to_serve))
 
-    def next_batch(device_id):
+    def next_batch():
+        # NOTE: stride (if needed) is handled at the
+        # generator (train_iter) level
         new_batch = next(generator_to_serve)
         semaphore.acquire()
         return new_batch[1]
 
-    b = next_batch(0)
+    b = next_batch()
 
-    for device_id, q in cycle(enumerate(queues)):
+    # for device_id, qs in cycle(enumerate(queues)):
+    while True:
         b.dataset = None
         # Move batch to correspond device_id
         # batch_to(b, device_id)
 
         # hack to dodge unpicklable `dict_keys`
         b.fields = list(b.fields)
-        q.put(b)
-        b = next_batch(device_id)
+        queue.put(b)
+        b = next_batch()
 
 
 def consumer(process_fn, opt, device_id, error_queue, batch_queue, semaphore, dynamic):  # noqa: E501

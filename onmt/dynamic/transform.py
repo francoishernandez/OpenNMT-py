@@ -355,6 +355,9 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
 
     def warm_up(self, vocabs):
         self.vocab = vocabs
+        if vocabs is None:
+            logger.warning(
+                "Switchout won't happen, there is no vocab.")
         self.temperature = self.opts.switchout_temperature
 
     def _switchout(self, tokens, vocab, stats=None):
@@ -376,8 +379,9 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
 
     def apply(self, src, tgt, stats=None, **kwargs):
         """Apply switchout to both src and tgt side tokens."""
-        src = self._switchout(src, self.vocab['src'], stats)
-        tgt = self._switchout(tgt, self.vocab['tgt'], stats)
+        if self.vocab is not None:
+            src = self._switchout(src, self.vocab['src'], stats)
+            tgt = self._switchout(tgt, self.vocab['tgt'], stats)
         return src, tgt
 
     def _repr_args(self):
@@ -639,9 +643,13 @@ class TransformPipe(Transform):
 
 def make_transforms(opts, transforms_cls, fields):
     """Build transforms in `transforms_cls` with vocab of `fields`."""
-    vocabs = get_vocabs(fields)
+    if fields is not None:
+        vocabs = get_vocabs(fields)
+    else:
+        vocabs = None
     transforms = {}
     for name, transform_cls in transforms_cls.items():
+        print("## TRANSFORM", name)
         transform_obj = transform_cls(opts)
         transform_obj.warm_up(vocabs)
         transforms[name] = transform_obj

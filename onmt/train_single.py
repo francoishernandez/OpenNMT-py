@@ -176,12 +176,11 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
 
         def _train_iter():
             while True:
-                for i in cycle(range(len(opt.gpu_ranks))):
-                    batch = batch_queue[i].get()
-                    semaphore.release()
-                    # Maybe move batch to specified device
-                    IterOnDevice.batch_to_device(batch, device_id)
-                    yield batch
+                batch = batch_queue.get()
+                semaphore.release()
+                # Maybe move batch to specified device
+                IterOnDevice.batch_to_device(batch, device_id)
+                yield batch
 
         train_iter = _train_iter()
 

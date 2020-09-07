@@ -163,7 +163,7 @@ class ErrorHandler(object):
         raise Exception(msg)
 
 
-def batch_producer(generator_to_serve, queues, semaphore, opt, producer_id):
+def batch_producer(generator_to_serve, queue, semaphore, opt):
     """Produce batches to `queues` from `generator_to_serve`."""
     init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
@@ -180,32 +180,35 @@ def batch_producer(generator_to_serve, queues, semaphore, opt, producer_id):
     generator_to_serve = filter(
         pred, enumerate(generator_to_serve))
 
-    def next_batch(device_id):
+    def next_batch():
+        # NOTE: stride (if needed) is handled at the
+        # generator (train_iter) level
         new_batch = next(generator_to_serve)
         semaphore.acquire()
         return new_batch[1]
 
-    b = next_batch(0)
+    b = next_batch()
 
-    for device_id, qs in cycle(enumerate(queues)):
+    # for device_id, qs in cycle(enumerate(queues)):
+    while True:
         b.dataset = None
         # Move batch to correspond device_id
         # batch_to(b, device_id)
 
         # hack to dodge unpicklable `dict_keys`
         b.fields = list(b.fields)
-        qs[producer_id].put(b)
-        b = next_batch(device_id)
+        queue.put(b)
+        b = next_batch()
 
 
-def consumer(process_fn, opt, device_id, error_queue, batch_queues, semaphore, dynamic):  # noqa: E501
+def consumer(process_fn, opt, device_id, error_queue, batch_queue, semaphore, dynamic):  # noqa: E501
     """Run `process_fn` on `device_id` with data from `batch_queue`."""
     try:
         gpu_rank = multi_init(opt, device_id)
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
-        process_fn(opt, device_id, batch_queues, semaphore, dynamic)
+        process_fn(opt, device_id, batch_queue, semaphore, dynamic)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing
     except Exception:

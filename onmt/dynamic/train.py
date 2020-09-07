@@ -10,7 +10,11 @@ from onmt.utils.logging import logger
 from onmt.train_single import main as single_main, get_train_iter
 
 from onmt.dynamic.parse import DynamicArgumentParser
-from onmt.dynamic.opts import dynamic_train_opts
+from onmt.dynamic.opts import dynamic_train_opts, dynamic_preprocess_opts
+
+from onmt.dynamic.vocab import build_dynamic_fields, save_fields
+from onmt.dynamic.transform import make_transforms, save_transforms, \
+    get_specials, get_transforms_cls
 
 # Set sharing strategy manually instead of default based on the OS.
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -24,6 +28,22 @@ def train(opt):
     DynamicArgumentParser.validate_model_opts(opt)
 
     set_random_seed(opt.seed, False)
+
+    DynamicArgumentParser.get_all_transform(opt)
+
+    transforms_cls = get_transforms_cls(opt._all_transform)
+    specials = get_specials(opt, transforms_cls)
+
+    print(opt)
+
+    fields = build_dynamic_fields(
+        opt, src_specials=specials['src'], tgt_specials=specials['tgt'])
+    save_fields(opt, fields)
+
+    transforms = make_transforms(opt, transforms_cls, fields)
+    save_transforms(opt, transforms)
+    if opt.verbose:
+        save_transformed_sample(opt, transforms)
 
     nb_gpu = len(opt.gpu_ranks)
 
@@ -75,6 +95,7 @@ def train(opt):
 
 def _get_parser():
     parser = DynamicArgumentParser(description='dynamic_train.py')
+    dynamic_preprocess_opts(parser)
     dynamic_train_opts(parser)
     # opts.config_opts(parser)
     # opts.model_opts(parser)

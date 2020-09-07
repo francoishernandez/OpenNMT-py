@@ -33,7 +33,7 @@ def train(opt):
 
         queues = []
         mp = torch.multiprocessing.get_context('spawn')
-        semaphore = mp.Semaphore(opt.world_size * opt.queue_size * opt.world_size)
+        semaphore = mp.Semaphore(opt.world_size * opt.queue_size)
         # Create a thread to listen for errors in the child processes.
         error_queue = mp.SimpleQueue()
         error_handler = ErrorHandler(error_queue)

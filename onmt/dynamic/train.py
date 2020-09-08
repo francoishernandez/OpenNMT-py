@@ -57,13 +57,15 @@ def train(opt):
         # Create a thread to listen for errors in the child processes.
         error_queue = mp.SimpleQueue()
         error_handler = ErrorHandler(error_queue)
+        tracker_queue = mp.Queue(maxsize=1)
         # Train with multiprocessing.
         procs = []
         for device_id in range(nb_gpu):
             q = mp.Queue(opt.queue_size)
             queues += [q]
             procs.append(mp.Process(target=consumer, args=(
-                single_main, opt, device_id, error_queue, q, semaphore, True),
+                single_main, opt, device_id, error_queue,
+                q, semaphore, True, tracker_queue,),
                 daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
@@ -74,7 +76,8 @@ def train(opt):
             train_iter = get_train_iter(
                 opt, dynamic=True, stride=nb_gpu, offset=device_id)
             producer = mp.Process(target=batch_producer,
-                                  args=(train_iter, queues[device_id], semaphore, opt,),
+                                  args=(train_iter, queues[device_id], semaphore,
+                                        opt, tracker_queue, device_id,),
                                   daemon=True)
             producers.append(producer)
             producers[device_id].start()

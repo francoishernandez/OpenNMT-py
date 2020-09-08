@@ -9,14 +9,17 @@ from onmt.inputters.inputter import max_tok_len, OrderedIterator
 from onmt.dynamic.corpus import get_corpora, build_corpora_iters
 from onmt.dynamic.transform import load_transforms
 
+from collections import defaultdict
+
 
 class DatasetAdapter(object):
     """Adapte a buckets of tuples into examples of a torchtext Dataset."""
 
     valid_field_name = ('src', 'tgt', 'indices')
 
-    def __init__(self, fields):
+    def __init__(self, fields, tracker):
         self._valid_fields(fields)
+        self.tracker = tracker
 
     def _valid_fields(self, fields):
         valid_fields = []
@@ -24,8 +27,7 @@ class DatasetAdapter(object):
             valid_fields.append((f_name, fields[f_name]))
         self.fields_list = valid_fields
 
-    @staticmethod
-    def _process(fields_list, item):
+    def _process(self, fields_list, item):
         src, tgt, transform, cid, index = item
         # this is a hack: appears quicker to apply it here
         # than in the ParallelCorpusIterator
@@ -38,6 +40,7 @@ class DatasetAdapter(object):
         tgt_line = ' '.join(tgt)
         ex = TorchtextExample.fromlist(
                 (src_line, tgt_line, index), fields_list)
+        self.tracker[cid] = ex.indices
         return ex
 
     def _to_examples(self, bucket):
@@ -123,7 +126,7 @@ class DynamicDatasetIter(object):
     """Yield data from multiple parallel plain text corpora."""
 
     def __init__(self, corpora, transforms, fields, opts, is_train,
-                 stride=1, offset=0):
+                 stride=1, offset=0, tracker=None):
         self.corpora = corpora
         self.transforms = transforms
         self.fields = fields
@@ -144,13 +147,17 @@ class DynamicDatasetIter(object):
         self.pool_factor = opts.pool_factor
         self.stride = stride
         self.offset = offset
+        # track for each corpus which index we're at
+        self.tracker = tracker if tracker is not None else defaultdict(int)
+        print("## TRACKER INIT", self.tracker)
 
     def _init_datasets(self):
         datasets_iterables = build_corpora_iters(
             self.corpora, self.transforms,
             self.corpora_info, self.is_train,
-            stride=self.stride, offset=self.offset)
-        self.dataset_adapter = DatasetAdapter(self.fields)
+            stride=self.stride, offset=self.offset,
+            tracker=self.tracker)
+        self.dataset_adapter = DatasetAdapter(self.fields, self.tracker)
         datasets_weights = {
             ds_name: int(self.corpora_info[ds_name]['weight'])
             for ds_name in datasets_iterables.keys()
@@ -191,7 +198,7 @@ class DynamicDatasetIter(object):
 
 
 def build_dynamic_dataset_iter(fields, opts, is_train=True,
-                               stride=1, offset=0):
+                               stride=1, offset=0, tracker=None):
     """Build `DynamicDatasetIter` from fields & opts."""
     transforms = load_transforms(opts)
     corpora = get_corpora(opts, is_train)
@@ -200,4 +207,4 @@ def build_dynamic_dataset_iter(fields, opts, is_train=True,
         return None
     return DynamicDatasetIter(
         corpora, transforms, fields, opts, is_train,
-        stride=stride, offset=offset)
+        stride=stride, offset=offset, tracker=tracker)

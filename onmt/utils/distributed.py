@@ -17,6 +17,8 @@ import torch.distributed
 from onmt.utils.misc import set_random_seed
 from onmt.utils.logging import init_logger, logger
 
+import queue
+
 
 def is_master(opt, device_id):
     return opt.gpu_ranks[device_id] == 0
@@ -163,7 +165,8 @@ class ErrorHandler(object):
         raise Exception(msg)
 
 
-def batch_producer(generator_to_serve, queue, semaphore, opt):
+def batch_producer(generator_to_serve, batch_queue, semaphore,
+                   opt, tracker_queue, device_id):
     """Produce batches to `queues` from `generator_to_serve`."""
     init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
@@ -177,13 +180,22 @@ def batch_producer(generator_to_serve, queue, semaphore, opt):
             if x[0] % opt.world_size == rank:
                 return True
 
-    generator_to_serve = filter(
+    _generator_to_serve = filter(
         pred, enumerate(generator_to_serve))
 
     def next_batch():
         # NOTE: stride (if needed) is handled at the
         # generator (train_iter) level
-        new_batch = next(generator_to_serve)
+        new_batch = next(_generator_to_serve)
+        if device_id == 0:
+            while not(tracker_queue.empty()):
+                tracker_queue.get()
+            try:
+                tracker_queue.put(generator_to_serve.tracker)
+            except queue.Full:
+                print("#### WARNING QUEUE IS FULL !!!")
+                print(tracker_queue.get())
+                pass
         semaphore.acquire()
         return new_batch[1]
 
@@ -197,18 +209,19 @@ def batch_producer(generator_to_serve, queue, semaphore, opt):
 
         # hack to dodge unpicklable `dict_keys`
         b.fields = list(b.fields)
-        queue.put(b)
+        batch_queue.put(b)
         b = next_batch()
 
 
-def consumer(process_fn, opt, device_id, error_queue, batch_queue, semaphore, dynamic):  # noqa: E501
+def consumer(process_fn, opt, device_id, error_queue, batch_queue,
+             semaphore, dynamic, tracker_queue):  # noqa: E501
     """Run `process_fn` on `device_id` with data from `batch_queue`."""
     try:
         gpu_rank = multi_init(opt, device_id)
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
-        process_fn(opt, device_id, batch_queue, semaphore, dynamic)
+        process_fn(opt, device_id, batch_queue, semaphore, dynamic, tracker_queue)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing
     except Exception:

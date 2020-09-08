@@ -98,11 +98,12 @@ def _build_valid_iter(opt, fields, device_id, dynamic=False):
     return valid_iter
 
 
-def _build_train_iter(opt, fields, dynamic=False, stride=1, offset=0):
+def _build_train_iter(opt, fields, dynamic=False, stride=1, offset=0, tracker=None):
     """Build training iterator."""
     if dynamic:
         train_iter = build_dynamic_dataset_iter(
-            fields, opt, is_train=True, stride=stride, offset=offset)
+            fields, opt, is_train=True, stride=stride, offset=offset,
+            tracker=tracker)
     else:
         if len(opt.data_ids) > 1:
             train_shards = []
@@ -124,11 +125,14 @@ def get_train_iter(opt, dynamic=False, stride=1, offset=0):
     checkpoint = _load_checkpoint(opt)
     fields = _load_fields(opt, checkpoint, dynamic=dynamic)
     train_iter = _build_train_iter(
-        opt, fields, dynamic=dynamic, stride=stride, offset=offset)
+        opt, fields, dynamic=dynamic, stride=stride, offset=offset,
+        tracker=checkpoint.get('tracker', None)
+            if checkpoint is not None else None)
     return train_iter
 
 
-def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
+def main(opt, device_id, batch_queue=None, semaphore=None,
+         dynamic=False, tracker_queue=None):
     """Start training on `device_id`."""
     # NOTE: It's important that ``opt`` has been validated and updated
     # at this point.
@@ -162,7 +166,8 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
     optim = Optimizer.from_opt(model, opt, checkpoint=checkpoint)
 
     # Build model saver
-    model_saver = build_model_saver(model_opt, opt, model, fields, optim)
+    model_saver = build_model_saver(
+        model_opt, opt, model, fields, optim, tracker_queue=tracker_queue)
 
     trainer = build_trainer(
         opt, device_id, model, fields, optim, model_saver=model_saver)

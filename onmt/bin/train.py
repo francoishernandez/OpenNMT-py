@@ -3,12 +3,18 @@
 import torch
 
 import onmt.opts as opts
-from onmt.utils.distributed import ErrorHandler, consumer, batch_producer
+from onmt.utils.distributed import ErrorHandler, consumer
 from onmt.utils.misc import set_random_seed
-from onmt.utils.logging import logger
+from onmt.utils.logging import init_logger, logger
 
 from onmt.train_single import main as single_main, get_train_iter
 from onmt.utils.parse import ArgumentParser
+
+from itertools import cycle
+
+
+# Fix CPU tensor sharing strategy
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 def train(opt):
@@ -55,6 +61,38 @@ def train(opt):
         single_main(opt, 0)
     else:   # case only CPU
         single_main(opt, -1)
+
+
+def batch_producer(generator_to_serve, queues, semaphore, opt):
+    init_logger(opt.log_file)
+    set_random_seed(opt.seed, False)
+    # generator_to_serve = iter(generator_to_serve)
+
+    def pred(x):
+        """
+        Filters batches that belong only
+        to gpu_ranks of current node
+        """
+        for rank in opt.gpu_ranks:
+            if x[0] % opt.world_size == rank:
+                return True
+
+    generator_to_serve = filter(
+        pred, enumerate(generator_to_serve))
+
+    def next_batch(device_id):
+        new_batch = next(generator_to_serve)
+        semaphore.acquire()
+        return new_batch[1]
+
+    b = next_batch(0)
+
+    for device_id, q in cycle(enumerate(queues)):
+        b.dataset = None
+        # hack to dodge unpicklable `dict_keys`
+        b.fields = list(b.fields)
+        q.put(b)
+        b = next_batch(device_id)
 
 
 def _get_parser():

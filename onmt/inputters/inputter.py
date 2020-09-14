@@ -960,7 +960,7 @@ def build_dataset_iter(corpus_type, fields, opt, is_train=True, multi=False):
             if is_train and opt.batch_type == "tokens" else None
         batch_size_multiple = 8 if opt.model_dtype == "fp16" else 1
 
-    device = "cuda" if opt.gpu_ranks else "cpu"
+    device = "cpu"
 
     return DatasetLazyIter(
         dataset_paths,
@@ -978,4 +978,4 @@ def build_dataset_iter(corpus_type, fields, opt, is_train=True, multi=False):
 
 def build_dataset_iter_multiple(train_shards, fields, opt):
     return MultipleDatasetIterator(
-        train_shards, fields, "cuda" if opt.gpu_ranks else "cpu", opt)
+        train_shards, fields, "cpu", opt)

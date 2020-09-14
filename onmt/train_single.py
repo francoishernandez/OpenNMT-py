@@ -178,7 +178,7 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
             while True:
                 batch = batch_queue.get()
                 semaphore.release()
-                # Maybe move batch to specified device
+                # Move batch to specified device
                 IterOnDevice.batch_to_device(batch, device_id)
                 yield batch
 

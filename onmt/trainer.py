@@ -49,7 +49,7 @@ def build_trainer(opt, device_id, model, fields, optim, model_saver=None):
     if device_id >= 0:
         gpu_rank = opt.gpu_ranks[device_id]
     else:
-        gpu_rank = 0
+        gpu_rank = -1
         n_gpu = 0
     gpu_verbose_level = opt.gpu_verbose_level
 
@@ -82,7 +82,7 @@ def build_trainer(opt, device_id, model, fields, optim, model_saver=None):
                            n_gpu, gpu_rank,
                            gpu_verbose_level, report_manager,
                            with_align=True if opt.lambda_align > 0 else False,
-                           model_saver=model_saver if gpu_rank == 0 else None,
+                           model_saver=model_saver if gpu_rank <= 0 else None,
                            average_decay=average_decay,
                            average_every=average_every,
                            model_dtype=opt.model_dtype,
@@ -331,7 +331,7 @@ class Trainer(object):
 
             for batch in valid_iter:
                 src, src_lengths = batch.src if isinstance(batch.src, tuple) \
-                                   else (batch.src, None)
+                    else (batch.src, None)
                 tgt = batch.tgt
 
                 # F-prop through the model.

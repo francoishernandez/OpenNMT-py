@@ -147,9 +147,9 @@ def model_opts(parser):
               help='Number of steps to advance graph encoder')
     # The ggnn uses src_vocab during training because the graph is built
     # using edge information which requires parsing the input sequence.
-    group.add('--src_vocab', '-src_vocab', default="",
-              help="Path to an existing source vocabulary. Format: "
-                   "one word per line.")
+    # group.add('--src_vocab', '-src_vocab', default="",
+    #           help="Path to an existing source vocabulary. Format: "
+    #                "one word per line.")
 
     # Attention options
     group = parser.add_argument_group('Model- Attention')
@@ -366,14 +366,12 @@ def preprocess_opts(parser):
               help="mask will need to be inverted if prefix is joiner")
 
 
-def train_opts(parser):
-    """ Training and saving options """
-
-    group = parser.add_argument_group('General')
-    group.add('--data', '-data', required=True,
+def _train_bin_data(parser):
+    """ training options for preprocessed data """
+    group = parser.add_argument_group('Binary data')
+    group.add('--data', '-data',
               help='Path prefix to the ".train.pt" and '
                    '".valid.pt" file path from preprocess.py')
-
     group.add('--data_ids', '-data_ids', nargs='+', default=[None],
               help="In case there are several corpora.")
     group.add('--data_weights', '-data_weights', type=int, nargs='+',
@@ -381,6 +379,14 @@ def train_opts(parser):
               should follow the same order as in -data_ids.""")
     group.add('--data_to_noise', '-data_to_noise', nargs='+', default=[],
               help="IDs of datasets on which to apply noise.")
+
+
+def _train_general_opts(parser):
+    """ General options for training """
+    group = parser.add_argument_group('General')
+    group.add('--data_type', '-data_type', default="text",
+              help="Type of the source input. "
+                   "Options are [text|img|audio|vec].")
 
     group.add('--save_model', '-save_model', default='model',
               help="Model filename (the model will be saved as "
@@ -622,6 +628,12 @@ def train_opts(parser):
               type=int, default=3, choices=[3, 1],
               help="Using grayscale image can training "
                    "model faster and smaller")
+
+
+def train_opts(parser):
+    """ Training and saving options """
+    _train_bin_data(parser)
+    _train_general_opts(parser)
 
 
 def translate_opts(parser):

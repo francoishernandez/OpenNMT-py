@@ -4,7 +4,7 @@ import os
 import codecs
 import math
 
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, OrderedDict
 from itertools import chain, cycle
 
 import torch
@@ -196,6 +196,41 @@ def patch_fields(opt, fields):
         fields.update({'corpus_id': maybe_cid_field})
 
 
+class IterOnDevice(object):
+    """Sent items from `iterable` on `device_id` and yield."""
+
+    def __init__(self, iterable, device_id):
+        self.iterable = iterable
+        self.device_id = device_id
+
+    @staticmethod
+    def batch_to_device(batch, device_id):
+        """Move `batch` to `device_id`, cpu if `device_id` < 0."""
+        curr_device = batch.indices.device
+        device = torch.device(device_id) if device_id >= 0 \
+            else torch.device('cpu')
+        if curr_device != device:
+            if isinstance(batch.src, tuple):
+                batch.src = tuple([_.to(device) for _ in batch.src])
+            else:
+                batch.src = batch.src.to(device)
+            batch.tgt = batch.tgt.to(device)
+            batch.indices = batch.indices.to(device)
+            batch.alignment = batch.alignment.to(device) \
+                if hasattr(batch, 'alignment') else None
+            batch.src_map = batch.src_map.to(device) \
+                if hasattr(batch, 'src_map') else None
+            batch.align = batch.align.to(device) \
+                if hasattr(batch, 'align') else None
+            batch.corpus_id = batch.corpus_id.to(device) \
+                if hasattr(batch, 'corpus_id') else None
+
+    def __iter__(self):
+        for batch in self.iterable:
+            self.batch_to_device(batch, self.device_id)
+            yield batch
+
+
 def load_old_vocab(vocab, data_type="text", dynamic_dict=False):
     """Update a legacy vocab/field format.
 
@@ -339,35 +374,49 @@ def _pad_vocab_to_multiple(vocab, multiple):
 
 def _build_field_vocab(field, counter, size_multiple=1, **kwargs):
     # this is basically copy-pasted from torchtext.
-    all_specials = [
+    all_special = [
         field.unk_token, field.pad_token, field.init_token, field.eos_token
     ]
-    specials = [tok for tok in all_specials if tok is not None]
+    all_special.extend(list(kwargs.pop('specials', [])))
+    specials = list(OrderedDict.fromkeys(
+        tok for tok in all_special if tok is not None))
     field.vocab = field.vocab_cls(counter, specials=specials, **kwargs)
     if size_multiple > 1:
         _pad_vocab_to_multiple(field.vocab, size_multiple)
 
 
-def _load_vocab(vocab_path, name, counters, min_freq):
+def _load_vocab(vocab_path, name, counters, min_freq=0, with_count=False):
+    """Inplace update `counters`[`name`] with vocab in `vocab_path`.
+
+    Each line of `vocab_path` have a token, possible `with_count`.
+    If not `with_count`, each token will be assigned one so that the order
+    of counters[name] will be same with `vocab_path`, and the minimum count
+    number to be `min_freq` which defaults 0.
+    """
     # counters changes in place
-    vocab = _read_vocab_file(vocab_path, name)
+    vocab = _read_vocab_file(vocab_path, name, with_count=with_count)
     vocab_size = len(vocab)
     logger.info('Loaded %s vocab has %d tokens.' % (name, vocab_size))
-    for i, token in enumerate(vocab):
-        # keep the order of tokens specified in the vocab file by
-        # adding them to the counter with decreasing counting values
-        counters[name][token] = vocab_size - i + min_freq
+    if not with_count:
+        for i, token in enumerate(vocab):
+            # keep the order of tokens specified in the vocab file by
+            # adding them to the counter with decreasing counting values
+            counters[name][token] = vocab_size - i + min_freq
+    else:
+        for token, count in vocab:
+            count = int(count)
+            counters[name][token] = count
     return vocab, vocab_size
 
 
-def _build_fv_from_multifield(multifield, counters, build_fv_args,
+def _build_fv_from_multifield(multifield, counters, build_fv_kwargs,
                               size_multiple=1):
     for name, field in multifield:
         _build_field_vocab(
             field,
             counters[name],
             size_multiple=size_multiple,
-            **build_fv_args[name])
+            **build_fv_kwargs[name])
         logger.info(" * %s vocab size: %d." % (name, len(field.vocab)))
 
 
@@ -376,17 +425,22 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
                         src_vocab_size, src_words_min_frequency,
                         tgt_vocab_size, tgt_words_min_frequency,
                         subword_prefix="▁",
-                        subword_prefix_is_joiner=False):
-    build_fv_args = defaultdict(dict)
-    build_fv_args["src"] = dict(
-        max_size=src_vocab_size, min_freq=src_words_min_frequency)
-    build_fv_args["tgt"] = dict(
-        max_size=tgt_vocab_size, min_freq=tgt_words_min_frequency)
+                        subword_prefix_is_joiner=False,
+                        src_specials=None, tgt_specials=None):
+    src_specials = list(src_specials) if src_specials is not None else []
+    tgt_specials = list(tgt_specials) if tgt_specials is not None else []
+    build_fv_kwargs = defaultdict(dict)
+    build_fv_kwargs["src"] = dict(
+        max_size=src_vocab_size, min_freq=src_words_min_frequency,
+        specials=src_specials)
+    build_fv_kwargs["tgt"] = dict(
+        max_size=tgt_vocab_size, min_freq=tgt_words_min_frequency,
+        specials=tgt_specials)
     tgt_multifield = fields["tgt"]
     _build_fv_from_multifield(
         tgt_multifield,
         counters,
-        build_fv_args,
+        build_fv_kwargs,
         size_multiple=vocab_size_multiple if not share_vocab else 1)
 
     if fields.get("corpus_id", False):
@@ -398,7 +452,7 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
         _build_fv_from_multifield(
             src_multifield,
             counters,
-            build_fv_args,
+            build_fv_kwargs,
             size_multiple=vocab_size_multiple if not share_vocab else 1)
 
         if share_vocab:
@@ -406,10 +460,12 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
             logger.info(" * merging src and tgt vocab...")
             src_field = src_multifield.base_field
             tgt_field = tgt_multifield.base_field
+            _all_specials = [item for item in src_specials + tgt_specials]
             _merge_field_vocabs(
                 src_field, tgt_field, vocab_size=src_vocab_size,
                 min_freq=src_words_min_frequency,
-                vocab_size_multiple=vocab_size_multiple)
+                vocab_size_multiple=vocab_size_multiple,
+                specials=_all_specials)
             logger.info(" * merged vocab size: %d." % len(src_field.vocab))
 
         build_noise_field(
@@ -538,16 +594,19 @@ def build_vocab(train_dataset_files, fields, data_type, share_vocab,
 
 
 def _merge_field_vocabs(src_field, tgt_field, vocab_size, min_freq,
-                        vocab_size_multiple):
+                        vocab_size_multiple, specials):
     # in the long run, shouldn't it be possible to do this by calling
     # build_vocab with both the src and tgt data?
-    specials = [tgt_field.unk_token, tgt_field.pad_token,
-                tgt_field.init_token, tgt_field.eos_token]
+    init_specials = [tgt_field.unk_token, tgt_field.pad_token,
+                     tgt_field.init_token, tgt_field.eos_token]
+    all_specials = list(OrderedDict.fromkeys(
+        tok for tok in init_specials + specials
+        if tok is not None))
     merged = sum(
         [src_field.vocab.freqs, tgt_field.vocab.freqs], Counter()
     )
     merged_vocab = Vocab(
-        merged, specials=specials,
+        merged, specials=all_specials,
         max_size=vocab_size, min_freq=min_freq
     )
     if vocab_size_multiple > 1:
@@ -557,15 +616,15 @@ def _merge_field_vocabs(src_field, tgt_field, vocab_size, min_freq,
     assert len(src_field.vocab) == len(tgt_field.vocab)
 
 
-def _read_vocab_file(vocab_path, tag):
+def _read_vocab_file(vocab_path, tag, with_count=False):
     """Loads a vocabulary from the given path.
 
     Args:
         vocab_path (str): Path to utf-8 text file containing vocabulary.
-            Each token should be on a line by itself. Tokens must not
-            contain whitespace (else only before the whitespace
-            is considered).
+            Each token should be on a line, may followed with a count number
+            seperate by space if `with_count`. No extra whitespace is allowed.
         tag (str): Used for logging which vocab is being read.
+        with_count (bool): if True, each line should be a token with its count.
     """
 
     logger.info("Loading {} vocabulary from {}".format(tag, vocab_path))
@@ -575,7 +634,10 @@ def _read_vocab_file(vocab_path, tag):
             "{} vocabulary not found at {}".format(tag, vocab_path))
     else:
         with codecs.open(vocab_path, 'r', 'utf-8') as f:
-            return [line.strip().split()[0] for line in f if line.strip()]
+            if with_count:
+                return [line.strip().split(None, 1) for line in f]
+            else:
+                return [line.strip().split()[0] for line in f if line.strip()]
 
 
 def batch_iter(data, batch_size, batch_size_fn=None, batch_size_multiple=1):

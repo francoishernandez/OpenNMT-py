@@ -5,7 +5,7 @@ import os
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, patch_fields, \
-    load_old_vocab, old_style_vocab, build_dataset_iter_multiple
+    load_old_vocab, old_style_vocab, build_dataset_iter_multiple, IterOnDevice
 from onmt.model_builder import build_model
 from onmt.utils.optimizers import Optimizer
 from onmt.utils.misc import set_random_seed
@@ -14,6 +14,10 @@ from onmt.models import build_model_saver
 from onmt.utils.logging import init_logger, logger
 from onmt.utils.parse import ArgumentParser
 
+from onmt.dynamic.vocab import load_fields
+from onmt.dynamic.iterator import build_dynamic_dataset_iter
+
+from itertools import cycle
 
 def _check_save_model_path(opt):
     save_model_path = os.path.abspath(opt.save_model)
@@ -39,39 +43,102 @@ def configure_process(opt, device_id):
     set_random_seed(opt.seed, device_id >= 0)
 
 
-def main(opt, device_id, batch_queue=None, semaphore=None):
-    # NOTE: It's important that ``opt`` has been validated and updated
-    # at this point.
-    configure_process(opt, device_id)
-    init_logger(opt.log_file)
-    assert len(opt.accum_count) == len(opt.accum_steps), \
-        'Number of accum_count values must match number of accum_steps'
-    # Load checkpoint if we resume from a previous training.
+def _load_checkpoint(opt):
+    """Load checkpoint if any."""
+    checkpoint = None
     if opt.train_from:
         logger.info('Loading checkpoint from %s' % opt.train_from)
         checkpoint = torch.load(opt.train_from,
                                 map_location=lambda storage, loc: storage)
+    return checkpoint
+
+
+def _load_fields(opt, checkpoint, dynamic=False):
+    """Load fields from preprocess file/checkpoint."""
+    if dynamic:
+        # should already verified data_config
+        fields = load_fields(opt)
+    else:
+        if checkpoint is not None:
+            logger.info(f'Loading vocab from checkpoint at {opt.train_from}.')
+            vocab = checkpoint['vocab']
+        else:
+            vocab = torch.load(opt.data + '.vocab.pt')
+        # check for code where vocab is saved instead of fields
+        # (in the future this will be done in a smarter way)
+        if old_style_vocab(vocab):
+            fields = load_old_vocab(
+                vocab, opt.model_type, dynamic_dict=opt.copy_attn)
+        else:
+            fields = vocab
+        # patch for fields that may be missing in old data/model
+        patch_fields(opt, fields)
+    return fields
+
+
+def _get_model_opts(opt, checkpoint=None):
+    """Get `model_opt` to build model, may load from `checkpoint` if any."""
+    if checkpoint is not None:
         model_opt = ArgumentParser.ckpt_model_opts(checkpoint["opt"])
         ArgumentParser.update_model_opts(model_opt)
         ArgumentParser.validate_model_opts(model_opt)
-        logger.info('Loading vocab from checkpoint at %s.' % opt.train_from)
-        vocab = checkpoint['vocab']
     else:
-        checkpoint = None
         model_opt = opt
-        vocab = torch.load(opt.data + '.vocab.pt')
+    return model_opt
 
-    # check for code where vocab is saved instead of fields
-    # (in the future this will be done in a smarter way)
-    if old_style_vocab(vocab):
-        fields = load_old_vocab(
-            vocab, opt.model_type, dynamic_dict=opt.copy_attn)
+
+def _build_valid_iter(opt, fields, device_id, dynamic=False):
+    """Build iterator used for validation."""
+    if dynamic:
+        valid_iter = build_dynamic_dataset_iter(
+            fields, opt, is_train=False)
     else:
-        fields = vocab
+        valid_iter = build_dataset_iter(
+            "valid", fields, opt, is_train=False)
+    return valid_iter
 
-    # patch for fields that may be missing in old data/model
-    patch_fields(opt, fields)
 
+def _build_train_iter(opt, fields, dynamic=False, stride=1, offset=0):
+    """Build training iterator."""
+    if dynamic:
+        train_iter = build_dynamic_dataset_iter(
+            fields, opt, is_train=True, stride=stride, offset=offset)
+    else:
+        if len(opt.data_ids) > 1:
+            train_shards = []
+            for train_id in opt.data_ids:
+                shard_base = "train_" + train_id
+                train_shards.append(shard_base)
+            train_iter = build_dataset_iter_multiple(train_shards, fields, opt)
+        else:
+            if opt.data_ids[0] is not None:
+                shard_base = "train_" + opt.data_ids[0]
+            else:
+                shard_base = "train"
+            train_iter = build_dataset_iter(shard_base, fields, opt)
+    return train_iter
+
+
+def get_train_iter(opt, dynamic=False, stride=1, offset=0):
+    """Return training iterator."""
+    checkpoint = _load_checkpoint(opt)
+    fields = _load_fields(opt, checkpoint, dynamic=dynamic)
+    train_iter = _build_train_iter(
+        opt, fields, dynamic=dynamic, stride=stride, offset=offset)
+    return train_iter
+
+
+def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
+    """Start training on `device_id`."""
+    # NOTE: It's important that ``opt`` has been validated and updated
+    # at this point.
+    configure_process(opt, device_id)
+    init_logger(opt.log_file)
+    # Load checkpoint if we resume from a previous training.
+    checkpoint = _load_checkpoint(opt)
+    model_opt = _get_model_opts(opt, checkpoint=checkpoint)
+
+    fields = _load_fields(opt, checkpoint, dynamic=dynamic)
     # Report src and tgt vocab sizes, including for features
     for side in ['src', 'tgt']:
         f = fields[side]
@@ -101,19 +168,8 @@ def main(opt, device_id, batch_queue=None, semaphore=None):
         opt, device_id, model, fields, optim, model_saver=model_saver)
 
     if batch_queue is None:
-        if len(opt.data_ids) > 1:
-            train_shards = []
-            for train_id in opt.data_ids:
-                shard_base = "train_" + train_id
-                train_shards.append(shard_base)
-            train_iter = build_dataset_iter_multiple(train_shards, fields, opt)
-        else:
-            if opt.data_ids[0] is not None:
-                shard_base = "train_" + opt.data_ids[0]
-            else:
-                shard_base = "train"
-            train_iter = build_dataset_iter(shard_base, fields, opt)
-
+        _train_iter = _build_train_iter(opt, fields, dynamic=dynamic)
+        train_iter = IterOnDevice(_train_iter, device_id)
     else:
         assert semaphore is not None, \
             "Using batch_queue requires semaphore as well"
@@ -122,12 +178,15 @@ def main(opt, device_id, batch_queue=None, semaphore=None):
             while True:
                 batch = batch_queue.get()
                 semaphore.release()
+                # Maybe move batch to specified device
+                IterOnDevice.batch_to_device(batch, device_id)
                 yield batch
 
         train_iter = _train_iter()
 
-    valid_iter = build_dataset_iter(
-        "valid", fields, opt, is_train=False)
+    valid_iter = _build_valid_iter(opt, fields, device_id, dynamic=dynamic)
+    if valid_iter is not None:
+        valid_iter = IterOnDevice(valid_iter, device_id)
 
     if len(opt.gpu_ranks):
         logger.info('Starting training on GPU: %s' % opt.gpu_ranks)

@@ -13,6 +13,7 @@ from torchtext.data import Field, RawField, LabelField
 from torchtext.vocab import Vocab
 from torchtext.data.utils import RandomShuffler
 
+from onmt.constants import DefaultTokens, SubwordMarker
 from onmt.inputters.text_dataset import text_fields, TextMultiField
 from onmt.inputters.image_dataset import image_fields
 from onmt.inputters.audio_dataset import audio_fields
@@ -103,9 +104,9 @@ def get_fields(
     src_data_type,
     n_src_feats,
     n_tgt_feats,
-    pad='<blank>',
-    bos='<s>',
-    eos='</s>',
+    pad=DefaultTokens.PAD,
+    bos=DefaultTokens.BOS,
+    eos=DefaultTokens.EOS,
     dynamic_dict=False,
     with_align=False,
     src_truncate=None,
@@ -366,8 +367,8 @@ def _pad_vocab_to_multiple(vocab, multiple):
     if vocab_size % multiple == 0:
         return
     target_size = int(math.ceil(vocab_size / multiple)) * multiple
-    padding_tokens = [
-        "averyunlikelytoken%d" % i for i in range(target_size - vocab_size)]
+    padding_tokens = ["{}{}".format(DefaultTokens.VOCAB_PAD, i)
+                      for i in range(target_size - vocab_size)]
     vocab.extend(Vocab(Counter(), specials=padding_tokens))
     return vocab
 
@@ -424,7 +425,7 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
                         vocab_size_multiple,
                         src_vocab_size, src_words_min_frequency,
                         tgt_vocab_size, tgt_words_min_frequency,
-                        subword_prefix="▁",
+                        subword_prefix=SubwordMarker.SPACER,
                         subword_prefix_is_joiner=False,
                         src_specials=None, tgt_specials=None):
     src_specials = list(src_specials) if src_specials is not None else []
@@ -476,8 +477,8 @@ def _build_fields_vocab(fields, counters, data_type, share_vocab,
 
 
 def build_noise_field(src_field, subword=True,
-                      subword_prefix="▁", is_joiner=False,
-                      sentence_breaks=[".", "?", "!"]):
+                      subword_prefix=SubwordMarker.SPACER, is_joiner=False,
+                      sentence_breaks=DefaultTokens.SENT_FULL_STOPS):
     """In place add noise related fields i.e.:
          - word_start
          - end_of_sentence

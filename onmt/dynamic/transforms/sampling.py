@@ -2,6 +2,7 @@
 import random
 import numpy as np
 from onmt.utils.logging import logger
+from onmt.constants import DefaultTokens
 from onmt.dynamic.transforms import register_transform
 from .transform import Transform
 
@@ -132,7 +133,7 @@ class TokenDropTransform(Transform, HammingDistanceSampling):
 class TokenMaskTransform(Transform, HammingDistanceSampling):
     """Random mask tokens from src sentence."""
 
-    MASK_TOK = '｟MASK｠'
+    MASK_TOK = DefaultTokens.MASK
 
     def __init__(self, opts):
         super().__init__(opts)

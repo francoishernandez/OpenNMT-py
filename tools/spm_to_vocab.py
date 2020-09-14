@@ -1,10 +1,11 @@
 # converts a SentencePiece vocabulary to the format expected by dynamic data
 # (essentially converts float expected counts to "fixed precision" int pseudo
-# counts, and inverts the order)
+# counts)
 import sys
 import math
+from onmt.constants import DefaultTokens
 
-OMIT = ('<unk>', '<s>', '</s>')
+OMIT = (DefaultTokens.UNK, DefaultTokens.BOS, DefaultTokens.EOS)
 
 
 def convert(lines):

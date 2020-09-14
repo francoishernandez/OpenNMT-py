@@ -5,6 +5,7 @@ import six
 import torch
 from torchtext.data import Field, RawField
 
+from onmt.constants import DefaultTokens
 from onmt.inputters.datareader_base import DataReaderBase
 
 
@@ -170,9 +171,9 @@ def text_fields(**kwargs):
     n_feats = kwargs["n_feats"]
     include_lengths = kwargs["include_lengths"]
     base_name = kwargs["base_name"]
-    pad = kwargs.get("pad", "<blank>")
-    bos = kwargs.get("bos", "<s>")
-    eos = kwargs.get("eos", "</s>")
+    pad = kwargs.get("pad", DefaultTokens.PAD)
+    bos = kwargs.get("bos", DefaultTokens.BOS)
+    eos = kwargs.get("eos", DefaultTokens.EOS)
     truncate = kwargs.get("truncate", None)
     fields_ = []
     feat_delim = u"￨" if n_feats > 0 else None

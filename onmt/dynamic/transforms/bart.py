@@ -3,22 +3,18 @@ import math
 import numpy as np
 import torch
 from functools import partial
+from onmt.constants import DefaultTokens, SubwordMarker
 from onmt.dynamic.transforms import register_transform
 from .transform import Transform
-
-
-MASK_TOK = '<mask>'
-SUBWORD_SPACER = '▁'
-SUBWORD_JOINER = '￭'
 
 
 def word_start(x, ignore_subword=False, is_joiner=False):
     """Return if a token is the word start or not."""
     if not ignore_subword:
         if is_joiner:
-            return not x.startswith(SUBWORD_JOINER)
+            return not x.startswith(SubwordMarker.JOINER)
         else:
-            return x.startswith(SUBWORD_SPACER)
+            return x.startswith(SubwordMarker.SPACER)
     else:
         return True
 
@@ -26,11 +22,11 @@ def word_start(x, ignore_subword=False, is_joiner=False):
 class BARTNoising(object):
     """Noise from BART."""
 
-    def __init__(self, vocab, mask_tok=MASK_TOK, mask_ratio=0.0,
+    def __init__(self, vocab, mask_tok=DefaultTokens.MASK, mask_ratio=0.0,
                  insert_ratio=0.0, permute_sent_ratio=0.0, poisson_lambda=3.0,
                  replace_length=-1, rotate_ratio=0.5, mask_length='subword',
                  random_ratio=0.0, is_joiner=False,
-                 full_stop_token=[".", "?", "!"]):
+                 full_stop_token=DefaultTokens.SENT_FULL_STOPS):
         self.vocab = vocab
 
         self.mask_tok = mask_tok
@@ -329,7 +325,7 @@ class BARTNoiseTransform(Transform):
         is_joiner = (subword_type == 'bpe') if subword_type != 'none' else None
         self.bart_noise = BARTNoising(
             vocabs,
-            mask_tok=MASK_TOK,
+            mask_tok=DefaultTokens.MASK,
             mask_ratio=self.opts.mask_ratio,
             insert_ratio=self.opts.insert_ratio,
             permute_sent_ratio=self.opts.permute_sent_ratio,

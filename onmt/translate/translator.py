@@ -9,6 +9,7 @@ from itertools import count, zip_longest
 
 import torch
 
+from onmt.constants import DefaultTokens
 import onmt.model_builder
 import onmt.inputters as inputters
 import onmt.decoders.ensemble
@@ -378,9 +379,10 @@ class Translator(object):
                                       in trans.word_aligns[:self.n_best]]
                     n_best_preds_align = [" ".join(align) for align
                                           in align_pharaohs]
-                    n_best_preds = [pred + " ||| " + align
-                                    for pred, align in zip(
-                                        n_best_preds, n_best_preds_align)]
+                    n_best_preds = [
+                        pred + DefaultTokens.ALIGNMENT_SEPERATOR + align
+                        for pred, align in zip(
+                            n_best_preds, n_best_preds_align)]
                 all_predictions += [n_best_preds]
                 self.out_file.write('\n'.join(n_best_preds) + '\n')
                 self.out_file.flush()
@@ -395,7 +397,7 @@ class Translator(object):
 
                 if attn_debug:
                     preds = trans.pred_sents[0]
-                    preds.append('</s>')
+                    preds.append(DefaultTokens.EOS)
                     attns = trans.attns[0].tolist()
                     if self.data_type == 'text':
                         srcs = trans.src_raw

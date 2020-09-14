@@ -1,11 +1,10 @@
 """Module that contain shard utils for dynamic data."""
 import os
 from onmt.utils.logging import logger
+from onmt.constants import CorpusName
 from onmt.dynamic.transforms import TransformPipe
 
 from collections import Counter
-
-VALID_CORPUS_NAME = 'valid'
 
 
 class ParallelCorpus(object):
@@ -41,15 +40,15 @@ def get_corpora(opts, is_train=False):
     corpora_dict = {}
     if is_train:
         for corpus_id, corpus_dict in opts.data.items():
-            if corpus_id != VALID_CORPUS_NAME:
+            if corpus_id != CorpusName.VALID:
                 corpora_dict[corpus_id] = ParallelCorpus(
                     corpus_dict["path_src"],
                     corpus_dict["path_tgt"])
     else:
-        if VALID_CORPUS_NAME in opts.data.keys():
-            corpora_dict[VALID_CORPUS_NAME] = ParallelCorpus(
-                opts.data[VALID_CORPUS_NAME]["path_src"],
-                opts.data[VALID_CORPUS_NAME]["path_tgt"])
+        if CorpusName.VALID in opts.data.keys():
+            corpora_dict[CorpusName.VALID] = ParallelCorpus(
+                opts.data[CorpusName.VALID]["path_src"],
+                opts.data[CorpusName.VALID]["path_tgt"])
         else:
             return None
     return corpora_dict
@@ -131,10 +130,11 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
         corpora, transforms,
         opts.data, is_train=True)
     sample_path = os.path.join(
-        os.path.dirname(opts.save_data), 'sample')
+        os.path.dirname(opts.save_data), CorpusName.SAMPLE)
     os.makedirs(sample_path, exist_ok=True)
     for c_name, c_iter in datasets_iterables.items():
-        dest_base = os.path.join(sample_path, "{}.sample".format(c_name))
+        dest_base = os.path.join(
+            sample_path, "{}.{}".format(c_name, CorpusName.SAMPLE))
         with open(dest_base + ".src", 'w', encoding="utf-8") as f_src,\
                 open(dest_base + ".tgt", 'w', encoding="utf-8") as f_tgt:
             for i, example in enumerate(c_iter):

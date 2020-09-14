@@ -4,6 +4,7 @@ from __future__ import print_function
 import configargparse
 import onmt
 
+from onmt.constants import SubwordMarker
 from onmt.models.sru import CheckSRU
 
 
@@ -359,7 +360,7 @@ def preprocess_opts(parser):
     # Options for experimental source noising (BART style)
     group = parser.add_argument_group('Noise')
     group.add('--subword_prefix', '-subword_prefix',
-              type=str, default="▁",
+              type=str, default=SubwordMarker.SPACER,
               help="subword prefix to build wordstart mask")
     group.add('--subword_prefix_is_joiner', '-subword_prefix_is_joiner',
               action='store_true',

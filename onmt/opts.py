@@ -2,9 +2,7 @@
 from __future__ import print_function
 
 import configargparse
-import onmt
 
-from onmt.constants import SubwordMarker
 from onmt.models.sru import CheckSRU
 
 
@@ -63,10 +61,10 @@ def model_opts(parser):
     # Encoder-Decoder Options
     group = parser.add_argument_group('Model- Encoder-Decoder')
     group.add('--model_type', '-model_type', default='text',
-              choices=['text', 'img', 'audio', 'vec'],
+              choices=['text'],
               help="Type of source model to use. Allows "
                    "the system to incorporate non-text inputs. "
-                   "Options are [text|img|audio|vec].")
+                   "Options are [text].")
     group.add('--model_dtype', '-model_dtype', default='fp32',
               choices=['fp32', 'fp16'],
               help='Data type of the model.')
@@ -92,19 +90,9 @@ def model_opts(parser):
               help="Size of rnn hidden states. Overwrites "
                    "enc_rnn_size and dec_rnn_size")
     group.add('--enc_rnn_size', '-enc_rnn_size', type=int, default=500,
-              help="Size of encoder rnn hidden states. "
-                   "Must be equal to dec_rnn_size except for "
-                   "speech-to-text.")
+              help="Size of encoder rnn hidden states.")
     group.add('--dec_rnn_size', '-dec_rnn_size', type=int, default=500,
-              help="Size of decoder rnn hidden states. "
-                   "Must be equal to enc_rnn_size except for "
-                   "speech-to-text.")
-    group.add('--audio_enc_pooling', '-audio_enc_pooling',
-              type=str, default='1',
-              help="The amount of pooling of audio encoder, "
-                   "either the same amount of pooling across all layers "
-                   "indicated by a single number, or different amounts of "
-                   "pooling per layer separated by comma.")
+              help="Size of decoder rnn hidden states.")
     group.add('--cnn_kernel_width', '-cnn_kernel_width', type=int, default=3,
               help="Size of windows in the cnn, the kernel_size is "
                    "(cnn_kernel_width, 1) in conv layer")
@@ -232,7 +220,7 @@ def preprocess_opts(parser):
     group = parser.add_argument_group('Data')
     group.add('--data_type', '-data_type', default="text",
               help="Type of the source input. "
-                   "Options are [text|img|audio|vec].")
+                   "Options are [text].")
 
     group.add('--train_src', '-train_src', required=True, nargs='+',
               help="Path(s) to the training source data")
@@ -250,8 +238,8 @@ def preprocess_opts(parser):
     group.add('--valid_align', '-valid_align', default=None,
               help="Path(s) to the validation src-tgt alignment")
 
-    group.add('--src_dir', '-src_dir', default="",
-              help="Source directory for image or audio files.")
+    group.add('--src_dir', '-src_dir', default="", action=DeprecateAction,
+              help="Source directory for image files.")
 
     group.add('--save_data', '-save_data', required=True,
               help="Output file for the prepared data")
@@ -339,33 +327,6 @@ def preprocess_opts(parser):
               choices=StoreLoggingLevelAction.CHOICES,
               default="0")
 
-    # Options most relevant to speech
-    group = parser.add_argument_group('Speech')
-    group.add('--sample_rate', '-sample_rate', type=int, default=16000,
-              help="Sample rate.")
-    group.add('--window_size', '-window_size', type=float, default=.02,
-              help="Window size for spectrogram in seconds.")
-    group.add('--window_stride', '-window_stride', type=float, default=.01,
-              help="Window stride for spectrogram in seconds.")
-    group.add('--window', '-window', default='hamming',
-              help="Window type for spectrogram generation.")
-
-    # Option most relevant to image input
-    group.add('--image_channel_size', '-image_channel_size',
-              type=int, default=3,
-              choices=[3, 1],
-              help="Using grayscale image can training "
-                   "model faster and smaller")
-
-    # Options for experimental source noising (BART style)
-    group = parser.add_argument_group('Noise')
-    group.add('--subword_prefix', '-subword_prefix',
-              type=str, default=SubwordMarker.SPACER,
-              help="subword prefix to build wordstart mask")
-    group.add('--subword_prefix_is_joiner', '-subword_prefix_is_joiner',
-              action='store_true',
-              help="mask will need to be inverted if prefix is joiner")
-
 
 def _train_bin_data(parser):
     """ training options for preprocessed data """
@@ -378,8 +339,6 @@ def _train_bin_data(parser):
     group.add('--data_weights', '-data_weights', type=int, nargs='+',
               default=[1], help="""Weights of different corpora,
               should follow the same order as in -data_ids.""")
-    group.add('--data_to_noise', '-data_to_noise', nargs='+', default=[],
-              help="IDs of datasets on which to apply noise.")
 
 
 def _train_general_opts(parser):
@@ -387,7 +346,7 @@ def _train_general_opts(parser):
     group = parser.add_argument_group('General')
     group.add('--data_type', '-data_type', default="text",
               help="Type of the source input. "
-                   "Options are [text|img|audio|vec].")
+                   "Options are [text].")
 
     group.add('--save_model', '-save_model', default='model',
               help="Model filename (the model will be saved as "
@@ -564,12 +523,6 @@ def _train_general_opts(parser):
               help="Step for moving average. "
                    "Default is every update, "
                    "if -average_decay is set.")
-    group.add("--src_noise", "-src_noise", type=str, nargs='+',
-              default=[],
-              choices=onmt.modules.source_noise.MultiNoise.NOISES.keys())
-    group.add("--src_noise_prob", "-src_noise_prob", type=float, nargs='+',
-              default=[],
-              help="Probabilities of src_noise functions")
 
     # learning rate
     group = parser.add_argument_group('Optimization- Rate')
@@ -617,19 +570,6 @@ def _train_general_opts(parser):
               help="Log directory for Tensorboard. "
                    "This is also the name of the run.")
 
-    group = parser.add_argument_group('Speech')
-    # Options most relevant to speech
-    group.add('--sample_rate', '-sample_rate', type=int, default=16000,
-              help="Sample rate.")
-    group.add('--window_size', '-window_size', type=float, default=.02,
-              help="Window size for spectrogram in seconds.")
-
-    # Option most relevant to image input
-    group.add('--image_channel_size', '-image_channel_size',
-              type=int, default=3, choices=[3, 1],
-              help="Using grayscale image can training "
-                   "model faster and smaller")
-
 
 def train_opts(parser):
     """ Training and saving options """
@@ -658,13 +598,13 @@ def translate_opts(parser):
 
     group = parser.add_argument_group('Data')
     group.add('--data_type', '-data_type', default="text",
-              help="Type of the source input. Options: [text|img].")
+              help="Type of the source input. Options: [text].")
 
     group.add('--src', '-src', required=True,
               help="Source sequence to decode (one line per "
                    "sequence)")
-    group.add('--src_dir', '-src_dir', default="",
-              help='Source directory for image or audio files')
+    group.add('--src_dir', '-src_dir', default="", action=DeprecateAction,
+              help='Source directory for image files')
     group.add('--tgt', '-tgt',
               help='True target sequence (optional)')
     group.add('--tgt_prefix', '-tgt_prefix', action='store_true',
@@ -783,23 +723,6 @@ def translate_opts(parser):
                    "is sents. Tokens will do dynamic batching")
     group.add('--gpu', '-gpu', type=int, default=-1,
               help="Device to run on")
-
-    # Options most relevant to speech.
-    group = parser.add_argument_group('Speech')
-    group.add('--sample_rate', '-sample_rate', type=int, default=16000,
-              help="Sample rate.")
-    group.add('--window_size', '-window_size', type=float, default=.02,
-              help='Window size for spectrogram in seconds')
-    group.add('--window_stride', '-window_stride', type=float, default=.01,
-              help='Window stride for spectrogram in seconds')
-    group.add('--window', '-window', default='hamming',
-              help='Window type for spectrogram generation')
-
-    # Option most relevant to image input
-    group.add('--image_channel_size', '-image_channel_size',
-              type=int, default=3, choices=[3, 1],
-              help="Using grayscale image can training "
-                   "model faster and smaller")
 
 
 # Copyright 2016 The Chromium Authors. All rights reserved.

@@ -19,9 +19,6 @@ Contents
       Library.md
       extended.md
       Summarization.md
-      im2text.md
-      speech2text.md
-      vid2text.rst
       ggnn.md
 
 
@@ -44,3 +41,12 @@ Contents
       onmt.translation.rst
       onmt.translate.translation_server.rst
       onmt.inputters.rst
+
+
+.. toctree::
+      :caption: Legacy
+      :maxdepth: 2
+
+      legacy/im2text.md
+      legacy/speech2text.md
+      legacy/vid2text.rst

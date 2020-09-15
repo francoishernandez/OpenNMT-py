@@ -11,7 +11,7 @@ import signal
 import math
 import pickle
 
-from itertools import cycle
+# from itertools import cycle
 import torch.distributed
 
 from onmt.utils.misc import set_random_seed

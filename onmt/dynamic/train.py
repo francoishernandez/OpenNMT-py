@@ -76,11 +76,13 @@ def train(opt):
             train_iter = get_train_iter(
                 opt, dynamic=True, stride=nb_gpu, offset=device_id)
             producer = mp.Process(target=batch_producer,
-                                  args=(train_iter, queues[device_id], semaphore, opt,),
+                                  args=(train_iter, queues[device_id],
+                                        semaphore, opt,),
                                   daemon=True)
             producers.append(producer)
             producers[device_id].start()
-            logger.info(" Starting producer process pid: %d  " % producers[device_id].pid)
+            logger.info(" Starting producer process pid: {}  ".format(
+                producers[device_id].pid))
             error_handler.add_child(producers[device_id].pid)
 
         for p in procs:

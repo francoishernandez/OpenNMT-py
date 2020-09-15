@@ -14,8 +14,6 @@ def _get_dynamic_fields():
     tgt_nfeats = 0
     fields = get_fields('text', src_nfeats, tgt_nfeats)
 
-    # Do not support this in dynamic for now
-    del fields['corpus_id']
     return fields
 
 

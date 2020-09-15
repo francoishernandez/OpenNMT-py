@@ -14,10 +14,7 @@ from onmt.utils.misc import split_corpus
 import onmt.inputters as inputters
 import onmt.opts as opts
 from onmt.utils.parse import ArgumentParser
-from onmt.inputters.inputter import _build_fields_vocab,\
-                                    _load_vocab, \
-                                    old_style_vocab, \
-                                    load_old_vocab
+from onmt.inputters.inputter import _build_fields_vocab, _load_vocab
 
 from functools import partial
 from multiprocessing import Pool
@@ -63,16 +60,11 @@ def process_one_shard(corpus_params, params):
     dataset = inputters.Dataset(
         fields, readers=_readers, data=_data, dirs=_dir,
         sort_key=inputters.str2sortkey[opt.data_type],
-        filter_pred=filter_pred,
-        corpus_id=maybe_id
+        filter_pred=filter_pred
     )
     if corpus_type == "train" and existing_fields is None:
         for ex in dataset.examples:
-            sub_sub_counter['corpus_id'].update(
-                ["train" if maybe_id is None else maybe_id])
             for name, field in fields.items():
-                if (opt.data_type in ["audio", "vec"]) and name == "src":
-                    continue
                 try:
                     f_iter = iter(field)
                 except TypeError:
@@ -213,22 +205,11 @@ def build_save_dataset(corpus_type, fields, src_reader, tgt_reader,
             fields, counters, opt.data_type,
             opt.share_vocab, opt.vocab_size_multiple,
             opt.src_vocab_size, opt.src_words_min_frequency,
-            opt.tgt_vocab_size, opt.tgt_words_min_frequency,
-            subword_prefix=opt.subword_prefix,
-            subword_prefix_is_joiner=opt.subword_prefix_is_joiner)
+            opt.tgt_vocab_size, opt.tgt_words_min_frequency)
         if existing_fields is None:
             fields = new_fields
         else:
             fields = existing_fields
-
-        if old_style_vocab(fields):
-            fields = load_old_vocab(
-                fields, opt.data_type, dynamic_dict=opt.dynamic_dict)
-
-        # patch corpus_id
-        if fields.get("corpus_id", False):
-            fields["corpus_id"].vocab = new_fields["corpus_id"].vocab_cls(
-                counters["corpus_id"])
 
         torch.save(fields, vocab_path)
 

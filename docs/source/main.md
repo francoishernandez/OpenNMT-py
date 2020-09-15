@@ -19,7 +19,7 @@ cd OpenNMT-py
 python setup.py install
 ```
 
-*(Optionnal)* some advanced features (e.g. working audio, image or pretrained models) requires extra packages, you can install it with:
+*(Optionnal)* some advanced features (e.g. working pretrained models) requires extra packages, you can install it with:
 ```bash
 pip install -r requirements.opt.txt
 ```

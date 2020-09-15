@@ -42,7 +42,7 @@ python setup.py install
 
 Note: If you have MemoryError in the install try to use `pip` with `--no-cache-dir`.
 
-*(Optional)* some advanced features (e.g. working audio, image or pretrained models) requires extra packages, you can install it with:
+*(Optional)* some advanced features (e.g. working pretrained models) requires extra packages, you can install it with:
 ```bash
 pip install -r requirements.opt.txt
 ```
@@ -59,8 +59,6 @@ Note:
 - [Copy and Coverage Attention](http://opennmt.net/OpenNMT-py/options/train.html#model-attention)
 - [Pretrained Embeddings](http://opennmt.net/OpenNMT-py/FAQ.html#how-do-i-use-pretrained-embeddings-e-g-glove)
 - [Source word features](http://opennmt.net/OpenNMT-py/options/train.html#model-embeddings)
-- [Image-to-text processing](http://opennmt.net/OpenNMT-py/im2text.html)
-- [Speech-to-text processing](http://opennmt.net/OpenNMT-py/speech2text.html)
 - [TensorBoard logging](http://opennmt.net/OpenNMT-py/options/train.html#logging)
 - [Multi-GPU training](http://opennmt.net/OpenNMT-py/FAQ.html##do-you-support-multi-gpu)
 - [Data preprocessing](http://opennmt.net/OpenNMT-py/options/preprocess.html)

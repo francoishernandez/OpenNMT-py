@@ -3,8 +3,7 @@ from itertools import cycle
 
 from torchtext.data import Dataset as TorchtextDataset, \
     Example as TorchtextExample, batch as torchtext_batch
-from onmt.inputters import str2sortkey
-from onmt.inputters.inputter import max_tok_len, OrderedIterator
+from onmt.inputters import str2sortkey, max_tok_len, OrderedIterator
 
 from onmt.dynamic.corpus import get_corpora, build_corpora_iters
 from onmt.dynamic.transforms import load_transforms

@@ -19,17 +19,11 @@ clean_up()
     fi
     if [[ "${SKIP_FULL_CLEAN}" == "1" ]]; then
         # delete any .pt's that weren't downloaded
-        ls /tmp/*.pt | grep -vE "test_model_speech.pt|test_model_im2text.pt" | xargs -I {} rm -f /tmp/{}
+        ls /tmp/*.pt | xargs -I {} rm -f /tmp/{}
     else
         # delete all .pt's
         rm -f /tmp/*.pt
     fi
-    if [[ "${SKIP_FULL_CLEAN}" != "1" ]]; then
-        rm -rf /tmp/im2text
-        rm -rf /tm/speech
-    fi
-    rm -f /tmp/im2text.tgz
-    rm -f /tmp/speech.tgz
 }
 trap clean_up SIGINT SIGQUIT SIGKILL
 
@@ -41,39 +35,10 @@ error_exit()
     exit 1
 }
 
-environment_prepare()
-{
-  # Download img2text corpus
-  if [[ "${SKIP_DOWNLOADS}" != "1" || ! -d /tmp/im2text ]]; then
-    if [[ "${SKIP_DOWNLOADS}" != "1" || ! -f /tmp/im2text.tgz ]]; then
-      wget -q -O /tmp/im2text.tgz http://lstm.seas.harvard.edu/latex/im2text_small.tgz
-    fi
-    tar zxf /tmp/im2text.tgz -C /tmp/
-  fi
-  head /tmp/im2text/src-train.txt > /tmp/im2text/src-train-head.txt
-  head /tmp/im2text/tgt-train.txt > /tmp/im2text/tgt-train-head.txt
-  head /tmp/im2text/src-val.txt > /tmp/im2text/src-val-head.txt
-  head /tmp/im2text/tgt-val.txt > /tmp/im2text/tgt-val-head.txt
+# environment_prepare()
+# {
 
-  if [[ "${SKIP_DOWNLOADS}" != "1" || ! -f /tmp/test_model_speech.pt ]]; then
-    wget -q -O /tmp/test_model_speech.pt http://lstm.seas.harvard.edu/latex/model_step_2760.pt
-  fi
-  # Download speech2text corpus
-  if [[ "${SKIP_DOWNLOADS}" != "1" || ! -d /tmp/speech ]]; then
-    if [[ "${SKIP_DOWNLOADS}" != "1" || ! -f /tmp/speech.tgz ]]; then
-      wget -q -O /tmp/speech.tgz http://lstm.seas.harvard.edu/latex/speech.tgz
-    fi
-    tar zxf /tmp/speech.tgz -C /tmp/
-  fi
-  head /tmp/speech/src-train.txt > /tmp/speech/src-train-head.txt
-  head /tmp/speech/tgt-train.txt > /tmp/speech/tgt-train-head.txt
-  head /tmp/speech/src-val.txt > /tmp/speech/src-val-head.txt
-  head /tmp/speech/tgt-val.txt > /tmp/speech/tgt-val-head.txt
-
-  if [[ "${SKIP_DOWNLOADS}" != "1" || ! -f /tmp/test_model_im2text.pt ]]; then
-    wget -q -O /tmp/test_model_im2text.pt http://lstm.seas.harvard.edu/latex/test_model_im2text.pt
-  fi
-}
+# }
 
 # flake8 check
 echo -n "[+] Doing flake8 check..."
@@ -84,7 +49,7 @@ echo "Succeeded" | tee -a ${LOG_FILE}
 
 # Environment prepartion
 echo -n "[+] Preparing for test..."
-environment_prepare
+# environment_prepare
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
 
@@ -113,31 +78,6 @@ ${PYTHON} preprocess.py -train_src ${DATA_DIR}/src-train.txt \
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
 
-echo -n "  [+] Testing img2text preprocessing..."
-rm -rf /tmp/im2text/data*pt
-${PYTHON} preprocess.py -data_type img \
-		     -src_dir /tmp/im2text/images \
-		     -train_src /tmp/im2text/src-train.txt \
-		     -train_tgt /tmp/im2text/tgt-train.txt \
-		     -valid_src /tmp/im2text/src-val.txt \
-		     -valid_tgt /tmp/im2text/tgt-val.txt \
-		     -save_data /tmp/im2text/data  >> ${LOG_FILE} 2>&1
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
-echo -n "  [+] Testing speech2text preprocessing..."
-rm -rf /tmp/speech/data*pt
-${PYTHON} preprocess.py -data_type audio \
-		     -src_dir /tmp/speech/an4_dataset \
-		     -train_src /tmp/speech/src-train.txt \
-		     -train_tgt /tmp/speech/tgt-train.txt \
-		     -valid_src /tmp/speech/src-val.txt \
-		     -valid_tgt /tmp/speech/tgt-val.txt \
-		     -save_data /tmp/speech/data  >> ${LOG_FILE} 2>&1
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
-
 #
 # Translation test
 #
@@ -155,32 +95,6 @@ ${PYTHON} translate.py -model ${TEST_DIR}/test_model.pt ${TEST_DIR}/test_model.p
             -src /tmp/src-test.txt -verbose >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-
-echo -n "  [+] Testing img2text translation..."
-head /tmp/im2text/src-val.txt > /tmp/im2text/src-val-head.txt
-head /tmp/im2text/tgt-val.txt > /tmp/im2text/tgt-val-head.txt
-${PYTHON} translate.py -data_type img \
-	            -src_dir /tmp/im2text/images \
-		    -model /tmp/test_model_im2text.pt \
-		    -src /tmp/im2text/src-val-head.txt \
-		    -tgt /tmp/im2text/tgt-val-head.txt \
-		    -verbose -out /tmp/im2text/trans  >> ${LOG_FILE} 2>&1
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
-echo -n "  [+] Testing speech2text translation..."
-head /tmp/speech/src-val.txt > /tmp/speech/src-val-head.txt
-head /tmp/speech/tgt-val.txt > /tmp/speech/tgt-val-head.txt
-${PYTHON} translate.py -data_type audio \
-	            -src_dir /tmp/speech/an4_dataset \
-		    -model /tmp/test_model_speech.pt \
-		    -src /tmp/speech/src-val-head.txt \
-		    -tgt /tmp/speech/tgt-val-head.txt \
-		    -verbose -out /tmp/speech/trans  >> ${LOG_FILE} 2>&1
-diff /tmp/speech/tgt-val-head.txt /tmp/speech/trans
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
 
 # NMT Preprocess + Train + Translation test
 echo -n "[+] Doing NMT {preprocess + train + translation} test..."
@@ -239,45 +153,6 @@ ${PYTHON} train.py -data /tmp/q -rnn_size 2 -batch_size 10 \
 		-rnn_size 10 -train_steps 10 -copy_attn       >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-
-
-echo -n "[+] Doing im2text {preprocess w/sharding + train} test..."
-head /tmp/im2text/src-val.txt > /tmp/im2text/src-val-head.txt
-head /tmp/im2text/tgt-val.txt > /tmp/im2text/tgt-val-head.txt
-rm -rf /tmp/im2text/q*pt
-${PYTHON} preprocess.py -data_type img \
-	             -src_dir /tmp/im2text/images \
-		     -train_src /tmp/im2text/src-val-head.txt \
-		     -train_tgt /tmp/im2text/tgt-val-head.txt \
-		     -valid_src /tmp/im2text/src-val-head.txt \
-		     -valid_tgt /tmp/im2text/tgt-val-head.txt \
-             -shard_size 5 \
-		     -save_data /tmp/im2text/q  >> ${LOG_FILE} 2>&1
-${PYTHON} train.py -model_type img \
-	        -data /tmp/im2text/q -rnn_size 2 -batch_size 10 \
-		-word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10  >> ${LOG_FILE} 2>&1
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
-
-echo -n "[+] Doing speech2text {preprocess + train} test..."
-head /tmp/speech/src-val.txt > /tmp/speech/src-val-head.txt
-head /tmp/speech/tgt-val.txt > /tmp/speech/tgt-val-head.txt
-rm -rf /tmp/speech/q*pt
-${PYTHON} preprocess.py -data_type audio \
-	             -src_dir /tmp/speech/an4_dataset \
-		     -train_src /tmp/speech/src-val-head.txt \
-		     -train_tgt /tmp/speech/tgt-val-head.txt \
-		     -valid_src /tmp/speech/src-val-head.txt \
-		     -valid_tgt /tmp/speech/tgt-val-head.txt \
-             -shard_size 50 \
-		     -save_data /tmp/speech/q  >> ${LOG_FILE} 2>&1
-${PYTHON} train.py -model_type audio \
-	        -data /tmp/speech/q -rnn_size 2 -batch_size 10 \
-		-word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10  >> ${LOG_FILE} 2>&1
-[ "$?" -eq 0 ] || error_exit
-echo "Succeeded" | tee -a ${LOG_FILE}
-
 
 echo -n "[+] Doing create vocabulary {preprocess + create_vocabulary} test..."
 rm /tmp/src-train.txt

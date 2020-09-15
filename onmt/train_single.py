@@ -4,8 +4,9 @@ import os
 
 import torch
 
-from onmt.inputters.inputter import build_dataset_iter, patch_fields, \
-    load_old_vocab, old_style_vocab, build_dataset_iter_multiple, IterOnDevice
+from onmt.inputters.inputter import IterOnDevice
+from onmt.inputters.iterator import build_dataset_iter,\
+    build_dataset_iter_multiple
 from onmt.model_builder import build_model
 from onmt.utils.optimizers import Optimizer
 from onmt.utils.misc import set_random_seed
@@ -17,7 +18,6 @@ from onmt.utils.parse import ArgumentParser
 from onmt.dynamic.vocab import load_fields
 from onmt.dynamic.iterator import build_dynamic_dataset_iter
 
-from itertools import cycle
 
 def _check_save_model_path(opt):
     save_model_path = os.path.abspath(opt.save_model)
@@ -64,15 +64,7 @@ def _load_fields(opt, checkpoint, dynamic=False):
             vocab = checkpoint['vocab']
         else:
             vocab = torch.load(opt.data + '.vocab.pt')
-        # check for code where vocab is saved instead of fields
-        # (in the future this will be done in a smarter way)
-        if old_style_vocab(vocab):
-            fields = load_old_vocab(
-                vocab, opt.model_type, dynamic_dict=opt.copy_attn)
-        else:
-            fields = vocab
-        # patch for fields that may be missing in old data/model
-        patch_fields(opt, fields)
+        fields = vocab
     return fields
 
 

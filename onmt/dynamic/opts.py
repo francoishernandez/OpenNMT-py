@@ -8,7 +8,7 @@ def data_config_opts(parser):
     parser.add('-data_config', '--data_config', required=True,
                is_config_file_arg=True, help='data config file path')
     parser.add('-save_data_config', '--save_data_config', required=False,
-               #is_write_out_config_file_arg=True,
+               # is_write_out_config_file_arg=True,
                help='config file save path')
 
 

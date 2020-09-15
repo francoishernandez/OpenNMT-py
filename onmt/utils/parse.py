@@ -53,13 +53,12 @@ class ArgumentParser(cfargparse.ArgumentParser):
 
     @classmethod
     def validate_model_opts(cls, model_opt):
-        assert model_opt.model_type in ["text", "img", "audio", "vec"], \
+        assert model_opt.model_type in ["text"], \
             "Unsupported model type %s" % model_opt.model_type
 
-        # this check is here because audio allows the encoder and decoder to
-        # be different sizes, but other model types do not yet
+        # encoder and decoder should be same sizes
         same_size = model_opt.enc_rnn_size == model_opt.dec_rnn_size
-        assert model_opt.model_type == 'audio' or same_size, \
+        assert same_size, \
             "The encoder and decoder rnns must be the same size for now"
 
         assert model_opt.rnn_type != "SRU" or model_opt.gpu_ranks, \

@@ -337,11 +337,12 @@ class BARTNoiseTransform(Transform):
             is_joiner=is_joiner
         )
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
-        """Apply switchout to both src and tgt side tokens."""
+    def apply(self, example, is_train=False, stats=None, **kwargs):
+        """Apply BART noise to src side tokens."""
         if is_train and self.vocab is not None:
-            src = self.bart_noise.apply(src)
-        return src, tgt
+            src = self.bart_noise.apply(example['src'])
+            example['src'] = src
+        return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""

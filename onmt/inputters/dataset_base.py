@@ -38,7 +38,7 @@ def _dynamic_dict(example, src_field, tgt_field):
         tgt_field (torchtext.data.Field): Field object.
 
     Returns:
-        torchtext.data.Vocab and ``example``, changed as described.
+        ``example``, changed as described.
     """
 
     src = src_field.tokenize(example["src"])
@@ -57,7 +57,7 @@ def _dynamic_dict(example, src_field, tgt_field):
         mask = torch.LongTensor(
             [unk_idx] + [src_ex_vocab.stoi[w] for w in tgt] + [unk_idx])
         example["alignment"] = mask
-    return src_ex_vocab, example
+    return example
 
 
 class Dataset(TorchtextDataset):
@@ -123,9 +123,9 @@ class Dataset(TorchtextDataset):
                 src_field = fields['src']
                 tgt_field = fields['tgt']
                 # this assumes src_field and tgt_field are both text
-                src_ex_vocab, ex_dict = _dynamic_dict(
+                ex_dict = _dynamic_dict(
                     ex_dict, src_field.base_field, tgt_field.base_field)
-                self.src_vocabs.append(src_ex_vocab)
+                self.src_vocabs.append(ex_dict["src_ex_vocab"])
             ex_fields = {k: [(k, v)] for k, v in fields.items() if
                          k in ex_dict}
             ex = Example.fromdict(ex_dict, ex_fields)

@@ -77,12 +77,13 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
             stats.switchout(n_switchout=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
+    def apply(self, example, is_train=False, stats=None, **kwargs):
         """Apply switchout to both src and tgt side tokens."""
         if is_train and self.vocab is not None:
-            src = self._switchout(src, self.vocab['src'], stats)
-            tgt = self._switchout(tgt, self.vocab['tgt'], stats)
-        return src, tgt
+            src = self._switchout(example['src'], self.vocab['src'], stats)
+            tgt = self._switchout(example['tgt'], self.vocab['tgt'], stats)
+            example['src'], example['tgt'] = src, tgt
+        return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
@@ -117,12 +118,13 @@ class TokenDropTransform(Transform, HammingDistanceSampling):
             stats.token_drop(n_dropped=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
+    def apply(self, example, is_train=False, stats=None, **kwargs):
         """Apply token drop to both src and tgt side tokens."""
         if is_train:
-            src = self._token_drop(src, stats)
-            tgt = self._token_drop(tgt, stats)
-        return src, tgt
+            src = self._token_drop(example['src'], stats)
+            tgt = self._token_drop(example['tgt'], stats)
+            example['src'], example['tgt'] = src, tgt
+        return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
@@ -166,12 +168,13 @@ class TokenMaskTransform(Transform, HammingDistanceSampling):
             stats.token_mask(n_masked=n_chosen, n_total=len(tokens))
         return out
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
+    def apply(self, example, is_train=False, stats=None, **kwargs):
         """Apply word drop to both src and tgt side tokens."""
         if is_train:
-            src = self._token_mask(src, stats)
-            tgt = self._token_mask(tgt, stats)
-        return src, tgt
+            src = self._token_mask(example['src'], stats)
+            tgt = self._token_mask(example['tgt'], stats)
+            example['src'], example['tgt'] = src, tgt
+        return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""

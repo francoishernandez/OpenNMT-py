@@ -8,18 +8,21 @@ from onmt.inputters.inputter import get_fields, _load_vocab, \
     _build_fields_vocab
 
 
-def _get_dynamic_fields():
+def _get_dynamic_fields(opts):
     # TODO: support for features & other opts
     src_nfeats = 0
     tgt_nfeats = 0
-    fields = get_fields('text', src_nfeats, tgt_nfeats)
+    fields = get_fields('text', src_nfeats, tgt_nfeats,
+                        dynamic_dict=opts.dynamic_dict,
+                        src_truncate=opts.src_seq_length_trunc,
+                        tgt_truncate=opts.tgt_seq_length_trunc)
 
     return fields
 
 
 def build_dynamic_fields(opts, src_specials=None, tgt_specials=None):
     """Build fields for dynamic, including load & build vocab."""
-    fields = _get_dynamic_fields()
+    fields = _get_dynamic_fields(opts)
 
     counters = defaultdict(Counter)
     logger.info("Loading vocab from text file...")

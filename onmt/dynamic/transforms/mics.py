@@ -21,14 +21,15 @@ class FilterTooLongTransform(Transform):
         group.add('--tgt_seq_length', '-tgt_seq_length', type=int, default=200,
                   help="Maximum target sequence length")
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
+    def apply(self, example, is_train=False, stats=None, **kwargs):
         """Return None if too long else return as is."""
-        if len(src) > self.src_seq_length or len(tgt) > self.tgt_seq_length:
+        if (len(example['src']) > self.src_seq_length or
+                len(example['tgt']) > self.tgt_seq_length):
             if stats is not None:
                 stats.filter_too_long()
             return None
         else:
-            return src, tgt
+            return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
@@ -82,13 +83,14 @@ class PrefixSrcTransform(Transform):
             raise ValueError('corpus_name does not exist.')
         return [corpus_prefix] + tokens
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
+    def apply(self, example, is_train=False, stats=None, **kwargs):
         """Prepend prefix to src side tokens."""
         corpus_name = kwargs.get('corpus_name', None)
         if corpus_name is None:
             raise ValueError('corpus_name is required.')
-        src = self._prepend(src, corpus_name)
-        return src, tgt
+        src = self._prepend(example['src'], corpus_name)
+        example['src'] = src
+        return example
 
     def _repr_args(self):
         """Return str represent key arguments for class."""

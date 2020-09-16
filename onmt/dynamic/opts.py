@@ -19,7 +19,7 @@ def _dynamic_corpus_opts(parser):
               help='data configuration list.')
     group.add('-save_data', '--save_data', required=True,
               help='Output directory for data saving path.')
-    group.add('--overwrite', '-overwrite', action="store_true",
+    group.add('-overwrite', '--overwrite', action="store_true",
               help="Overwrite existing shards if any.")
     group.add('-transforms', '--transforms', default=[], nargs='+',
               choices=AVAILABLE_TRANSFORMS.keys(),
@@ -28,11 +28,8 @@ def _dynamic_corpus_opts(parser):
 
 
 def _dynamic_vocab_opts(parser):
-    """Options related to vocabulary."""
+    """Options related to vocabulary and fields."""
     group = parser.add_argument_group('vocab')
-    group.add('-share_vocab', '--share_vocab', action='store_true',
-              help="Share source and target vocabulary")
-
     group.add('-src_vocab', '--src_vocab', required=True,
               help="Path to an vocabulary file for src(or shard)."
                    "Format: one word per line.")
@@ -40,20 +37,32 @@ def _dynamic_vocab_opts(parser):
               help="Path to an vocabulary file for tgt."
                    "Format: one word per line.")
 
-    group.add('-src_vocab_size', '--src_vocab_size',
-              type=int, default=50000,
+    group.add('-src_vocab_size', '--src_vocab_size', type=int, default=50000,
               help="Size of the source vocabulary")
-    group.add('-tgt_vocab_size', '--tgt_vocab_size',
-              type=int, default=50000,
+    group.add('-tgt_vocab_size', '--tgt_vocab_size', type=int, default=50000,
               help="Size of the target vocabulary")
+    group.add('-vocab_size_multiple', '--vocab_size_multiple',
+              type=int, default=1,
+              help="Make the vocabulary size a multiple of this value")
 
     group.add('-src_words_min_frequency', '--src_words_min_frequency',
               type=int, default=0)
     group.add('-tgt_words_min_frequency', '--tgt_words_min_frequency',
               type=int, default=0)
-    group.add('-vocab_size_multiple', '--vocab_size_multiple',
-              type=int, default=1,
-              help="Make the vocabulary size a multiple of this value")
+
+    group.add('-dynamic_dict', '--dynamic_dict', action='store_true',
+              help="Create dynamic dictionaries")
+    group.add('-share_vocab', '--share_vocab', action='store_true',
+              help="Share source and target vocabulary")
+
+    # Truncation options, for text corpus
+    group = parser.add_argument_group('Pruning')
+    group.add('--src_seq_length_trunc', '-src_seq_length_trunc',
+              type=int, default=None,
+              help="Truncate source sequence length.")
+    group.add('--tgt_seq_length_trunc', '-tgt_seq_length_trunc',
+              type=int, default=None,
+              help="Truncate target sequence length.")
 
 
 def _dynamic_transform_opts(parser):
@@ -69,13 +78,13 @@ def dynamic_prepare_opts(parser):
     _dynamic_vocab_opts(parser)
     _dynamic_transform_opts(parser)
     parser.add_argument(
-        '--n_sample', '-n_sample', type=int, default=-1,
+        '-n_sample', '--n_sample', type=int, default=-1,
         help="Show this number of transformed samples.")
 
 
 def _train_dynamic_data(parser):
     group = parser.add_argument_group('Dynamic data')
-    group.add('--bucket_size', '-bucket_size', type=int, default=2048,
+    group.add('-bucket_size', '--bucket_size', type=int, default=2048,
               help='Examples per dynamically generated torchtext Dataset')
 
 

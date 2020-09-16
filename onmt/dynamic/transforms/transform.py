@@ -23,12 +23,11 @@ class Transform(object):
     def get_specials(cls, opts):
         return (set(), set())
 
-    def apply(self, src, tgt, is_train=False, stats=None, **kwargs):
-        """Apply transform to `src` & `tgt`.
+    def apply(self, example, is_train=False, stats=None, **kwargs):
+        """Apply transform to `example`.
 
         Args:
-            src (list): a list of str, representing tokens;
-            tgt (list): a list of str, representing tokens;
+            example (dict): a dict of field value, ex. src, tgt;
             is_train (bool): Indicate if src/tgt is training data;
             stats (TransformStatistics): a statistic object.
         """
@@ -137,21 +136,19 @@ class TransformPipe(Transform):
             tgt_specials.update(tgt_specials)
         return (src_specials, tgt_specials)
 
-    def apply(self, src, tgt, is_train=False, **kwargs):
-        """Apply transform pipe to `src` & `tgt`.
+    def apply(self, example, is_train=False, **kwargs):
+        """Apply transform pipe to `example`.
 
         Args:
-            src (list): a list of str, representing tokens;
-            tgt (list): a list of str, representing tokens;
+            example (dict): a dict of field value, ex. src, tgt.
 
         """
-        item = (src, tgt)
         for transform in self.transforms:
-            item = transform.apply(
-                *item, is_train=is_train, stats=self.statistics, **kwargs)
-            if item is None:
+            example = transform.apply(
+                example, is_train=is_train, stats=self.statistics, **kwargs)
+            if example is None:
                 break
-        return item
+        return example
 
     def stats(self):
         """Return statistic message."""

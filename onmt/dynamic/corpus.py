@@ -29,7 +29,11 @@ class ParallelCorpus(object):
                 if (i % stride) == offset:
                     sline = sline.decode('utf-8')
                     tline = tline.decode('utf-8')
-                    yield (sline, tline)
+                    example = {
+                        'src': sline,
+                        'tgt': tline
+                    }
+                    yield example
 
     def __repr__(self):
         cls_name = type(self).__name__
@@ -65,16 +69,17 @@ class ParallelCorpusIterator(object):
         self.offset = offset
 
     def _tokenize(self, stream):
-        for (sline, tline) in stream:
-            sline = sline.strip('\n').split()
-            tline = tline.strip('\n').split()
-            yield (sline, tline)
+        for example in stream:
+            src = example['src'].strip('\n').split()
+            tgt = example['tgt'].strip('\n').split()
+            example['src'], example['tgt'] = src, tgt
+            yield example
 
     def _transform(self, stream):
-        for item in stream:
+        for example in stream:
             # item = self.transform.apply(
-            # *item, is_train=self.infinitely, corpus_name=self.cid)
-            item = (*item, self.transform, self.cid)
+            # example, is_train=self.infinitely, corpus_name=self.cid)
+            item = (example, self.transform, self.cid)
             if item is not None:
                 yield item
         report_msg = self.transform.stats()
@@ -82,17 +87,17 @@ class ParallelCorpusIterator(object):
             logger.info("Transform statistics for {}:\n{}".format(
                 self.cid, report_msg))
 
-    def _add_index(self, stream, stride=1, offset=0):
+    def _add_index(self, stream):
         for i, item in enumerate(stream):
-            yield (*item, i * stride + offset)
+            item[0]['indices'] = i * self.stride + self.offset
+            yield item
 
     def _iter_corpus(self):
         corpus_stream = self.corpus.load(
             stride=self.stride, offset=self.offset)
         tokenized_corpus = self._tokenize(corpus_stream)
         transformed_corpus = self._transform(tokenized_corpus)
-        indexed_corpus = self._add_index(
-            transformed_corpus, stride=self.stride, offset=self.offset)
+        indexed_corpus = self._add_index(transformed_corpus)
         yield from indexed_corpus
 
     def __iter__(self):
@@ -122,6 +127,7 @@ def build_corpora_iters(corpora, transforms, corpora_info, is_train=False,
 
 def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
     """Save transformed data sample as specified in opts."""
+    from onmt.dynamic.iterator import DatasetAdapter
     corpora = get_corpora(opts, is_train=True)
     if build_vocab:
         counter_src = Counter()
@@ -137,19 +143,16 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
             sample_path, "{}.{}".format(c_name, CorpusName.SAMPLE))
         with open(dest_base + ".src", 'w', encoding="utf-8") as f_src,\
                 open(dest_base + ".tgt", 'w', encoding="utf-8") as f_tgt:
-            for i, example in enumerate(c_iter):
-                src, tgt, transform, cid, index = example
-                maybe_item = transform.apply(
-                    src, tgt, is_train=True, corpus_name=cid)
-                if maybe_item is None:
+            for i, item in enumerate(c_iter):
+                maybe_example = DatasetAdapter._process(item, is_train=True)
+                if maybe_example is None:
                     continue
-                src, tgt = maybe_item
-                # example = [src, tgt, index]
+                src_line, tgt_line = maybe_example['src'], maybe_example['tgt']
                 if build_vocab:
-                    counter_src.update(src)
-                    counter_tgt.update(tgt)
-                f_src.write(" ".join(src) + '\n')
-                f_tgt.write(" ".join(tgt) + '\n')
+                    counter_src.update(src_line.split(' '))
+                    counter_tgt.update(tgt_line.split(' '))
+                f_src.write(src_line + '\n')
+                f_tgt.write(tgt_line + '\n')
                 if i >= n_sample:
                     break
     if build_vocab:

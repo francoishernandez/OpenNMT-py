@@ -23,7 +23,7 @@ class DatasetAdapter(object):
     def _valid_fields(cls, fields):
         """Return valid fields in dict format."""
         return {
-            f_k: [(f_k, f_v)] for f_k, f_v in fields.items()
+            f_k: f_v for f_k, f_v in fields.items()
             if f_k in cls.valid_field_name
         }
 
@@ -47,8 +47,8 @@ class DatasetAdapter(object):
         if 'src_map' in fields and 'alignment' in fields:
             example = _dynamic_dict(
                 example,
-                fields['src'][0][1].base_field,
-                fields['tgt'][0][1].base_field)
+                fields['src'].base_field,
+                fields['tgt'].base_field)
         return example
 
     def _to_examples(self, bucket, is_train=False):

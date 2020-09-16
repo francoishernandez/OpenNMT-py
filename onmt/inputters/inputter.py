@@ -260,27 +260,26 @@ def _build_field_vocab(field, counter, size_multiple=1, **kwargs):
         _pad_vocab_to_multiple(field.vocab, size_multiple)
 
 
-def _load_vocab(vocab_path, name, counters, min_freq=0, with_count=False):
+def _load_vocab(vocab_path, name, counters, min_freq=0):
     """Inplace update `counters`[`name`] with vocab in `vocab_path`.
 
-    Each line of `vocab_path` have a token, possible `with_count`.
-    If not `with_count`, each token will be assigned one so that the order
+    Each line of `vocab_path` have a token, possible with a count.
+    If not with count, each token will be assigned one so that the order
     of counters[name] will be same with `vocab_path`, and the minimum count
     number to be `min_freq` which defaults 0.
     """
     # counters changes in place
-    vocab = _read_vocab_file(vocab_path, name, with_count=with_count)
+    vocab, has_count = _read_vocab_file(vocab_path, name)
     vocab_size = len(vocab)
     logger.info('Loaded %s vocab has %d tokens.' % (name, vocab_size))
-    if not with_count:
+    if not has_count:
         for i, token in enumerate(vocab):
             # keep the order of tokens specified in the vocab file by
             # adding them to the counter with decreasing counting values
             counters[name][token] = vocab_size - i + min_freq
     else:
         for token, count in vocab:
-            count = int(count)
-            counters[name][token] = count
+            counters[name][token] = int(count)
     return vocab, vocab_size
 
 
@@ -456,7 +455,7 @@ def _merge_field_vocabs(src_field, tgt_field, vocab_size, min_freq,
     assert len(src_field.vocab) == len(tgt_field.vocab)
 
 
-def _read_vocab_file(vocab_path, tag, with_count=False):
+def _read_vocab_file(vocab_path, tag):
     """Loads a vocabulary from the given path.
 
     Args:
@@ -464,7 +463,6 @@ def _read_vocab_file(vocab_path, tag, with_count=False):
             Each token should be on a line, may followed with a count number
             seperate by space if `with_count`. No extra whitespace is allowed.
         tag (str): Used for logging which vocab is being read.
-        with_count (bool): if True, each line should be a token with its count.
     """
 
     logger.info("Loading {} vocabulary from {}".format(tag, vocab_path))
@@ -474,7 +472,11 @@ def _read_vocab_file(vocab_path, tag, with_count=False):
             "{} vocabulary not found at {}".format(tag, vocab_path))
     else:
         with codecs.open(vocab_path, 'r', 'utf-8') as f:
-            if with_count:
-                return [line.strip().split(None, 1) for line in f]
+            lines = [line.strip() for line in f if line.strip()]
+            first_line = lines[0].split(None, 1)
+            has_count = (len(first_line) == 2 and first_line[-1].isdigit())
+            if has_count:
+                vocab = [line.split(None, 1) for line in lines]
             else:
-                return [line.strip().split()[0] for line in f if line.strip()]
+                vocab = [line.strip().split()[0] for line in lines]
+            return vocab, has_count

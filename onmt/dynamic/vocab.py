@@ -29,12 +29,12 @@ def build_dynamic_fields(opts, src_specials=None, tgt_specials=None):
 
     _src_vocab, _src_vocab_size = _load_vocab(
         opts.src_vocab, 'src', counters,
-        with_count=True)
+        min_freq=opts.src_words_min_frequency)
 
     if opts.tgt_vocab:
         _tgt_vocab, _tgt_vocab_size = _load_vocab(
             opts.tgt_vocab, 'tgt', counters,
-            with_count=True)
+            min_freq=opts.tgt_words_min_frequency)
     elif opts.share_vocab:
         logger.info("Sharing src vocab to tgt...")
         counters['tgt'] = counters['src']

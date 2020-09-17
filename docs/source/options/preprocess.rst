@@ -1,7 +1,7 @@
-Preprocess
-==========
+Get vocab
+=========
 
 .. argparse::
-    :filename: ../onmt/bin/preprocess.py
+    :filename: ../onmt/dynamic/get_vocab.py
     :func: _get_parser
-    :prog: preprocess.py
+    :prog: get_vocab.py

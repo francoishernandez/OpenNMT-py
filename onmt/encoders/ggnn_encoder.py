@@ -208,12 +208,8 @@ class GGNNEncoder(EncoderBase):
                                           + source_node] = 1
                         source_node = -1
 
-        if torch.cuda.is_available():
-            prop_state = torch.from_numpy(prop_state).float().to("cuda:0")
-            edges = torch.from_numpy(edges).float().to("cuda:0")
-        else:
-            prop_state = torch.from_numpy(prop_state).float()
-            edges = torch.from_numpy(edges).float()
+        prop_state = torch.from_numpy(prop_state).float().to(src.device)
+        edges = torch.from_numpy(edges).float().to(src.device)
 
         for i_step in range(self.n_steps):
             in_states = []

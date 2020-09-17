@@ -40,7 +40,7 @@ def get_vocab_main(opts):
     save_counter(tgt_counter, opts.save_data + '.vocab.tgt')
 
 
-def get_parser():
+def _get_parser():
     parser = DynamicArgumentParser(description='build_vocab.py')
     dynamic_prepare_opts(parser)
     parser.add_argument('--seed', '-seed', type=int, default=-1,
@@ -50,7 +50,7 @@ def get_parser():
 
 
 def main():
-    parser = get_parser()
+    parser = _get_parser()
     opts, unknown = parser.parse_known_args()
     get_vocab_main(opts)
 

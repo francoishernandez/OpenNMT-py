@@ -1,0 +1,11 @@
+# Corpus opts:
+src_vocab: data/ggnnsrcvocab.txt
+tgt_vocab: data/ggnntgtvocab.txt
+data:
+    ggnn:
+        path_src: data/ggnnsrc.txt
+        path_tgt: data/ggnntgt.txt
+        transforms: []
+        weight: 1
+        src_lang: en
+        tgt_lang: fr

@@ -103,8 +103,25 @@ PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
             -copy_attn >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-rm $TMP_OUT_DIR/onmt.vocab*
 rm $TMP_OUT_DIR/onmt.train.check_copy*
+
+echo -n "  [+] Testing NMT training w/ align..."
+PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
+            -data_config ${DATA_DIR}/align_data.yaml \
+            -save_data $TMP_OUT_DIR/onmt.train.check_align \
+            -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
+            -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
+            -src_vocab_size 1000 \
+            -tgt_vocab_size 1000 \
+            -max_generator_batches 0 \
+            -encoder_type transformer -decoder_type transformer \
+            -layers 4 -word_vec_size 16 -rnn_size 16 -heads 2 -transformer_ff 64 \
+            -lambda_align 0.05 -alignment_layer 2 -alignment_heads 0 \
+            -report_every 5 -train_steps 10 >> ${LOG_FILE} 2>&1
+[ "$?" -eq 0 ] || error_exit
+echo "Succeeded" | tee -a ${LOG_FILE}
+rm $TMP_OUT_DIR/onmt.train.check_align*
+rm $TMP_OUT_DIR/onmt.vocab*
 
 echo -n "  [+] Testing Graph Neural Network training..."
 PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \

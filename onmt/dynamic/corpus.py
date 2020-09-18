@@ -7,13 +7,34 @@ from onmt.dynamic.transforms import TransformPipe
 from collections import Counter
 
 
+class File(object):
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        if self.name is None:
+            from itertools import repeat
+            self._file = repeat(None)
+        else:
+            import codecs
+            self._file = codecs.open(self.name, *self.args, **self.kwargs)
+        return self._file
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.name is not None and self._file:
+            self._file.close()
+
+
 class ParallelCorpus(object):
     """A parallel corpus file pair that can be loaded to iterate."""
 
-    def __init__(self, src, tgt):
+    def __init__(self, src, tgt, align=None):
         """Initialize src & tgt side file path."""
         self.src = src
         self.tgt = tgt
+        self.align = align
 
     def load(self, offset=0, stride=1):
         """
@@ -21,11 +42,11 @@ class ParallelCorpus(object):
         `offset` and `stride` allow to iterate only on every
         `stride` example, starting from `offset`.
         """
-        import codecs
-        with codecs.open(self.src, mode='rb') as fs,\
-                codecs.open(self.tgt, mode='rb') as ft:
+        with File(self.src, mode='rb') as fs,\
+                File(self.tgt, mode='rb') as ft,\
+                File(self.align, mode='rb') as fa:
             logger.info(f"Loading {repr(self)}...")
-            for i, (sline, tline) in enumerate(zip(fs, ft)):
+            for i, (sline, tline, align) in enumerate(zip(fs, ft, fa)):
                 if (i % stride) == offset:
                     sline = sline.decode('utf-8')
                     tline = tline.decode('utf-8')
@@ -33,11 +54,14 @@ class ParallelCorpus(object):
                         'src': sline,
                         'tgt': tline
                     }
+                    if align is not None:
+                        example['align'] = align.decode('utf-8')
                     yield example
 
     def __repr__(self):
         cls_name = type(self).__name__
-        return '{}({}, {})'.format(cls_name, self.src, self.tgt)
+        return '{}({}, {}, align={})'.format(
+            cls_name, self.src, self.tgt, self.align)
 
 
 def get_corpora(opts, is_train=False):
@@ -47,12 +71,14 @@ def get_corpora(opts, is_train=False):
             if corpus_id != CorpusName.VALID:
                 corpora_dict[corpus_id] = ParallelCorpus(
                     corpus_dict["path_src"],
-                    corpus_dict["path_tgt"])
+                    corpus_dict["path_tgt"],
+                    corpus_dict["path_align"])
     else:
         if CorpusName.VALID in opts.data.keys():
             corpora_dict[CorpusName.VALID] = ParallelCorpus(
                 opts.data[CorpusName.VALID]["path_src"],
-                opts.data[CorpusName.VALID]["path_tgt"])
+                opts.data[CorpusName.VALID]["path_tgt"],
+                opts.data[CorpusName.VALID]["path_align"])
         else:
             return None
     return corpora_dict
@@ -73,6 +99,8 @@ class ParallelCorpusIterator(object):
             src = example['src'].strip('\n').split()
             tgt = example['tgt'].strip('\n').split()
             example['src'], example['tgt'] = src, tgt
+            if 'align' in example:
+                example['align'] = example['align'].strip('\n').split()
             yield example
 
     def _transform(self, stream):

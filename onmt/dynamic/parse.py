@@ -17,8 +17,14 @@ class DynamicArgumentParser(ArgumentParser):
             # Check path
             path_src = corpus.get('path_src', None)
             path_tgt = corpus.get('path_tgt', None)
+            path_align = corpus.get('path_align', None)
             if path_src is None or path_tgt is None:
                 raise ValueError(f'Corpus {cname} path are required')
+            if path_align is None:
+                if hasattr(opt, 'lambda_align') and opt.lambda_align > 0.0:
+                    raise ValueError(f'Corpus {cname} alignment file path are '
+                                     'required when lambda_align > 0.0')
+                corpus['path_align'] = None
             # Check language
             src_lang = corpus.get('src_lang', None)
             tgt_lang = corpus.get('tgt_lang', None)
@@ -57,4 +63,13 @@ class DynamicArgumentParser(ArgumentParser):
             _transforms = set(corpus['transforms'])
             if len(_transforms) != 0:
                 all_transforms.update(_transforms)
+        if hasattr(opt, 'lambda_align') and opt.lambda_align > 0.0:
+            if not all_transforms.isdisjoint(
+                    {'sentencepiece', 'bpe', 'onmt_tokenize'}):
+                raise ValueError('lambda_align is not compatible with'
+                                 ' on-the-fly tokenization.')
+            if not all_transforms.isdisjoint(
+                    {'tokendrop', 'prefix', 'bart'}):
+                raise ValueError('lambda_align is not compatible yet with'
+                                 ' potentiel token deletion/addition.')
         opt._all_transform = all_transforms

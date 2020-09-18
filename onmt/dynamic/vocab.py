@@ -12,10 +12,12 @@ def _get_dynamic_fields(opts):
     # TODO: support for features & other opts
     src_nfeats = 0
     tgt_nfeats = 0
+    with_align = hasattr(opts, 'lambda_align') and opts.lambda_align > 0.0
     fields = get_fields('text', src_nfeats, tgt_nfeats,
                         dynamic_dict=opts.dynamic_dict,
                         src_truncate=opts.src_seq_length_trunc,
-                        tgt_truncate=opts.tgt_seq_length_trunc)
+                        tgt_truncate=opts.tgt_seq_length_trunc,
+                        with_align=with_align)
 
     return fields
 

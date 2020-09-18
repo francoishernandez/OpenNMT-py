@@ -7,5 +7,5 @@ data:
         path_tgt: data/ggnntgt.txt
         transforms: []
         weight: 1
-        src_lang: en
-        tgt_lang: fr
+        src_lang: xx
+        tgt_lang: en

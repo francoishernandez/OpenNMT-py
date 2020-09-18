@@ -38,7 +38,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-file_type', default='text',
                         choices=['text', 'field'], required=True,
-                        help="""Options for vocabulary creation.
+                        help="""Options for vocabulary extraction.
                                The default is 'text' where the user passes
                                a corpus or a list of corpora files for which
                                they want to create a vocabulary from.

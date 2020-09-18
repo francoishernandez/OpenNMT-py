@@ -191,7 +191,7 @@ rm $TMP_OUT_DIR/trans_sampling
 #
 echo "[+] Doing tools test..."
 echo -n "  [+] Doing create vocabulary test..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} ./tools/create_vocabulary.py \
+PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} ./tools/extract_vocabulary.py \
             -file $TMP_OUT_DIR/onmt.train.check.vocab.pt -file_type field -side src \
             -out_file $TMP_OUT_DIR/vocab.txt >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit

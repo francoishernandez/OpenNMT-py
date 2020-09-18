@@ -20,8 +20,8 @@ max_generator_batches: 0
 accum_count: [3, 6, 12]
 accum_steps: [0, 15000, 30000]
 
-model_dtype: "fp32"
-optim: "adam"
+model_dtype: "fp16"
+optim: "fusedadam"
 learning_rate: 2
 warmup_steps: 6000
 decay_method: "noam"

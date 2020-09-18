@@ -1,7 +1,7 @@
-Get vocab
-=========
+Build Vocab
+===========
 
 .. argparse::
-    :filename: ../onmt/dynamic/get_vocab.py
+    :filename: ../onmt/dynamic/build_vocab.py
     :func: _get_parser
-    :prog: get_vocab.py
+    :prog: build_vocab.py

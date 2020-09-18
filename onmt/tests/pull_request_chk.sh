@@ -60,7 +60,7 @@ echo "Succeeded" | tee -a ${LOG_FILE}
 # Get Vocabulary test
 #
 echo -n "[+] Testing vocabulary building..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/get_vocab.py \
+PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/build_vocab.py \
             -data_config ${DATA_DIR}/data.yaml \
             -save_data $TMP_OUT_DIR/onmt \
             -src_vocab '' \
@@ -190,7 +190,7 @@ rm $TMP_OUT_DIR/trans_sampling
 # Tools test
 #
 echo "[+] Doing tools test..."
-echo -n "  [+] Doing create vocabulary test..."
+echo -n "  [+] Doing extract vocabulary test..."
 PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} ./tools/extract_vocabulary.py \
             -file $TMP_OUT_DIR/onmt.train.check.vocab.pt -file_type field -side src \
             -out_file $TMP_OUT_DIR/vocab.txt >> ${LOG_FILE} 2>&1

@@ -4,9 +4,10 @@ save_data: generated/dynamic.ex0
 overwrite: False
 
 ### vocab:
-src_vocab: examples/subword_share/efcjk_shared_50k.spm-onmt_dynamic.vocab
-src_vocab_size: 60000
-tgt_vocab_size: 60000
+src_vocab: data/vocab-train.src
+tgt_vocab: data/vocab-train.tgt
+src_vocab_size: 32000
+tgt_vocab_size: 32000
 vocab_size_multiple: 8
 src_words_min_frequency: 10
 tgt_words_min_frequency: 10
@@ -14,10 +15,10 @@ share_vocab: True
 
 ### Transform related opts:
 #### Subword
-src_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.model
-tgt_subword_model: examples/subword_share/efcjk_shared_50k.en-fr-zh-ja-ko.spm.model
-subword_nbest: 4
-subword_alpha: 0.1
+src_subword_model: examples/subword.spm.model
+tgt_subword_model: examples/subword.spm.model
+subword_nbest: 1
+subword_alpha: 0.0
 src_subword_type: sentencepiece
 tgt_subword_type: sentencepiece
 onmttok_kwargs: "{'mode': 'aggressive', 'spacer_annotate': True}"
@@ -46,10 +47,10 @@ data:
         transforms: [tokenmask, tokendrop, onmt_tokenize, prefix, filtertoolong]
         weight: 5
         src_lang: en
-        tgt_lang: fr
+        tgt_lang: de
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
         transforms: [onmt_tokenize, prefix]
         src_lang: en
-        tgt_lang: fr
+        tgt_lang: de

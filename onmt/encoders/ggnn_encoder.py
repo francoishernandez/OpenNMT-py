@@ -82,7 +82,6 @@ class GGNNEncoder(EncoderBase):
        src_vocab (int): Path to source vocabulary.(The ggnn uses src_vocab
             during training because the graph is built using edge information
             which requires parsing the input sequence.)
-    
     """
 
     def __init__(self, rnn_type, state_dim, bidir_edges,

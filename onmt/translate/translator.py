@@ -377,7 +377,7 @@ class Translator(object):
                     n_best_preds_align = [" ".join(align) for align
                                           in align_pharaohs]
                     n_best_preds = [
-                        pred + DefaultTokens.ALIGNMENT_SEPERATOR + align
+                        pred + DefaultTokens.ALIGNMENT_SEPARATOR + align
                         for pred, align in zip(
                             n_best_preds, n_best_preds_align)]
                 all_predictions += [n_best_preds]

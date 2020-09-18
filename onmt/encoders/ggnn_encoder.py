@@ -79,7 +79,10 @@ class GGNNEncoder(EncoderBase):
        bridge_extra_node (bool): True indicates only 1st extra node
           (after token listing) should be used for decoder init.
        n_steps (int): Steps to advance graph encoder for stabilization
-       src_vocab (int): Path to source vocabulary
+       src_vocab (int): Path to source vocabulary.(The ggnn uses src_vocab
+            during training because the graph is built using edge information
+            which requires parsing the input sequence.)
+    
     """
 
     def __init__(self, rnn_type, state_dim, bidir_edges,

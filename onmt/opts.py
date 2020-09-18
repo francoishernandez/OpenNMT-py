@@ -134,11 +134,6 @@ def model_opts(parser):
               help='Number of nodes in the graph encoder')
     group.add('--n_steps', '-n_steps', type=int, default=2,
               help='Number of steps to advance graph encoder')
-    # The ggnn uses src_vocab during training because the graph is built
-    # using edge information which requires parsing the input sequence.
-    # group.add('--src_vocab', '-src_vocab', default="",
-    #           help="Path to an existing source vocabulary. Format: "
-    #                "one word per line.")
 
     # Attention options
     group = parser.add_argument_group('Model- Attention')

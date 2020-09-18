@@ -11,7 +11,6 @@ import signal
 import math
 import pickle
 
-# from itertools import cycle
 import torch.distributed
 
 from onmt.utils.misc import set_random_seed
@@ -189,11 +188,9 @@ def batch_producer(generator_to_serve, queue, semaphore, opt):
 
     b = next_batch()
 
-    # for device_id, qs in cycle(enumerate(queues)):
     while True:
         b.dataset = None
-        # Move batch to correspond device_id
-        # batch_to(b, device_id)
+        # Move batch to correspond device_id when consumer iterate
 
         # hack to dodge unpicklable `dict_keys`
         b.fields = list(b.fields)

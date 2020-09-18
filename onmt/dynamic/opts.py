@@ -7,9 +7,6 @@ def data_config_opts(parser):
     """Options related to dynamic data config file."""
     parser.add('-data_config', '--data_config', required=True,
                is_config_file_arg=True, help='data config file path')
-    parser.add('-save_data_config', '--save_data_config', required=False,
-               # is_write_out_config_file_arg=True,
-               help='config file save path')
 
 
 def _dynamic_corpus_opts(parser):
@@ -32,10 +29,10 @@ def _dynamic_vocab_opts(parser):
     group = parser.add_argument_group('vocab')
     group.add('-src_vocab', '--src_vocab', required=True,
               help="Path to an vocabulary file for src(or shard)."
-                   "Format: one word per line.")
+                   "Format: one <word> or <word>\t<count> per line.")
     group.add('-tgt_vocab', '--tgt_vocab',
               help="Path to an vocabulary file for tgt."
-                   "Format: one word per line.")
+                   "Format: one <word> or <word>\t<count> per line.")
 
     group.add('-src_vocab_size', '--src_vocab_size', type=int, default=50000,
               help="Size of the source vocabulary")
@@ -79,7 +76,7 @@ def dynamic_prepare_opts(parser):
     _dynamic_transform_opts(parser)
     parser.add_argument(
         '-n_sample', '--n_sample', type=int, default=-1,
-        help="Show this number of transformed samples.")
+        help="Show this number of transformed samples from each corpus.")
 
 
 def _train_dynamic_data(parser):

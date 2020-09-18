@@ -100,9 +100,6 @@ def train(opt):
 def _get_parser():
     parser = DynamicArgumentParser(description='dynamic_train.py')
     dynamic_train_opts(parser)
-    # opts.config_opts(parser)
-    # opts.model_opts(parser)
-    # opts.train_opts(parser)
     return parser
 
 

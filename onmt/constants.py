@@ -9,8 +9,8 @@ class DefaultTokens(object):
     MASK = '<mask>'
     VOCAB_PAD = 'averyunlikelytoken'
     SENT_FULL_STOPS = [".", "?", "!"]
-    PHRASE_TABLE_SEPERATOR = '|||'
-    ALIGNMENT_SEPERATOR = ' ||| '
+    PHRASE_TABLE_SEPARATOR = '|||'
+    ALIGNMENT_SEPARATOR = ' ||| '
 
 
 class CorpusName(object):

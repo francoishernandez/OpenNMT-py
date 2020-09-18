@@ -9,7 +9,7 @@ from onmt.inputters.inputter import get_fields, _load_vocab, \
 
 
 def _get_dynamic_fields(opts):
-    # TODO: support for features & other opts
+    # NOTE: not support nfeats > 0 yet
     src_nfeats = 0
     tgt_nfeats = 0
     with_align = hasattr(opts, 'lambda_align') and opts.lambda_align > 0.0

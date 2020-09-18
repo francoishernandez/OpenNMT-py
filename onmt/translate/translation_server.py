@@ -761,7 +761,7 @@ class ServerModel(object):
         align = None
         if self.opt.report_align:
             # output contain alignment
-            sequence, align = sequence.split(DefaultTokens.ALIGNMENT_SEPERATOR)
+            sequence, align = sequence.split(DefaultTokens.ALIGNMENT_SEPARATOR)
             if align != '':
                 align = self.maybe_convert_align(src, sequence, align)
         sequence = self.maybe_detokenize(sequence, side)

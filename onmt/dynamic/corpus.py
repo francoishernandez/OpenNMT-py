@@ -105,6 +105,7 @@ class ParallelCorpusIterator(object):
 
     def _transform(self, stream):
         for example in stream:
+            # NOTE: moved to DatasetAdapter._process method in iterator.py
             # item = self.transform.apply(
             # example, is_train=self.infinitely, corpus_name=self.cid)
             item = (example, self.transform, self.cid)

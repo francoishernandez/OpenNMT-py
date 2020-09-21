@@ -15,11 +15,11 @@ class FilterTooLongTransform(Transform):
     @classmethod
     def add_options(cls, parser):
         """Avalilable options relate to this Transform."""
-        group = parser.add_argument_group('Transform/Filter')
-        group.add('--src_seq_length', '-src_seq_length', type=int, default=200,
-                  help="Maximum source sequence length")
-        group.add('--tgt_seq_length', '-tgt_seq_length', type=int, default=200,
-                  help="Maximum target sequence length")
+        group = parser.add_argument_group("Transform/Filter")
+        group.add("--src_seq_length", "-src_seq_length", type=int, default=200,
+                  help="Maximum source sequence length.")
+        group.add("--tgt_seq_length", "-tgt_seq_length", type=int, default=200,
+                  help="Maximum target sequence length.")
 
     def apply(self, example, is_train=False, stats=None, **kwargs):
         """Return None if too long else return as is."""

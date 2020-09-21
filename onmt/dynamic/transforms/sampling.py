@@ -38,7 +38,10 @@ class HammingDistanceSampling(object):
 
 @register_transform(name='switchout')
 class SwitchOutTransform(Transform, HammingDistanceSampling):
-    """SwitchOut."""
+    """
+    SwitchOut.
+    :cite:`DBLP:journals/corr/abs-1808-07512`
+    """
 
     def __init__(self, opts):
         super().__init__(opts)
@@ -53,11 +56,12 @@ class SwitchOutTransform(Transform, HammingDistanceSampling):
     @classmethod
     def add_options(cls, parser):
         """Avalilable options relate to this Transform."""
-        group = parser.add_argument_group('Transform/SwitchOut')
-        group.add('-switchout_temperature', '--switchout_temperature',
+        group = parser.add_argument_group("Transform/SwitchOut")
+        group.add("-switchout_temperature", "--switchout_temperature",
                   type=float, default=1.0,
-                  help="sampling temperature for switchout. tau^(-1) in paper."
-                  "Smaller value makes data more diverse.")
+                  help="Sampling temperature for SwitchOut. tau^(-1) "
+                       "in :cite:`DBLP:journals/corr/abs-1808-07512`. "
+                       "Smaller value makes data more diverse.")
 
     def _switchout(self, tokens, vocab, stats=None):
         assert vocab is not None, "vocab can not be None for SwitchOut."

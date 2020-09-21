@@ -7,10 +7,11 @@ from onmt.models.sru import CheckSRU
 
 
 def config_opts(parser):
-    parser.add('-config', '--config', required=False,
+    group = parser.add_argument_group("Configuration")
+    group.add('-config', '--config', required=False,
                is_config_file_arg=True,
                help='Path of the main YAML config file.')
-    parser.add('-save_config', '--save_config', required=False,
+    group.add('-save_config', '--save_config', required=False,
                is_write_out_config_file_arg=True,
                help='Path where to save the config.')
 

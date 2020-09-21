@@ -1,5 +1,7 @@
 # FAQ
 
+All the example YAML configurations are partial. To get an overview of what this YAML configuration is you can start by reading the [Quickstart](https://opennmt.net/OpenNMT-py/quickstart.html) section.
+
 ## How do I use Pretrained embeddings (e.g. GloVe)?
 
 This is handled in the initial steps of the `onmt_train` execution.
@@ -147,39 +149,91 @@ Bear in mind that your models must share the same target vocabulary.
 
 ## How can I weight different corpora at training?
 
-### Preprocessing
+This is naturally embedded in the data configuration format introduced in OpenNMT-py 2.0. Each entry of the `data` configuration will have its own *weight*. When building batches, we'll sequentially take *weight* example from each corpus.
 
-We introduced `-train_ids` which is a list of IDs that will be given to the preprocessed shards.
+**Note**: don't worry about batch homogeneity/heterogeneity, the pooling mechanism is here for that reason. Instead of building batches one at a time, we will load `pool_factor` of batches worth of examples, sort them by length, build batches and then yield them in a random order.
 
-E.g. we have two corpora : `parallel.en` and  `parallel.de` + `from_backtranslation.en` `from_backtranslation.de`, we can pass the following in the `preprocess.py` command:
+### Example
 
-```shell
+In the following example, we will sequentially sample 7 examples from *corpus_1*, and 3 examples from *corpus_2*, and so on:
+
+```yaml
+# <your_config>.yaml
+
 ...
--train_src parallel.en from_backtranslation.en \
--train_tgt parallel.de from_backtranslation.de \
--train_ids A B \
--save_data my_data \
+
+# Corpus opts:
+data:
+    corpus_1:
+        path_src: toy-ende/src-train1.txt
+        path_tgt: toy-ende/tgt-train1.txt
+        transforms: []
+        weight: 7
+        src_lang: en
+        tgt_lang: de
+    corpus_2:
+        path_src: toy-ende/src-train1.txt
+        path_tgt: toy-ende/tgt-train1.txt
+        transforms: []
+        weight: 3
+        src_lang: en
+        tgt_lang: de
+    valid:
+        path_src: toy-ende/src-val.txt
+        path_tgt: toy-ende/tgt-val.txt
+        transforms: []
+        src_lang: en
+        tgt_lang: de
 ...
+
 ```
 
-and it will dump `my_data.train_A.X.pt` based on `parallel.en`//`parallel.de` and `my_data.train_B.X.pt` based on `from_backtranslation.en`//`from_backtranslation.de`.
+## How can I apply on-the-fly tokenization and subword regularization when training?
 
-### Training
+This is naturally embedded in the data configuration format introduced in OpenNMT-py 2.0. Each entry of the `data` configuration will have its own *transforms*. *transforms* basically is a list of functions that will be applied sequentially to the examples when read from file.
 
-We introduced `-data_ids` based on the same principle as above, as well as `-data_weights`, which is the list of the weight each corpus should have.
-E.g.
+### Example
 
-```shell
+This example applies sentencepiece tokenization with `pyonmttok`, with `nbest=20` and `alpha=0.1`.
+
+```yaml
+# <your_config>.yaml
+
 ...
--data my_data \
--data_ids A B \
--data_weights 1 7 \
+
+# Tokenization options
+src_subword_type: sentencepiece
+src_subword_model: examples/subword.spm.model
+tgt_subword_type: sentencepiece
+tgt_subword_model: examples/subword.spm.model
+
+# Number of candidates for SentencePiece sampling
+subword_nbest: 20
+# Smoothing parameter for SentencePiece sampling
+subword_alpha: 0.1
+# Specific arguments for pyonmttok
+onmttok_kwargs: "{'mode': 'none', 'spacer_annotate': True}"
+
+# Corpus opts:
+data:
+    corpus_1:
+        path_src: toy-ende/src-train1.txt
+        path_tgt: toy-ende/tgt-train1.txt
+        transforms: [onmt_tokenize]
+        weight: 7
+        src_lang: en
+        tgt_lang: de
+    valid:
+        path_src: toy-ende/src-val.txt
+        path_tgt: toy-ende/tgt-val.txt
+        transforms: [onmt_tokenize]
+        src_lang: en
+        tgt_lang: de
 ...
+
 ```
 
-will mean that we'll look for `my_data.train_A.*.pt` and `my_data.train_B.*.pt`, and that when building batches, we'll take 1 example from corpus A, then 7 examples from corpus B, and so on.
-
-**Warning**: This means that we'll load as many shards as we have `-data_ids`, in order to produce batches containing data from every corpus. It may be a good idea to reduce the `-shard_size` at preprocessing.
+Other tokenization methods and transforms are readily available. See the dedicated docs for more details.
 
 ## Can I get word alignment while translating?
 

@@ -1,6 +1,6 @@
 # FAQ
 
-All the example YAML configurations are partial. To get an overview of what this YAML configuration is you can start by reading the [Quickstart](https://opennmt.net/OpenNMT-py/quickstart.html) section.
+All the example YAML configurations are partial. To get an overview of what this YAML configuration is you can start by reading the [Quickstart](quickstart) section.
 
 ## How do I use Pretrained embeddings (e.g. GloVe)?
 

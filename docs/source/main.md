@@ -23,7 +23,9 @@ python setup.py install
 pip install -r requirements.opt.txt
 ```
 
-And you are ready to go! Take a look at the [quickstart](quickstart) to familiarize yourself with the main training workflow.
+And you are ready to go!
+
+Take a look at the [quickstart](quickstart) to familiarize yourself with the main training workflow.
 
 ## Citation
 

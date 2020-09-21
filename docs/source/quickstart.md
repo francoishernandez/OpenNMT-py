@@ -26,7 +26,7 @@ The data consists of parallel source (`src`) and target (`tgt`) data containing 
 * `src-val.txt`
 * `tgt-val.txt`
 
-Validation files are required and used to evaluate the convergence of the training. It usually contains no more than 5k sentences.
+Validation files are used to evaluate the convergence of the training. It usually contains no more than 5k sentences.
 
 ```text
 $ head -n 3 toy_ende/src-train.txt
@@ -41,7 +41,7 @@ We need to build a **YAML configuration file** to specify the data that will be 
 # toy_en_de.yaml
 
 ## Where the vocab(s) will be written
-save_data: toy-ende/run/
+save_data: toy-ende/run/example
 # Prevent overwriting existing files in the folder
 overwrite: False
 
@@ -69,9 +69,9 @@ From this configuration, we can build the vocab(s), that will be necessary to tr
 onmt_build_vocab -config toy_en_de.yaml -n_sample 10000
 ```
 
-Notes:
+**Notes**:
 - `-n_sample` is required here -- it represents the number of lines sampled from each corpus to build the vocab.
-- This configuration is the simplest possible, without any tokenization or other transforms. See [other example configurations](https://github.com/OpenNMT/OpenNMT-py/tree/master/config) for more complex pipelines.
+- This configuration is the simplest possible, without any tokenization or other *transforms*. See [other example configurations](https://github.com/OpenNMT/OpenNMT-py/tree/master/config) for more complex pipelines.
 
 
 ### Step 2: Train the model
@@ -107,9 +107,9 @@ Then you can simply run:
 onmt_train -config toy_en_de.yaml
 ```
 
-This configuration will run the default model, which consists of a 2-layer LSTM with 500 hidden units on both the encoder and decoder.
+This configuration will run the default model, which consists of a 2-layer LSTM with 500 hidden units on both the encoder and decoder. It will run on a single GPU (`world_size 1` & `gpu_ranks [0]`).
 
-For more advanded models and parameters, see [other example configurations](https://github.com/OpenNMT/OpenNMT-py/tree/master/config).
+For more advanded models and parameters, see [other example configurations](https://github.com/OpenNMT/OpenNMT-py/tree/master/config) or the [FAQ](FAQ).
 
 ### Step 3: Translate
 
@@ -119,6 +119,6 @@ onmt_translate -model toy-ende/run/model_step_1000.pt -src toy-ende/src-test.txt
 
 Now you have a model which you can use to predict on new data. We do this by running beam search. This will output predictions into `toy-ende/pred_1000.txt`.
 
-Note:
+**Note**:
 
 The predictions are going to be quite terrible, as the demo dataset is small. Try running on some larger datasets! For example you can download millions of parallel sentences for [translation](http://www.statmt.org/wmt16/translation-task.html) or [summarization](https://github.com/harvardnlp/sent-summary).

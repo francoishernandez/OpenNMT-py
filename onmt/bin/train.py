@@ -64,7 +64,8 @@ def prepare_embeddings(opt, fields):
                 opt.tgt_embeddings, skip_lines,
                 filter_set=dec_vocab.stoi
             )
-            logger.info("\tFound {} total vectors in file".format(total_vec_count))
+            logger.info(
+                "\tFound {} total vectors in file".format(total_vec_count))
         else:
             tgt_vectors = None
     logger.info("After filtering to vectors in vocab:")
@@ -112,7 +113,6 @@ def prepare_fields_transforms(opt):
 
     # maybe do stuff for pretrained embeddings
     prepare_embeddings(opt, fields)
-
 
     transforms = make_transforms(opt, transforms_cls, fields)
     save_transforms(opt, transforms)

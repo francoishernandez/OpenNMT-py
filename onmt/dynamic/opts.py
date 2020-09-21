@@ -58,7 +58,6 @@ def _dynamic_vocab_opts(parser):
               choices=["GloVe", "word2vec"],
               help="Type of embeddings file.")
 
-
     # Truncation options, for text corpus
     group = parser.add_argument_group('Pruning')
     group.add('--src_seq_length_trunc', '-src_seq_length_trunc',

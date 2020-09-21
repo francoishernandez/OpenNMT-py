@@ -2,70 +2,56 @@
 
 ## How do I use Pretrained embeddings (e.g. GloVe)?
 
-Using vocabularies from OpenNMT-py preprocessing outputs, `embeddings_to_torch.py` to generate encoder and decoder embeddings initialized with GloVe's values.
+This is handled in the initial steps of the `onmt_train` execution.
 
-the script is a slightly modified version of ylhsieh's one2.
-
-Usage:
-
-```shell
-embeddings_to_torch.py [-h] [-emb_file_both EMB_FILE_BOTH]
-                       [-emb_file_enc EMB_FILE_ENC]
-                       [-emb_file_dec EMB_FILE_DEC] -output_file
-                       OUTPUT_FILE -dict_file DICT_FILE [-verbose]
-                       [-skip_lines SKIP_LINES]
-                       [-type {GloVe,word2vec}]
-```
-
-Run embeddings_to_torch.py -h for more usagecomplete info.
+Pretrained embeddings can be configured in the main YAML configuration file.
 
 ### Example
 
 1. Get GloVe files:
 
-    ```shell
-    mkdir "glove_dir"
-    wget http://nlp.stanford.edu/data/glove.6B.zip
-    unzip glove.6B.zip -d "glove_dir"
-    ```
+```bash
+mkdir "glove_dir"
+wget http://nlp.stanford.edu/data/glove.6B.zip
+unzip glove.6B.zip -d "glove_dir"
+```
+2. Adapt the configuration:
 
-2. Prepare data:
+```yaml
+# <your_config>.yaml
 
-    ```shell
-    onmt_preprocess \
-    -train_src data/train.src.txt \
-    -train_tgt data/train.tgt.txt \
-    -valid_src data/valid.src.txt \
-    -valid_tgt data/valid.tgt.txt \
-    -save_data data/data
-    ```
+<Your data config...>
 
-3. Prepare embeddings:
+...
 
-    ```shell
-    ./tools/embeddings_to_torch.py -emb_file_both "glove_dir/glove.6B.100d.txt" \
-    -dict_file "data/data.vocab.pt" \
-    -output_file "data/embeddings"
-    ```
+# this means embeddings will be used for both encoder and decoder sides
+both_embeddings: glove_dir/glove.6B.100d.txt
+# to set src and tgt embeddings separately:
+# src_embeddings: ...
+# tgt_embeddings: ...
 
-4. Train using pre-trained embeddings:
+# supported types: GloVe, word2vec
+embeddings_type: "GloVe"
 
-    ```shell
-    onmt_train -save_model data/model \
-               -batch_size 64 \
-               -layers 2 \
-               -rnn_size 200 \
-               -word_vec_size 100 \
-               -pre_word_vecs_enc "data/embeddings.enc.pt" \
-               -pre_word_vecs_dec "data/embeddings.dec.pt" \
-               -data data/data
-    ```
+# word_vec_size need to match with the pretrained embeddings dimensions
+word_vec_size: 100
+
+```
+
+3. Train:
+
+```bash
+onmt_train -config <your_config>.yaml
+```
+
+Notes:
+- the matched embeddings will be saved at `<save_data>.enc_embeddings.pt` and `<save_data>.dec_embeddings.pt`;
+- additional flags `fix_word_vecs_enc` and `fix_word_vecs_dec` are available to freeze the embeddings.
 
 ## How do I use the Transformer model?
 
 The transformer model is very sensitive to hyperparameters. To run it
-effectively you need to set a bunch of different options that mimic the Google
-setup. We have confirmed the following configuration can replicate their WMT results.
+effectively you need to set a bunch of different options that mimic the [Google](https://arxiv.org/abs/1706.03762) setup. We have confirmed the following configuration can replicate their WMT results.
 
 ```yaml
 <data configuration>
@@ -86,7 +72,7 @@ batch_type: "tokens"
 batch_size: 4096
 valid_batch_size: 8
 max_generator_batches: 2
-accum_count: [2]
+accum_count: [4]
 accum_steps: [0]
 
 # Optimization
@@ -117,12 +103,13 @@ dropout: [0.1]
 attention_dropout: [0.1]
 ```
 
-Here are what each of the parameters mean:
+Here are what the most important parameters mean:
 
-* `param_init_glorot` `-param_init 0`: correct initialization of parameters
-* `position_encoding`: add sinusoidal position encoding to each embedding
-* `optim adam`, `decay_method noam`, `warmup_steps 8000`: use special learning rate.
-* `batch_type tokens`, `normalization tokens`, `accum_count 4`: batch and normalize based on number of tokens and not sentences. Compute gradients based on four batches.
+* `param_init_glorot` & `param_init 0`: correct initialization of parameters;
+* `position_encoding`: add sinusoidal position encoding to each embedding;
+* `optim adam`, `decay_method noam`, `warmup_steps 8000`: use special learning rate;
+* `batch_type tokens`, `normalization tokens`: batch and normalize based on number of tokens and not sentences;
+* `accum_count 4`: compute gradients based on four batches;
 * `label_smoothing 0.1`: use label smoothing loss.
 
 ## Do you support multi-gpu?
@@ -133,23 +120,29 @@ If you want to use GPU id 1 and 3 of your OS, you will need to `export CUDA_VISI
 
 Both `-world_size` and `-gpu_ranks` need to be set. E.g. `-world_size 4 -gpu_ranks 0 1 2 3` will use 4 GPU on this node only.
 
+**Warning - Deprecated**
+
+Multi-node distributed training is not properly implemented in OpenNMT-py 2.0 yet.
+
 If you want to use 2 nodes with 2 GPU each, you need to set `-master_ip` and `-master_port`, and
 
 * `-world_size 4 -gpu_ranks 0 1`: on the first node
 * `-world_size 4 -gpu_ranks 2 3`: on the second node
 * `-accum_count 2`: This will accumulate over 2 batches before updating parameters.
 
-if you use a regular network card (1 Gbps) then we suggest to use a higher `-accum_count` to minimize the inter-node communication.
+If you use a regular network card (1 Gbps) then we suggest to use a higher `-accum_count` to minimize the inter-node communication.
 
 **Note:**
 
-When training on several GPUs, you can't have them in 'Exclusive' compute mode (`nvidia-smi -c 3`).
+In the legacy version, when training on several GPUs, you couldn't have them in 'Exclusive' compute mode (`nvidia-smi -c 3`).
 
-The multi-gpu setup relies on a Producer/Consumer setup. This setup means there will be `2<n_gpu> + 1` processes spawned, with 2 processes per GPU, one for model training and one (Consumer) that hosts a `Queue` of batches that will be processed next. The additional process is the Producer, creating batches and sending them to the Consumers. This setup is beneficial for both wall time and memory, since it loads data shards 'in advance', and does not require to load it for each GPU process.
+The multi-gpu setup relied on a Producer/Consumer setup. This setup means there will be `2<n_gpu> + 1` processes spawned, with 2 processes per GPU, one for model training and one (Consumer) that hosts a `Queue` of batches that will be processed next. The additional process is the Producer, creating batches and sending them to the Consumers. This setup is beneficial for both wall time and memory, since it loads data shards 'in advance', and does not require to load it for each GPU process.
+
+The new codebase allows GPUs to be in exclusive mode, because batches are moved to the device later in the process. Hence, there is no 'producer' process on each GPU.
 
 ## How can I ensemble Models at inference?
 
-You can specify several models in the translate.py command line: -model model1_seed1 model2_seed2
+You can specify several models in the `onmt_translate` command line: `-model model1_seed1 model2_seed2`
 Bear in mind that your models must share the same target vocabulary.
 
 ## How can I weight different corpora at training?

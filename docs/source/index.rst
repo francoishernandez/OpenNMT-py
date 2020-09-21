@@ -47,6 +47,7 @@ Contents
       :caption: Legacy
       :maxdepth: 2
 
+      legacy/FAQ.md
       legacy/im2text.md
       legacy/speech2text.md
       legacy/vid2text.rst

@@ -74,7 +74,8 @@ def dynamic_prepare_opts(parser):
     _dynamic_corpus_opts(parser)
     _dynamic_vocab_opts(parser)
     _dynamic_transform_opts(parser)
-    parser.add_argument(
+    group = parser.add_argument_group("Dataset sampling")
+    group.add_argument(
         "-n_sample", "--n_sample", type=int, default=-1,
         help="Sample this amount of examples samples from each corpus.")
 

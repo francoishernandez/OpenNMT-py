@@ -8,10 +8,11 @@ from onmt.models.sru import CheckSRU
 
 def config_opts(parser):
     parser.add('-config', '--config', required=False,
-               is_config_file_arg=True, help='config file path')
+               is_config_file_arg=True,
+               help='Path of the main YAML config file.')
     parser.add('-save_config', '--save_config', required=False,
                is_write_out_config_file_arg=True,
-               help='config file save path')
+               help='Path where to save the config.')
 
 
 def _add_logging_opts(parser, is_train=True):

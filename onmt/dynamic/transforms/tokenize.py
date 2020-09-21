@@ -21,18 +21,19 @@ class TokenizerTransform(Transform):
         global _COMMON_OPT_ADDED
         if _COMMON_OPT_ADDED is True:
             return
-        group = parser.add_argument_group('Transform/Subword/Common')
-        group.add('-src_subword_model', '--src_subword_model',
+        group = parser.add_argument_group("Transform/Subword/Common")
+        group.add("-src_subword_model", "--src_subword_model",
                   help="Path of subword model for src (or shared).")
-        group.add('-tgt_subword_model', '--tgt_subword_model',
+        group.add("-tgt_subword_model", "--tgt_subword_model",
                   help="Path of subword model for tgt.")
 
-        group.add('-subword_nbest', '--subword_nbest', type=int, default=1,
-                  help="No of (n_best) candidate in subword regularization."
-                  "Valid for unigram sampling, invalid for BPE-dropout.")
-        group.add('-subword_alpha', '--subword_alpha', type=float, default=0,
-                  help="Smoothing param for sentencepiece unigram sampling,"
-                  "and dropout probability for BPE-dropout.")
+        group.add("-subword_nbest", "--subword_nbest", type=int, default=1,
+                  help="Number of candidates in subword regularization. "
+                       "Valid for unigram sampling, "
+                       "invalid for BPE-dropout.")
+        group.add("-subword_alpha", "--subword_alpha", type=float, default=0,
+                  help="Smoothing parameter for sentencepiece unigram "
+                       "sampling, and dropout probability for BPE-dropout.")
         _COMMON_OPT_ADDED = True
 
     def _parse_opts(self):
@@ -195,19 +196,20 @@ class ONMTTokenizerTransform(TokenizerTransform):
     def add_options(cls, parser):
         """Avalilable options relate to Subword."""
         super().add_options(parser)
-        group = parser.add_argument_group('Transform/Subword/ONMTTOK')
-        group.add('-src_subword_type', '--src_subword_type',
-                  type=str, default='none',
-                  choices=['none', 'sentencepiece', 'bpe'],
-                  help="Type of subword model for src (or shared) in onmttok.")
-        group.add('-tgt_subword_type', '--tgt_subword_type',
-                  type=str, default='none',
-                  choices=['none', 'sentencepiece', 'bpe'],
-                  help="Type of subword model for tgt in onmttok.")
-        group.add('-onmttok_kwargs', '--onmttok_kwargs', type=str,
+        group = parser.add_argument_group("Transform/Subword/ONMTTOK")
+        group.add("-src_subword_type", "--src_subword_type",
+                  type=str, default="none",
+                  choices=["none", "sentencepiece", "bpe"],
+                  help="Type of subword model for src (or shared) "
+                       "in pyonmttok.")
+        group.add("-tgt_subword_type", "--tgt_subword_type",
+                  type=str, default="none",
+                  choices=["none", "sentencepiece", "bpe"],
+                  help="Type of subword model for tgt in  pyonmttok.")
+        group.add("-onmttok_kwargs", "--onmttok_kwargs", type=str,
                   default="{'mode': 'none'}",
-                  help="Accept any OpenNMT Tokenizer's options in dict string,"
-                  "except subword related options listed earlier.")
+                  help="Accept any OpenNMT Tokenizer's options in dict "
+                       "string, except subword related options.")
 
     def _set_subword_opts(self):
         """Set all options relate to subword for OpenNMT/Tokenizer."""

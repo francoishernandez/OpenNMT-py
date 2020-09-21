@@ -45,8 +45,8 @@ def _get_parser():
     dynamic_prepare_opts(parser)
     group = parser.add_argument_group("Reproducibility")
     group.add_argument('--seed', '-seed', type=int, default=-1,
-                        help="Random seed used for the experiments "
-                        "reproducibility.")
+                       help="Set random seed used for better "
+                            "reproducibility between experiments.")
     return parser
 
 

@@ -196,7 +196,7 @@ class ONMTTokenizerTransform(TokenizerTransform):
     def add_options(cls, parser):
         """Avalilable options relate to Subword."""
         super().add_options(parser)
-        group = parser.add_argument_group("Transform/Subword/ONMTTOK")
+        group = parser.add_argument_group("Transform/Subword/pyonmttok")
         group.add("-src_subword_type", "--src_subword_type",
                   type=str, default="none",
                   choices=["none", "sentencepiece", "bpe"],

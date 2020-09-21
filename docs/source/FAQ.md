@@ -169,21 +169,15 @@ data:
         path_tgt: toy-ende/tgt-train1.txt
         transforms: []
         weight: 7
-        src_lang: en
-        tgt_lang: de
     corpus_2:
         path_src: toy-ende/src-train1.txt
         path_tgt: toy-ende/tgt-train1.txt
         transforms: []
         weight: 3
-        src_lang: en
-        tgt_lang: de
     valid:
         path_src: toy-ende/src-val.txt
         path_tgt: toy-ende/tgt-val.txt
         transforms: []
-        src_lang: en
-        tgt_lang: de
 ...
 
 ```
@@ -220,15 +214,11 @@ data:
         path_src: toy-ende/src-train1.txt
         path_tgt: toy-ende/tgt-train1.txt
         transforms: [onmt_tokenize]
-        weight: 7
-        src_lang: en
-        tgt_lang: de
+        weight: 1
     valid:
         path_src: toy-ende/src-val.txt
         path_tgt: toy-ende/tgt-val.txt
         transforms: [onmt_tokenize]
-        src_lang: en
-        tgt_lang: de
 ...
 
 ```
@@ -269,15 +259,11 @@ data:
         # src - tgt alignments in pharaoh format
         path_align: toy-ende/src-tgt.align
         transforms: []
-        weight: 7
-        src_lang: en
-        tgt_lang: de
+        weight: 1
     valid:
         path_src: toy-ende/src-val.txt
         path_tgt: toy-ende/tgt-val.txt
         transforms: []
-        src_lang: en
-        tgt_lang: de
 
 ...
 ```

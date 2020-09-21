@@ -52,14 +52,10 @@ data:
         path_tgt: toy-ende/tgt-train.txt
         transforms: []
         weight: 1
-        src_lang: en
-        tgt_lang: de
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
         transforms: []
-        src_lang: en
-        tgt_lang: de
 ...
 
 ```

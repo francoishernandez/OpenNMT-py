@@ -323,8 +323,8 @@ class BARTNoiseTransform(Transform):
         group.add("--insert_ratio", "-insert_ratio", type=float, default=0.0,
                   help="Insert this percentage of additional random tokens.")
         group.add("--random_ratio", "-random_ratio", type=float, default=0.0,
-                  help="Instead of using {}, use random token this often.".format(
-                    DefaultTokens.MASK))
+                  help="Instead of using {}, use random token "
+                       "this often.".format(DefaultTokens.MASK))
 
         group.add("--mask_ratio", "-mask_ratio", type=float, default=0.0,
                   help="Fraction of words/subwords that will be masked.")

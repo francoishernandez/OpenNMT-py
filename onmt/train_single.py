@@ -53,7 +53,7 @@ def _load_checkpoint(opt):
 
 def _load_fields(opt, checkpoint):
     """Load fields from preprocess file/checkpoint."""
-    # should already verified data_config
+    # should already verified data config
     fields = load_fields(opt)
     return fields
 

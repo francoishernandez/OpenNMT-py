@@ -10,7 +10,7 @@ from onmt.inputters.datareader_base import DataReaderBase
 
 
 class TextDataReader(DataReaderBase):
-    def read(self, sequences, side, _dir=None):
+    def read(self, sequences, side):
         """Read text data from disk.
 
         Args:
@@ -18,16 +18,12 @@ class TextDataReader(DataReaderBase):
                 path to text file or iterable of the actual text data.
             side (str): Prefix used in return dict. Usually
                 ``"src"`` or ``"tgt"``.
-            _dir (NoneType): Leave as ``None``. This parameter exists to
-                conform with the :func:`DataReaderBase.read()` signature.
 
         Yields:
             dictionaries whose keys are the names of fields and whose
             values are more or less the result of tokenizing with those
             fields.
         """
-        assert _dir is None or _dir == "", \
-            "Cannot use _dir with TextDataReader."
         if isinstance(sequences, str):
             sequences = DataReaderBase._read_file(sequences)
         for i, seq in enumerate(sequences):

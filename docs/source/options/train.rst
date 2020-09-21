@@ -2,6 +2,6 @@ Train
 =====
 
 .. argparse::
-    :filename: ../onmt/dynamic/train.py
+    :filename: ../onmt/bin/train.py
     :func: _get_parser
     :prog: train.py

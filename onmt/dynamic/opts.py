@@ -3,12 +3,6 @@ from onmt.opts import _train_general_opts, config_opts, model_opts
 from onmt.dynamic.transforms import AVAILABLE_TRANSFORMS
 
 
-def data_config_opts(parser):
-    """Options related to dynamic data config file."""
-    parser.add('-data_config', '--data_config', required=True,
-               is_config_file_arg=True, help='data config file path')
-
-
 def _dynamic_corpus_opts(parser):
     """Options related to training corpus, type: a list of dictionary."""
     group = parser.add_argument_group('Data')
@@ -70,7 +64,7 @@ def _dynamic_transform_opts(parser):
 
 def dynamic_prepare_opts(parser):
     """Options related to data prepare in dynamic mode."""
-    data_config_opts(parser)
+    config_opts(parser)
     _dynamic_corpus_opts(parser)
     _dynamic_vocab_opts(parser)
     _dynamic_transform_opts(parser)
@@ -90,7 +84,6 @@ def dynamic_train_opts(parser):
     # options relate to data preprare
     dynamic_prepare_opts(parser)
     # options relate to train
-    config_opts(parser)
     _train_dynamic_data(parser)
     model_opts(parser)
     _train_general_opts(parser)

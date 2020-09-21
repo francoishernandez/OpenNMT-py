@@ -8,13 +8,13 @@ We propose therefore a alternative mecanism to current dataloader: dynamic data 
 
 ## Quickstart
 
-To train models with this dynamic feature, a `-data_config` yaml file is required. This config file contains all options related to data transfrom, vocabulary and corpora definition, and need to be used through out the trainig. A example setting can be seen at [example](https://github.com/OpenNMT/OpenNMT-py/blob/master/examples/onmt.dynamic.data_config.yaml).
+To train models with this dynamic feature, a `-config` yaml file is required. This config file should contains all options related to data transfrom, vocabulary and corpora definition, and need to be used through out the trainig. A example setting can be seen at [example](https://github.com/OpenNMT/OpenNMT-py/blob/master/examples/onmt.dynamic.data_config.yaml).
 
 ### Step 0: Build vocabulary and data config file
 
 As the data is supposed to be dynamicly processed when iterate, we can not build vocabulary automaticly by walking through the corpora as sequences may not be the same token level before/after transform. Therefore, a vocabulary file is required.
 
-To get the needed vocabulary, if [sentencepiece](https://github.com/google/sentencepiece) is used as subword tokenizer, its learned vocab file can be used and feed to [spm_to_vocab](https://github.com/OpenNMT/OpenNMT-py/blob/master/tools/spm_to_vocab.py) to get the vocab file in OpenNMT-py format. While a vocab file for official bpe by [subword-nmt](https://github.com/rsennrich/subword-nmt) can only be get by walking through the bpe tokenized corpora as there is no vocab file generated when learning. We provide also a script [build_vocab.py](https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/dynamic/build_vocab.py) to extract vocabularies from dynamically transformed samples specified in corpus field of `-data_config` yaml file.
+To get the needed vocabulary, if [sentencepiece](https://github.com/google/sentencepiece) is used as subword tokenizer, its learned vocab file can be used and feed to [spm_to_vocab](https://github.com/OpenNMT/OpenNMT-py/blob/master/tools/spm_to_vocab.py) to get the vocab file in OpenNMT-py format. While a vocab file for official bpe by [subword-nmt](https://github.com/rsennrich/subword-nmt) can only be get by walking through the bpe tokenized corpora as there is no vocab file generated when learning. We provide also a script [build_vocab.py](https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/bin/build_vocab.py) to extract vocabularies from dynamically transformed samples specified in corpus field `-data` of `-config` yaml file.
 
 ### Step 1: Preprocess the data
 
@@ -25,10 +25,10 @@ No preprocess step is required for dynamic training.
 To lanch the training, another config file for training related options is required.
 
 ```bash
-python3 OpenNMT-py/onmt/dynamic/train.py -data_config examples/onmt.dynamic.data_config.yaml -config examples/onmt.train.deep8fp16.yaml
+python3 OpenNMT-py/onmt/bin/train.py -config examples/onmt.dynamic.data_config.yaml -config examples/onmt.train.deep8fp16.yaml
 ```
 
-Before the training process, the `*.vocab.pt` together with `*.transform.pt` will be dumpped to `-save_data` with configurations specified in `-data_config` yaml file. We'll also generate transformed samples for verifying the examples that are going to be used in training if specifying `-n_sample`.
+Before the training process, the `*.vocab.pt` together with `*.transform.pt` will be dumpped to `-save_data` with configurations specified in `-config` yaml file. We'll also generate transformed samples for verifying the examples that are going to be used in training if specifying `-n_sample`.
 During training, transform statistics will be reported at the end of each file's iteration. One should keep in mind that, as we process the data online, the more sophisticated transform we use, the more costly for data generation. Therefore, we recommend to only use it with multiprocessor and only apply necessary transforms. However, you can rest assured that using already processed plain text corpora with simple transform like `filteroutlong`, training will not slow down compared to previous binarized mode.
 
 ### Step 3: Translating

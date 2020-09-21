@@ -34,16 +34,16 @@ jobs:
       script:
         - python -m unittest discover
         # test build vocabulary
-        - PYTHONPATH=$PYTHONPATH:. python onmt/dynamic/build_vocab.py -data_config data/data.yaml -save_data /tmp/onmt -src_vocab '' -n_sample 5000 && rm -rf /tmp/sample
+        - PYTHONPATH=$PYTHONPATH:. python onmt/bin/build_vocab.py -config data/data.yaml -save_data /tmp/onmt -src_vocab '' -n_sample 5000 && rm -rf /tmp/sample
 
         # test nmt training
-        - PYTHONPATH=$PYTHONPATH:. python onmt/dynamic/train.py -data_config data/data.yaml -save_data /tmp/onmt.train.check -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -rnn_size 2 -batch_size 10 -word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10
+        - python train.py -config data/data.yaml -save_data /tmp/onmt.train.check -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -rnn_size 2 -batch_size 10 -word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10
         # test nmt training w/copy
-        - PYTHONPATH=$PYTHONPATH:. python onmt/dynamic/train.py -data_config data/data.yaml -save_data /tmp/onmt.train.check_copy -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -rnn_size 2 -batch_size 10 -word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10 -dynamic_dict -copy_attn && rm -rf /tmp/onmt.train.check_copy*.pt
+        - python train.py -config data/data.yaml -save_data /tmp/onmt.train.check_copy -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -rnn_size 2 -batch_size 10 -word_vec_size 5 -report_every 5 -rnn_size 10 -train_steps 10 -dynamic_dict -copy_attn && rm -rf /tmp/onmt.train.check_copy*.pt
         # test nmt training w/align
-        - PYTHONPATH=$PYTHONPATH:. python onmt/dynamic/train.py -data_config data/align_data.yaml -save_data /tmp/onmt.train.check_align -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -max_generator_batches 0 -encoder_type transformer -decoder_type transformer -layers 4 -word_vec_size 16 -rnn_size 16 -heads 2 -transformer_ff 64 -lambda_align 0.05 -alignment_layer 2 -alignment_heads 0 -report_every 5 -train_steps 10 && rm -rf /tmp/onmt.train.check_align*.pt
+        - python train.py -config data/align_data.yaml -save_data /tmp/onmt.train.check_align -src_vocab /tmp/onmt.vocab.src -tgt_vocab /tmp/onmt.vocab.tgt -src_vocab_size 1000 -tgt_vocab_size 1000 -max_generator_batches 0 -encoder_type transformer -decoder_type transformer -layers 4 -word_vec_size 16 -rnn_size 16 -heads 2 -transformer_ff 64 -lambda_align 0.05 -alignment_layer 2 -alignment_heads 0 -report_every 5 -train_steps 10 && rm -rf /tmp/onmt.train.check_align*.pt
         # test Graph neural network training
-        - PYTHONPATH=$PYTHONPATH:. python onmt/dynamic/train.py -data_config data/ggnn_data.yaml -save_data /tmp/onmt.train.check_ggnn -src_seq_length 1000 -tgt_seq_length 30 -dynamic_dict -encoder_type ggnn -layers 2 -decoder_type rnn -rnn_size 256 -learning_rate 0.1 -learning_rate_decay 0.8 -global_attention general -batch_size 32 -word_vec_size 256 -bridge -train_steps 10 -n_edge_types 9 -state_dim 256 -n_steps 10 -n_node 64 && rm -rf /tmp/onmt.train.check_ggnn*.pt
+        - python train.py -config data/ggnn_data.yaml -save_data /tmp/onmt.train.check_ggnn -src_seq_length 1000 -tgt_seq_length 30 -dynamic_dict -encoder_type ggnn -layers 2 -decoder_type rnn -rnn_size 256 -learning_rate 0.1 -learning_rate_decay 0.8 -global_attention general -batch_size 32 -word_vec_size 256 -bridge -train_steps 10 -n_edge_types 9 -state_dim 256 -n_steps 10 -n_node 64 && rm -rf /tmp/onmt.train.check_ggnn*.pt
 
         # test nmt translation
         - head data/src-test.txt > /tmp/src-test.txt; python translate.py -model onmt/tests/test_model.pt -src /tmp/src-test.txt -verbose

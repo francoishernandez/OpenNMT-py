@@ -60,6 +60,8 @@ class BARTNoising(object):
         self.mask_span_distribution = None
         if mask_length == 'span-poisson':
             self.mask_span_distribution = self._make_poisson(poisson_lambda)
+        self.mask_length = mask_length
+        self.poisson_lambda = poisson_lambda
 
     def _make_poisson(self, poisson_lambda):
         lambda_to_the_k = 1
@@ -280,6 +282,27 @@ class BARTNoising(object):
             tokens = self.rolling_noise(tokens, self.rotate_ratio)
         return tokens
 
+    def __repr__(self):
+        cls_name = type(self).__name__
+        kwargs = {}
+        if self.permute_sent_ratio > 0.0:
+            kwargs['permute_sent_ratio'] = self.permute_sent_ratio
+            kwargs['full_stop_token'] = self.full_stop_token
+        if self.insert_ratio > 0.0:
+            kwargs['insert_ratio'] = self.insert_ratio
+        if self.rotate_ratio > 0.0:
+            kwargs['rotate_ratio'] = self.rotate_ratio
+        if self.random_ratio > 0.0:
+            kwargs['random_ratio'] = self.random_ratio
+        if self.mask_ratio > 0.0:
+            kwargs['mask_ratio'] = self.mask_ratio
+            kwargs['mask_length'] = self.mask_length
+            kwargs['poisson_lambda'] = self.poisson_lambda
+            kwargs['replace_length'] = self.replace_length
+        cls_args = ', '.join(
+            [f'{kw}={arg}' for kw, arg in kwargs.items()])
+        return '{}({})'.format(cls_name, cls_args)
+
 
 @register_transform(name='bart')
 class BARTNoiseTransform(Transform):
@@ -345,5 +368,5 @@ class BARTNoiseTransform(Transform):
         return example
 
     def _repr_args(self):
-        """Return str represent key arguments for class."""
-        return ''
+        """Return str represent key arguments for BART."""
+        return repr(self.bart_noise)

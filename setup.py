@@ -37,7 +37,6 @@ setup(
             "onmt_server=onmt.bin.server:main",
             "onmt_train=onmt.bin.train:main",
             "onmt_translate=onmt.bin.translate:main",
-            "onmt_preprocess=onmt.bin.preprocess:main",
             "onmt_release_model=onmt.bin.release_model:main",
             "onmt_average_models=onmt.bin.average_models:main"
         ],

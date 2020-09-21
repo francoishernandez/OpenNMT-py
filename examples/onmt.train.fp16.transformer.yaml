@@ -1,4 +1,4 @@
-# data_config: examples/onmt.dynamic.data_config.yaml
+# data's config: examples/onmt.dynamic.data_config.yaml
 save_model: foo
 keep_checkpoint: 50
 save_checkpoint_steps: 4000

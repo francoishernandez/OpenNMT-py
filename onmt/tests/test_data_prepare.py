@@ -9,19 +9,19 @@ import os
 
 from onmt.dynamic.parse import DynamicArgumentParser
 from onmt.dynamic.opts import dynamic_prepare_opts
-from onmt.dynamic.train import prepare_fields_transforms
+from onmt.bin.train import prepare_fields_transforms
 from onmt.constants import CorpusName
 
 
-SAVE_DATA_PREFIX = 'data/test_preprocess'
+SAVE_DATA_PREFIX = 'data/test_data_prepare'
 
 
 def get_default_opts():
-    parser = DynamicArgumentParser(description='preprocess.py')
+    parser = DynamicArgumentParser(description='data sample prepare')
     dynamic_prepare_opts(parser)
 
     default_opts = [
-        '-data_config', 'data/data.yaml',
+        '-config', 'data/data.yaml',
         '-save_data', SAVE_DATA_PREFIX,
         '-src_vocab', 'data/vocab-train.src',
         '-tgt_vocab', 'data/vocab-train.tgt',

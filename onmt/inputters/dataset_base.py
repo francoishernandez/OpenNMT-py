@@ -92,8 +92,6 @@ class Dataset(TorchtextDataset):
             where ``data_arg`` is passed to the ``read()`` method of the
             reader in ``readers`` at that position. (See the reader object for
             details on the ``Any`` type.)
-        dirs (Iterable[str or NoneType]): A list of directories where
-            data is contained. See the reader object for more details.
         sort_key (Callable[[torchtext.data.Example], Any]): A function
             for determining the value on which data is sorted (i.e. length).
         filter_pred (Callable[[torchtext.data.Example], bool]): A function
@@ -107,13 +105,11 @@ class Dataset(TorchtextDataset):
             predict to copy them.
     """
 
-    def __init__(self, fields, readers, data, dirs, sort_key,
-                 filter_pred=None):
+    def __init__(self, fields, readers, data, sort_key, filter_pred=None):
         self.sort_key = sort_key
         can_copy = 'src_map' in fields and 'alignment' in fields
 
-        read_iters = [r.read(dat[1], dat[0], dir_) for r, dat, dir_
-                      in zip(readers, data, dirs)]
+        read_iters = [r.read(dat[1], dat[0]) for r, dat in zip(readers, data)]
 
         # self.src_vocabs is used in collapse_copy_scores and Translator.py
         self.src_vocabs = []
@@ -155,10 +151,9 @@ class Dataset(TorchtextDataset):
 
     @staticmethod
     def config(fields):
-        readers, data, dirs = [], [], []
+        readers, data = [], []
         for name, field in fields:
             if field["data"] is not None:
                 readers.append(field["reader"])
                 data.append((name, field["data"]))
-                dirs.append(field["dir"])
-        return readers, data, dirs
+        return readers, data

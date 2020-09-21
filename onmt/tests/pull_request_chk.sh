@@ -60,8 +60,8 @@ echo "Succeeded" | tee -a ${LOG_FILE}
 # Get Vocabulary test
 #
 echo -n "[+] Testing vocabulary building..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/build_vocab.py \
-            -data_config ${DATA_DIR}/data.yaml \
+PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/bin/build_vocab.py \
+            -config ${DATA_DIR}/data.yaml \
             -save_data $TMP_OUT_DIR/onmt \
             -src_vocab '' \
             -n_sample 5000 >> ${LOG_FILE} 2>&1
@@ -75,8 +75,8 @@ rm -r $TMP_OUT_DIR/sample
 echo "[+] Doing Training test..."
 
 echo -n "  [+] Testing NMT training..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
-            -data_config ${DATA_DIR}/data.yaml \
+${PYTHON} onmt/bin/train.py \
+            -config ${DATA_DIR}/data.yaml \
             -save_data $TMP_OUT_DIR/onmt.train.check \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
@@ -89,8 +89,8 @@ PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
 echo "Succeeded" | tee -a ${LOG_FILE}
 
 echo -n "  [+] Testing NMT training w/ copy..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
-            -data_config ${DATA_DIR}/data.yaml \
+${PYTHON} onmt/bin/train.py \
+            -config ${DATA_DIR}/data.yaml \
             -save_data $TMP_OUT_DIR/onmt.train.check_copy \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
@@ -106,8 +106,8 @@ echo "Succeeded" | tee -a ${LOG_FILE}
 rm $TMP_OUT_DIR/onmt.train.check_copy*
 
 echo -n "  [+] Testing NMT training w/ align..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
-            -data_config ${DATA_DIR}/align_data.yaml \
+${PYTHON} onmt/bin/train.py \
+            -config ${DATA_DIR}/align_data.yaml \
             -save_data $TMP_OUT_DIR/onmt.train.check_align \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
@@ -124,8 +124,8 @@ rm $TMP_OUT_DIR/onmt.train.check_align*
 rm $TMP_OUT_DIR/onmt.vocab*
 
 echo -n "  [+] Testing Graph Neural Network training..."
-PYTHONPATH=${PROJECT_ROOT}:${PYTHONPATH} ${PYTHON} onmt/dynamic/train.py \
-            -data_config ${DATA_DIR}/ggnn_data.yaml \
+${PYTHON} onmt/bin/train.py \
+            -config ${DATA_DIR}/ggnn_data.yaml \
             -save_data $TMP_OUT_DIR/onmt.train.check_ggnn \
             -src_seq_length 1000 -tgt_seq_length 30 \
             -dynamic_dict \

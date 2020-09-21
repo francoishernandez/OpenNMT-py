@@ -4,8 +4,8 @@ import torch
 
 # import onmt.opts as opts
 from onmt.utils.distributed import ErrorHandler, consumer, batch_producer
-from onmt.utils.misc import set_random_seed, read_embeddings,\
-    calc_vocab_load_stats, convert_to_torch_tensor
+from onmt.utils.misc import set_random_seed
+from onmt.modules.embeddings import prepare_pretrained_embeddings
 from onmt.utils.logging import init_logger, logger
 
 from onmt.train_single import main as single_main, get_train_iter
@@ -21,84 +21,6 @@ from onmt.dynamic.transforms import make_transforms, save_transforms, \
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 
-def prepare_embeddings(opt, fields):
-    if any([opt.both_embeddings is not None,
-            opt.src_embeddings is not None,
-            opt.tgt_embeddings is not None]):
-        vocs = []
-        for side in ['src', 'tgt']:
-            try:
-                vocab = fields[side].base_field.vocab
-            except AttributeError:
-                vocab = fields[side].vocab
-            vocs.append(vocab)
-        enc_vocab, dec_vocab = vocs
-
-    skip_lines = 1 if opt.embeddings_type == "word2vec" else 0
-    if opt.both_embeddings is not None:
-        set_of_src_and_tgt_vocab = \
-            set(enc_vocab.stoi.keys()) | set(dec_vocab.stoi.keys())
-        logger.info("Reading encoder and decoder embeddings from {}".format(
-            opt.both_embeddings))
-        src_vectors, total_vec_count = \
-            read_embeddings(opt.both_embeddings, skip_lines,
-                            set_of_src_and_tgt_vocab)
-        tgt_vectors = src_vectors
-        logger.info("\tFound {} total vectors in file".format(total_vec_count))
-    else:
-        if opt.src_embeddings is not None:
-            logger.info("Reading encoder embeddings from {}".format(
-                opt.src_embeddings))
-            src_vectors, total_vec_count = read_embeddings(
-                opt.src_embeddings, skip_lines,
-                filter_set=enc_vocab.stoi
-            )
-            logger.info("\tFound {} total vectors in file.".format(
-                total_vec_count))
-        else:
-            src_vectors = None
-        if opt.tgt_embeddings is not None:
-            logger.info("Reading decoder embeddings from {}".format(
-                opt.tgt_embeddings))
-            tgt_vectors, total_vec_count = read_embeddings(
-                opt.tgt_embeddings, skip_lines,
-                filter_set=dec_vocab.stoi
-            )
-            logger.info(
-                "\tFound {} total vectors in file".format(total_vec_count))
-        else:
-            tgt_vectors = None
-    logger.info("After filtering to vectors in vocab:")
-    if opt.src_embeddings is not None or opt.both_embeddings is not None:
-        logger.info("\t* enc: %d match, %d missing, (%.2f%%)"
-                    % calc_vocab_load_stats(enc_vocab, src_vectors))
-    if opt.tgt_embeddings is not None or opt.both_embeddings is not None:
-        logger.info("\t* dec: %d match, %d missing, (%.2f%%)"
-                    % calc_vocab_load_stats(dec_vocab, tgt_vectors))
-
-    # Write to file
-    enc_output_file = opt.save_data + ".enc_embeddings.pt"
-    dec_output_file = opt.save_data + ".dec_embeddings.pt"
-    if opt.src_embeddings is not None or opt.both_embeddings is not None:
-        logger.info("\nSaving encoder embeddings as:\n\t* enc: %s"
-                    % enc_output_file)
-        torch.save(
-            convert_to_torch_tensor(src_vectors, enc_vocab),
-            enc_output_file
-        )
-        # set the opt in place
-        opt.pre_word_vecs_enc = enc_output_file
-    if opt.tgt_embeddings is not None or opt.both_embeddings is not None:
-        logger.info("\nSaving decoder embeddings as:\n\t* dec: %s"
-                    % dec_output_file)
-        torch.save(
-            convert_to_torch_tensor(tgt_vectors, dec_vocab),
-            dec_output_file
-        )
-        # set the opt in place
-        opt.pre_word_vecs_dec = dec_output_file
-
-
 def prepare_fields_transforms(opt):
     """Prepare or dump fields & transforms before training."""
     DynamicArgumentParser.validate_dynamic_corpus(opt)
@@ -111,8 +33,8 @@ def prepare_fields_transforms(opt):
         opt, src_specials=specials['src'], tgt_specials=specials['tgt'])
     save_fields(opt, fields)
 
-    # maybe do stuff for pretrained embeddings
-    prepare_embeddings(opt, fields)
+    # prepare pretrained embeddings, if any
+    prepare_pretrained_embeddings(opt, fields)
 
     transforms = make_transforms(opt, transforms_cls, fields)
     save_transforms(opt, transforms)

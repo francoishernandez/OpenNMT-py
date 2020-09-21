@@ -65,18 +65,56 @@ Run embeddings_to_torch.py -h for more usagecomplete info.
 
 The transformer model is very sensitive to hyperparameters. To run it
 effectively you need to set a bunch of different options that mimic the Google
-setup. We have confirmed the following command can replicate their WMT results.
+setup. We have confirmed the following configuration can replicate their WMT results.
 
-```shell
-python  train.py -data /tmp/de2/data -save_model /tmp/extra \
-        -layers 6 -rnn_size 512 -word_vec_size 512 -transformer_ff 2048 -heads 8  \
-        -encoder_type transformer -decoder_type transformer -position_encoding \
-        -train_steps 200000  -max_generator_batches 2 -dropout 0.1 \
-        -batch_size 4096 -batch_type tokens -normalization tokens  -accum_count 2 \
-        -optim adam -adam_beta2 0.998 -decay_method noam -warmup_steps 8000 -learning_rate 2 \
-        -max_grad_norm 0 -param_init 0  -param_init_glorot \
-        -label_smoothing 0.1 -valid_steps 10000 -save_checkpoint_steps 10000 \
-        -world_size 4 -gpu_ranks 0 1 2 3
+```yaml
+<data configuration>
+...
+
+# General opts
+save_model: foo
+save_checkpoint_steps: 10000
+valid_steps: 10000
+train_steps: 200000
+
+# Batching
+queue_size: 10000
+bucket_size: 32768
+world_size: 4
+gpu_ranks: [0, 1, 2, 3]
+batch_type: "tokens"
+batch_size: 4096
+valid_batch_size: 8
+max_generator_batches: 2
+accum_count: [2]
+accum_steps: [0]
+
+# Optimization
+model_dtype: "fp32"
+optim: "adam"
+learning_rate: 2
+warmup_steps: 8000
+decay_method: "noam"
+adam_beta2: 0.998
+max_grad_norm: 0
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+normalization: "tokens"
+
+# Model
+encoder_type: transformer
+decoder_type: transformer
+position_encoding: true
+enc_layers: 6
+dec_layers: 6
+heads: 8
+rnn_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+dropout_steps: [0]
+dropout: [0.1]
+attention_dropout: [0.1]
 ```
 
 Here are what each of the parameters mean:

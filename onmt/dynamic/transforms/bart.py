@@ -256,7 +256,7 @@ class BARTNoising(object):
         result[~noise_mask] = tokens
 
         assert all([item is not None for item in result]),\
-            "Error when insert noise."
+            "Error when inserting noise."
         return [tok for tok in result]
 
     def rolling_noise(self, tokens, p=1.0):
@@ -267,7 +267,7 @@ class BARTNoising(object):
 
     def apply(self, tokens):
         if self.vocab is None:
-            raise ValueError("Inject BART noise require a valid vocabulary.")
+            raise ValueError("Inject BART noise requires a valid vocabulary.")
 
         if self.permute_sent_ratio > 0.0:
             tokens = self.permute_sentences(tokens, self.permute_sent_ratio)
@@ -315,25 +315,28 @@ class BARTNoiseTransform(Transform):
         group = parser.add_argument_group('Transform/BART')
         group.add('--permute_sent_ratio', '-permute_sent_ratio',
                   type=float, default=0.0,
-                  help="shuffle this proportion of sentences in all inputs")
+                  help="Permute this proportion of sentences "
+                       "(boundaries defined by {}) in all inputs.".format(
+                        DefaultTokens.SENT_FULL_STOPS))
         group.add('--rotate_ratio', '-rotate_ratio', type=float, default=0.5,
-                  help="rotate this proportion of inputs")
+                  help="Rotate this proportion of inputs.")
         group.add('--insert_ratio', '-insert_ratio', type=float, default=0.0,
-                  help="insert this percentage of additional random tokens")
+                  help="Insert this percentage of additional random tokens.")
         group.add('--random_ratio', '-random_ratio', type=float, default=0.0,
-                  help="instead of using [MASK], use random token this often")
+                  help="Instead of using {}, use random token this often.".format(
+                    DefaultTokens.MASK))
 
         group.add('--mask_ratio', '-mask_ratio', type=float, default=0.0,
-                  help="fraction of words/subwords that will be masked")
+                  help="Fraction of words/subwords that will be masked.")
         group.add('--mask_length', '-mask_length', type=str, default='subword',
                   choices=['subword', 'word', 'span-poisson'],
-                  help="mask length to choose")
+                  help="Length of masking window to apply.")
         group.add('--poisson_lambda', '-poisson_lambda',
                   type=float, default=0.0,
-                  help="randomly shuffle sentences for this proportion.")
+                  help="Randomly shuffle sentences for this proportion.")
         group.add('--replace_length', '-replace_length',
                   type=int, default=-1, choices=[-1, 0, 1],
-                  help="when masking N tokens, replace with 0, 1, or N tokens."
+                  help="When masking N tokens, replace with 0, 1, or N tokens."
                   "(use -1 for N)")
 
     def warm_up(self, vocabs):

@@ -16,13 +16,13 @@ def _dynamic_corpus_opts(parser):
               help="Overwrite existing objects if any.")
     group.add('-transforms', '--transforms', default=[], nargs='+',
               choices=AVAILABLE_TRANSFORMS.keys(),
-              help="Default transform pipeline to apply to data."
+              help="Default transform pipeline to apply to data. "
                    "Can be specified in each corpus of data to override.")
 
 
 def _dynamic_vocab_opts(parser):
     """Options related to vocabulary and fields."""
-    group = parser.add_argument_group('vocab')
+    group = parser.add_argument_group('Vocab')
     group.add('-src_vocab', '--src_vocab', required=True,
               help="Path to a vocabulary file for src."
                    "Format: one <word> or <word>\t<count> per line.")

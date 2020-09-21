@@ -6,6 +6,7 @@ import inspect
 import numpy as np
 from itertools import islice, repeat
 import os
+import six
 
 
 def check_path(path, exist_ok=False, log=print):
@@ -182,3 +183,45 @@ def check_model_config(model_config, root):
                         raise FileNotFoundError(
                             "{} from model {} does not exist".format(
                                 tok_path, model_config["id"]))
+
+
+def read_embeddings(path, skip_lines=0, filter_set=None):
+    """
+    Read an embeddings file in the glove format.
+    """
+    embs = dict()
+    total_vectors_in_file = 0
+    with open(path, 'rb') as f:
+        for i, line in enumerate(f):
+            if i < skip_lines:
+                continue
+            if not line:
+                break
+            if len(line) == 0:
+                # is this reachable?
+                continue
+
+            l_split = line.decode('utf8').strip().split(' ')
+            if len(l_split) == 2:
+                continue
+            total_vectors_in_file += 1
+            if filter_set is not None and l_split[0] not in filter_set:
+                continue
+            embs[l_split[0]] = [float(em) for em in l_split[1:]]
+    return embs, total_vectors_in_file
+
+
+def calc_vocab_load_stats(vocab, loaded_embed_dict):
+    matching_count = len(
+        set(vocab.stoi.keys()) & set(loaded_embed_dict.keys()))
+    missing_count = len(vocab) - matching_count
+    percent_matching = matching_count / len(vocab) * 100
+    return matching_count, missing_count, percent_matching
+
+
+def convert_to_torch_tensor(word_to_float_list_dict, vocab):
+    dim = len(six.next(six.itervalues(word_to_float_list_dict)))
+    tensor = torch.zeros((len(vocab), dim))
+    for word, values in word_to_float_list_dict.items():
+        tensor[vocab.stoi[word]] = torch.Tensor(values)
+    return tensor

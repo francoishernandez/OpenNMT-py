@@ -164,3 +164,17 @@ class ArgumentParser(cfargparse.ArgumentParser):
             "Please check path of your src vocab!"
         assert not opt.tgt_vocab or os.path.isfile(opt.tgt_vocab), \
             "Please check path of your tgt vocab!"
+
+        # Check embeddings stuff
+
+        if opt.both_embeddings is not None:
+            assert (opt.src_embeddings is None
+                    and opt.tgt_embeddings is None), \
+                "You don't need -src_embeddings or -tgt_embeddings \
+                if -both_embeddings is set."
+
+        if any([opt.both_embeddings is not None,
+                opt.src_embeddings is not None,
+                opt.tgt_embeddings is not None]):
+            assert opt.embeddings_type is not None, \
+                "You need to specify an -embedding_type!"

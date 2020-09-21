@@ -46,6 +46,19 @@ def _dynamic_vocab_opts(parser):
     group.add('-share_vocab', '--share_vocab', action='store_true',
               help="Share source and target vocabulary")
 
+    group = parser.add_argument_group('embeddings')
+    group.add('-both_embeddings', '--both_embeddings',
+              help="Path to the embeddings file to use "
+                   "for both source and target tokens.")
+    group.add('-src_embeddings', '--src_embeddings',
+              help="Path to the embeddings file to use for source tokens.")
+    group.add('-tgt_embeddings', '--tgt_embeddings',
+              help="Path to the embeddings file to use for target tokens.")
+    group.add('-embeddings_type', '--embeddings_type',
+              choices=["GloVe", "word2vec"],
+              help="Type of embeddings file.")
+
+
     # Truncation options, for text corpus
     group = parser.add_argument_group('Pruning')
     group.add('--src_seq_length_trunc', '-src_seq_length_trunc',

@@ -46,11 +46,11 @@ data:
         path_tgt: data/tgt-train.txt
         transforms: [tokenmask, tokendrop, onmt_tokenize, prefix, filtertoolong]
         weight: 5
-        src_lang: en
-        tgt_lang: de
+        src_prefix: "｟_tgt_is_de｠"
+        tgt_prefix: ""
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
         transforms: [onmt_tokenize, prefix]
-        src_lang: en
-        tgt_lang: de
+        src_prefix: "｟_tgt_is_de｠"
+        tgt_prefix: ""

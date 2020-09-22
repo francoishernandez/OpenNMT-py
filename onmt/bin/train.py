@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Train models with dynamic data."""
+import sys
 import torch
 
 # import onmt.opts as opts
@@ -13,7 +14,7 @@ from onmt.train_single import main as single_main, get_train_iter
 from onmt.dynamic.parse import DynamicArgumentParser
 from onmt.dynamic.opts import dynamic_train_opts
 from onmt.dynamic.corpus import save_transformed_sample
-from onmt.dynamic.vocab import build_dynamic_fields, save_fields
+from onmt.dynamic.fields import build_dynamic_fields, save_fields
 from onmt.dynamic.transforms import make_transforms, save_transforms, \
     get_specials, get_transforms_cls
 
@@ -23,8 +24,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 def prepare_fields_transforms(opt):
     """Prepare or dump fields & transforms before training."""
-    DynamicArgumentParser.validate_dynamic_corpus(opt)
-    DynamicArgumentParser.get_all_transform(opt)
+    DynamicArgumentParser.validate_prepare_opts(opt)
 
     transforms_cls = get_transforms_cls(opt._all_transform)
     specials = get_specials(opt, transforms_cls)
@@ -39,7 +39,11 @@ def prepare_fields_transforms(opt):
     transforms = make_transforms(opt, transforms_cls, fields)
     save_transforms(opt, transforms)
     if opt.n_sample > 1:
+        logger.warning(
+            "`-n_sample` > 1: Training will not be started. "
+            f"Stop after saving {opt.n_sample} samples/corpus.")
         save_transformed_sample(opt, transforms, n_sample=opt.n_sample)
+        sys.exit("Sample saved, please check it before restart training.")
 
 
 def train(opt):

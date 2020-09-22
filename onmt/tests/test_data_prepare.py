@@ -24,8 +24,7 @@ def get_default_opts():
         '-config', 'data/data.yaml',
         '-save_data', SAVE_DATA_PREFIX,
         '-src_vocab', 'data/vocab-train.src',
-        '-tgt_vocab', 'data/vocab-train.tgt',
-        '-n_sample', '30'
+        '-tgt_vocab', 'data/vocab-train.tgt'
     ]
 
     opt = parser.parse_known_args(default_opts)[0]
@@ -50,9 +49,10 @@ class TestData(unittest.TestCase):
         sample_path = os.path.join(
             os.path.dirname(self.opt.save_data),
             CorpusName.SAMPLE)
-        for f in glob.glob(sample_path + '/*'):
-            os.remove(f)
-        os.rmdir(sample_path)
+        if os.path.exists(sample_path):
+            for f in glob.glob(sample_path + '/*'):
+                os.remove(f)
+            os.rmdir(sample_path)
 
 
 def _add_test(param_setting, methodname):
@@ -95,7 +95,8 @@ test_databuild = [[],
                   [('tgt_seq_length_trunc', 1)],
                   [('tgt_seq_length_trunc', 5000)],
                   [('dynamic_dict', True)],
-                  [('share_vocab', True)]
+                  [('share_vocab', True)],
+                  [('n_sample', True)]
                   ]
 
 for p in test_databuild:

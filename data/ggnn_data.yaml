@@ -5,7 +5,3 @@ data:
     ggnn:
         path_src: data/ggnnsrc.txt
         path_tgt: data/ggnntgt.txt
-        transforms: []
-        weight: 1
-        src_lang: xx
-        tgt_lang: en

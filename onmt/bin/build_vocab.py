@@ -8,9 +8,19 @@ from onmt.dynamic.corpus import save_transformed_sample
 from onmt.dynamic.transforms import make_transforms, get_transforms_cls
 
 
-def get_vocab_main(opts):
-    DynamicArgumentParser.validate_dynamic_corpus(opts)
-    DynamicArgumentParser.get_all_transform(opts)
+def build_vocab_main(opts):
+    """Apply transforms to samples of specified data and build vocab from it.
+
+    Transforms that need vocab will be disabled in this.
+    Built vocab is saved in plain text format as following and can be pass as
+    `-src_vocab` (and `-tgt_vocab`) when training:
+    ```
+    <tok_0>\t<count_0>
+    <tok_1>\t<count_1>
+    ```
+    """
+
+    DynamicArgumentParser.validate_prepare_opts(opts)
     assert opts.n_sample > 1, f"Illegal argument n_sample={opts.n_sample}."
 
     logger = init_logger()
@@ -42,17 +52,14 @@ def get_vocab_main(opts):
 
 def _get_parser():
     parser = DynamicArgumentParser(description='build_vocab.py')
-    dynamic_prepare_opts(parser)
-    parser.add_argument('--seed', '-seed', type=int, default=-1,
-                        help="Random seed used for the experiments "
-                        "reproducibility.")
+    dynamic_prepare_opts(parser, build_vocab_only=True)
     return parser
 
 
 def main():
     parser = _get_parser()
     opts, unknown = parser.parse_known_args()
-    get_vocab_main(opts)
+    build_vocab_main(opts)
 
 
 if __name__ == '__main__':

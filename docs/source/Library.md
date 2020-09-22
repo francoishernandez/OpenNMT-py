@@ -76,7 +76,7 @@ ls toy-ende
 ```
 
     config.yaml  src-test.txt   src-val.txt   tgt-train.txt
-    [0m[01;34mrun[0m/         src-train.txt  tgt-test.txt  tgt-val.txt
+    run          src-train.txt  tgt-test.txt  tgt-val.txt
 
 
 ### Prepare data and vocab
@@ -156,7 +156,7 @@ build_vocab_main(opts)
 ls toy-ende/run
 ```
 
-    example.vocab.src  example.vocab.tgt  [0m[01;34msample[0m/
+    example.vocab.src  example.vocab.tgt  sample
 
 
 We just created our source and target vocabularies, respectively `toy-ende/run/example.vocab.src` and `toy-ende/run/example.vocab.tgt`.

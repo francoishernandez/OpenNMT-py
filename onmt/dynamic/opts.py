@@ -1,5 +1,6 @@
 """All options for dynamic running. Should be given in a yaml file."""
-from onmt.opts import _train_general_opts, config_opts, model_opts
+from onmt.opts import _train_general_opts, config_opts, model_opts,\
+    _add_reproducibility_opts
 from onmt.dynamic.transforms import AVAILABLE_TRANSFORMS
 
 
@@ -18,59 +19,84 @@ def _dynamic_corpus_opts(parser):
                    "Can be specified in each corpus of data to override.")
 
 
-def _dynamic_vocab_opts(parser):
-    """Options related to vocabulary and fields."""
+def _dynamic_fields_opts(parser, build_vocab_only=False):
+    """Options related to vocabulary and fields.
+
+    Add all options relate to vocabulary or fields to parser.
+    If `build_vocab_only` set to True, do not contain fields
+    related options which won't be used in `bin/build_vocab.py`.
+    """
     group = parser.add_argument_group('vocab')
-    group.add('-src_vocab', '--src_vocab', required=True,
-              help="Path to an vocabulary file for src(or shard)."
-                   "Format: one <word> or <word>\t<count> per line.")
+    group.add('-src_vocab', '--src_vocab',
+              required=(not build_vocab_only),
+              help="Path to an vocabulary file for src (or shard). "
+                   "Format: one `<word>` or `<word>\\t<count>` per line.")
     group.add('-tgt_vocab', '--tgt_vocab',
-              help="Path to an vocabulary file for tgt."
-                   "Format: one <word> or <word>\t<count> per line.")
-
-    group.add('-src_vocab_size', '--src_vocab_size', type=int, default=50000,
-              help="Size of the source vocabulary")
-    group.add('-tgt_vocab_size', '--tgt_vocab_size', type=int, default=50000,
-              help="Size of the target vocabulary")
-    group.add('-vocab_size_multiple', '--vocab_size_multiple',
-              type=int, default=1,
-              help="Make the vocabulary size a multiple of this value")
-
-    group.add('-src_words_min_frequency', '--src_words_min_frequency',
-              type=int, default=0)
-    group.add('-tgt_words_min_frequency', '--tgt_words_min_frequency',
-              type=int, default=0)
-
-    group.add('-dynamic_dict', '--dynamic_dict', action='store_true',
-              help="Create dynamic dictionaries")
+              help="Path to an vocabulary file for tgt. "
+                   "Format: one `<word>` or `<word>\\t<count>` per line.")
     group.add('-share_vocab', '--share_vocab', action='store_true',
               help="Share source and target vocabulary")
 
-    # Truncation options, for text corpus
-    group = parser.add_argument_group('Pruning')
-    group.add('--src_seq_length_trunc', '-src_seq_length_trunc',
-              type=int, default=None,
-              help="Truncate source sequence length.")
-    group.add('--tgt_seq_length_trunc', '-tgt_seq_length_trunc',
-              type=int, default=None,
-              help="Truncate target sequence length.")
+    if not build_vocab_only:
+        group.add('-src_vocab_size', '--src_vocab_size',
+                  type=int, default=50000,
+                  help="Size of the source vocabulary")
+        group.add('-tgt_vocab_size', '--tgt_vocab_size',
+                  type=int, default=50000,
+                  help="Size of the target vocabulary")
+        group.add('-vocab_size_multiple', '--vocab_size_multiple',
+                  type=int, default=1,
+                  help="Make the vocabulary size a multiple of this value")
+
+        group.add('-src_words_min_frequency', '--src_words_min_frequency',
+                  type=int, default=0)
+        group.add('-tgt_words_min_frequency', '--tgt_words_min_frequency',
+                  type=int, default=0)
+
+        group.add('-dynamic_dict', '--dynamic_dict', action='store_true',
+                  help="Create dynamic dictionaries")
+
+        # Truncation options, for text corpus
+        group = parser.add_argument_group('Pruning')
+        group.add('--src_seq_length_trunc', '-src_seq_length_trunc',
+                  type=int, default=None,
+                  help="Truncate source sequence length.")
+        group.add('--tgt_seq_length_trunc', '-tgt_seq_length_trunc',
+                  type=int, default=None,
+                  help="Truncate target sequence length.")
 
 
 def _dynamic_transform_opts(parser):
-    """Options related to transforms."""
+    """Options related to transforms.
+
+    Options that specified in the definitions of each transform class
+    at `onmt/dynamic/transforms/*.py`.
+    """
     for name, transform_cls in AVAILABLE_TRANSFORMS.items():
         transform_cls.add_options(parser)
 
 
-def dynamic_prepare_opts(parser):
-    """Options related to data prepare in dynamic mode."""
+def dynamic_prepare_opts(parser, build_vocab_only=False):
+    """Options related to data prepare in dynamic mode.
+
+    Add all dynamic data prepare related options to parser.
+    If `build_vocab_only` set to True, then only contains options that
+    will be used in `onmt/bin/build_vocab.py`.
+    """
     config_opts(parser)
     _dynamic_corpus_opts(parser)
-    _dynamic_vocab_opts(parser)
+    _dynamic_fields_opts(parser, build_vocab_only=build_vocab_only)
     _dynamic_transform_opts(parser)
     parser.add_argument(
-        '-n_sample', '--n_sample', type=int, default=-1,
-        help="Show this number of transformed samples from each corpus.")
+        '-n_sample', '--n_sample',
+        type=int, default=(5000 if build_vocab_only else -1),
+        help=("Build vocab using this number of transformed samples/corpus."
+              if build_vocab_only else
+              "Stop after save this number of transformed samples/corpus."))
+
+    if build_vocab_only:
+        _add_reproducibility_opts(parser)
+        # as for False, this will be added in _train_general_opts
 
 
 def _train_dynamic_data(parser):
@@ -82,7 +108,7 @@ def _train_dynamic_data(parser):
 def dynamic_train_opts(parser):
     """All options used in train."""
     # options relate to data preprare
-    dynamic_prepare_opts(parser)
+    dynamic_prepare_opts(parser, build_vocab_only=False)
     # options relate to train
     _train_dynamic_data(parser)
     model_opts(parser)

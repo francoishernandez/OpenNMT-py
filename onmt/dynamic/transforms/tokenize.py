@@ -56,6 +56,16 @@ class TokenizerTransform(Transform):
         self._parse_opts()
         self.warm_up()
 
+    def _repr_args(self):
+        """Return str represent key arguments for TokenizerTransform."""
+        kwargs = {
+            'share_vocab': self.share_vocab,
+            'alpha': self.alpha,
+            'src_subword_model': self.src_subword_model,
+            'tgt_subword_model': self.tgt_subword_model
+        }
+        return ', '.join([f'{kw}={arg}' for kw, arg in kwargs.items()])
+
 
 @register_transform(name='sentencepiece')
 class SentencePieceTransform(TokenizerTransform):
@@ -115,13 +125,8 @@ class SentencePieceTransform(TokenizerTransform):
 
     def _repr_args(self):
         """Return str represent key arguments for class."""
-        return '{}={}, {}={}, {}={}, {}={}, {}={}'.format(
-            'share_vocab', self.share_vocab,
-            'subword_nbest', self.subword_nbest,
-            'alpha', self.alpha,
-            'src_subword_model', self.src_subword_model,
-            'tgt_subword_model', self.tgt_subword_model
-        )
+        kwargs_str = super()._repr_args()
+        return kwargs_str + ', subword_nbest={}'.format(self.subword_nbest)
 
 
 @register_transform(name='bpe')
@@ -171,15 +176,6 @@ class BPETransform(TokenizerTransform):
             stats.subword(n_subwords, n_words)
         example['src'], example['tgt'] = src_out, tgt_out
         return example
-
-    def _repr_args(self):
-        """Return str represent key arguments for class."""
-        return '{}={}, {}={}, {}={}, {}={}'.format(
-            'share_vocab', self.share_vocab,
-            'alpha', self.alpha,
-            'src_subword_model', self.src_subword_model,
-            'tgt_subword_model', self.tgt_subword_model
-        )
 
 
 @register_transform(name='onmt_tokenize')
@@ -247,7 +243,7 @@ class ONMTTokenizerTransform(TokenizerTransform):
             kwopts['sp_nbest_size'] = self.subword_nbest
             kwopts['sp_alpha'] = self.alpha
         else:
-            raise ValueError(f'Unvalid subword_type: {subword_type}.')
+            logger.warning('No subword method will be applied.')
         return kwopts
 
     def warm_up(self, vocab=None):

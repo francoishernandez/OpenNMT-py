@@ -13,7 +13,7 @@ from onmt.models import build_model_saver
 from onmt.utils.logging import init_logger, logger
 from onmt.utils.parse import ArgumentParser
 
-from onmt.dynamic.vocab import load_fields
+from onmt.dynamic.fields import load_fields
 from onmt.dynamic.iterator import build_dynamic_dataset_iter
 
 

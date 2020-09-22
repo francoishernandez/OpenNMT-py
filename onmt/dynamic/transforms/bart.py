@@ -337,8 +337,8 @@ class BARTNoiseTransform(Transform):
                        "if `-mask_length` set to span-poisson.")
         group.add("--replace_length", "-replace_length",
                   type=int, default=-1, choices=[-1, 0, 1],
-                  help="When masking N tokens, replace with 0, 1, or N tokens. "
-                       "(use -1 for N)")
+                  help="When masking N tokens, replace with 0, 1, "
+                       "or N tokens. (use -1 for N)")
 
     def warm_up(self, vocabs):
         self.vocab = vocabs

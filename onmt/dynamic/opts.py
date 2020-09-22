@@ -40,9 +40,11 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
               help="Share source and target vocabulary.")
 
     if not build_vocab_only:
-        group.add("-src_vocab_size", "--src_vocab_size", type=int, default=50000,
+        group.add("-src_vocab_size", "--src_vocab_size",
+                  type=int, default=50000,
                   help="Maximum size of the source vocabulary.")
-        group.add("-tgt_vocab_size", "--tgt_vocab_size", type=int, default=50000,
+        group.add("-tgt_vocab_size", "--tgt_vocab_size",
+                  type=int, default=50000,
                   help="Maximum size of the target vocabulary")
         group.add("-vocab_size_multiple", "--vocab_size_multiple",
                   type=int, default=1,
@@ -56,8 +58,8 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
                   help="Discard target words with lower frequency.")
 
         group.add("-dynamic_dict", "--dynamic_dict", action="store_true",
-                  help="Create dynamic dictionaries (matching source and target "
-                       "tokens at the example level), which are "
+                  help="Create dynamic dictionaries (matching source and "
+                       "target tokens at the example level), which are "
                        "required for the copy attention mechanism.")
 
         # Truncation options, for text corpus

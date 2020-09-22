@@ -40,34 +40,34 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
               help="Share source and target vocabulary.")
 
     if not build_vocab_only:
-	    group.add("-src_vocab_size", "--src_vocab_size", type=int, default=50000,
-	              help="Maximum size of the source vocabulary.")
-	    group.add("-tgt_vocab_size", "--tgt_vocab_size", type=int, default=50000,
-	              help="Maximum size of the target vocabulary")
-	    group.add("-vocab_size_multiple", "--vocab_size_multiple",
-	              type=int, default=1,
-	              help="Make the vocabulary size a multiple of this value.")
+        group.add("-src_vocab_size", "--src_vocab_size", type=int, default=50000,
+                  help="Maximum size of the source vocabulary.")
+        group.add("-tgt_vocab_size", "--tgt_vocab_size", type=int, default=50000,
+                  help="Maximum size of the target vocabulary")
+        group.add("-vocab_size_multiple", "--vocab_size_multiple",
+                  type=int, default=1,
+                  help="Make the vocabulary size a multiple of this value.")
 
-	    group.add("-src_words_min_frequency", "--src_words_min_frequency",
-	              type=int, default=0,
-	              help="Discard source words with lower frequency.")
-	    group.add("-tgt_words_min_frequency", "--tgt_words_min_frequency",
-	              type=int, default=0,
-	              help="Discard target words with lower frequency.")
+        group.add("-src_words_min_frequency", "--src_words_min_frequency",
+                  type=int, default=0,
+                  help="Discard source words with lower frequency.")
+        group.add("-tgt_words_min_frequency", "--tgt_words_min_frequency",
+                  type=int, default=0,
+                  help="Discard target words with lower frequency.")
 
-	    group.add("-dynamic_dict", "--dynamic_dict", action="store_true",
-	              help="Create dynamic dictionaries (matching source and target "
-	                   "tokens at the example level), which are "
-	                   "required for the copy attention mechanism.")
+        group.add("-dynamic_dict", "--dynamic_dict", action="store_true",
+                  help="Create dynamic dictionaries (matching source and target "
+                       "tokens at the example level), which are "
+                       "required for the copy attention mechanism.")
 
-	    # Truncation options, for text corpus
-	    group = parser.add_argument_group("Pruning")
-	    group.add("--src_seq_length_trunc", "-src_seq_length_trunc",
-	              type=int, default=None,
-	              help="Truncate source sequence length.")
-	    group.add("--tgt_seq_length_trunc", "-tgt_seq_length_trunc",
-	              type=int, default=None,
-	              help="Truncate target sequence length.")
+        # Truncation options, for text corpus
+        group = parser.add_argument_group("Pruning")
+        group.add("--src_seq_length_trunc", "-src_seq_length_trunc",
+                  type=int, default=None,
+                  help="Truncate source sequence length.")
+        group.add("--tgt_seq_length_trunc", "-tgt_seq_length_trunc",
+                  type=int, default=None,
+                  help="Truncate target sequence length.")
 
 
 def _dynamic_transform_opts(parser):

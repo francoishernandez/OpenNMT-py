@@ -52,15 +52,7 @@ def build_vocab_main(opts):
 
 def _get_parser():
     parser = DynamicArgumentParser(description='build_vocab.py')
-<<<<<<< HEAD
-    dynamic_prepare_opts(parser)
-    group = parser.add_argument_group("Reproducibility")
-    group.add_argument('--seed', '-seed', type=int, default=-1,
-                       help="Set random seed used for better "
-                            "reproducibility between experiments.")
-=======
     dynamic_prepare_opts(parser, build_vocab_only=True)
->>>>>>> 8d7a989c32b37480e6a786baa5d309607e78d0f1
     return parser
 
 

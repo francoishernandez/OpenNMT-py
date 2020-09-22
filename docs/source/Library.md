@@ -1,10 +1,52 @@
 # Library
 
-For this example, we will assume that we have run preprocess to
-create our datasets. For instance
+## Prerequisites
 
-> onmt_preprocess -train_src data/src-train.txt -train_tgt data/tgt-train.txt -valid_src data/src-val.txt -valid_tgt data/tgt-val.txt -save_data data/data -src_vocab_size 10000 -tgt_vocab_size 10000
+To make a proper example, we will need some data, as well as some vocabulary(ies).
 
+Let's take the same data as in the [quickstart](quickstart):
+
+```bash
+wget https://s3.amazonaws.com/opennmt-trainingdata/toy-ende.tar.gz
+tar xf toy-ende.tar.gz
+```
+
+As for any use case of OpenNMT-py 2.0, we can start by creating a simple YAML configuration with our datasets:
+
+```yaml
+# toy_en_de.yaml
+
+## Where the vocab(s) will be written
+save_data: toy-ende/run/example
+# Prevent overwriting existing files in the folder
+overwrite: False
+
+# Corpus opts:
+data:
+    corpus_1:
+        path_src: toy-ende/src-train.txt
+        path_tgt: toy-ende/tgt-train.txt
+        transforms: []
+        weight: 1
+    valid:
+        path_src: data/src-val.txt
+        path_tgt: data/tgt-val.txt
+        transforms: []
+...
+
+```
+
+We also need to have the corresponding vocabulary(ies). For that, we can run `onmt_build_vocab` with the configuration file defined above:
+
+```bash
+onmt_build_vocab -config toy_en_de.yaml -n_sample 10000
+```
+
+This will create `toy-ende/run/example.vocab.src` and `toy-ende/run/example.vocab.tgt`.
+
+## Library Usage
+
+From there, we can dive into the library example.
 
 
 ```python

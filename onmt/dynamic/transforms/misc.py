@@ -40,8 +40,8 @@ class FilterTooLongTransform(Transform):
 
 
 @register_transform(name='prefix')
-class PrefixSrcTransform(Transform):
-    """Add target language Prefix to src sentence."""
+class PrefixTransform(Transform):
+    """Add Prefix to src (& tgt) sentence."""
 
     def __init__(self, opts):
         super().__init__(opts)
@@ -50,10 +50,11 @@ class PrefixSrcTransform(Transform):
     @staticmethod
     def _get_prefix(corpus):
         """Get prefix string of a `corpus`."""
-        prefix_tag_format = "｟_tgt_is_{}｠"
         if 'prefix' in corpus['transforms']:
-            tl = corpus['tgt_lang']
-            prefix = prefix_tag_format.format(tl)
+            prefix = {
+                'src': corpus['src_prefix'],
+                'tgt': corpus['tgt_prefix']
+            }
         else:
             prefix = None
         return prefix
@@ -73,24 +74,30 @@ class PrefixSrcTransform(Transform):
     def get_specials(cls, opts):
         """Get special vocabs added by prefix transform."""
         prefix_dict = cls.get_prefix_dict(opts)
-        src_specials = set(prefix_dict.values())
-        return (src_specials, set())
+        src_specials, tgt_specials = set(), set()
+        for _, prefix in prefix_dict.items():
+            src_specials.update(prefix['src'].split())
+            tgt_specials.update(prefix['tgt'].split())
+        return (src_specials, tgt_specials)
 
-    def _prepend(self, tokens, corpus_name):
-        """Get prefix according to `corpus_name` and prepend to `tokens`."""
-        corpus_prefix = self.prefix_dict.get(corpus_name, None)
-        if corpus_prefix is None:
-            raise ValueError('corpus_name does not exist.')
-        return [corpus_prefix] + tokens
+    def _prepend(self, example, prefix):
+        """Prepend `prefix` to `tokens`."""
+        for side, side_prefix in prefix.items():
+            example[side] = side_prefix.split() + example[side]
+        return example
 
     def apply(self, example, is_train=False, stats=None, **kwargs):
-        """Prepend prefix to src side tokens."""
+        """Apply prefix prepend to example.
+
+        Should provide `corpus_name` to get correspond prefix.
+        """
         corpus_name = kwargs.get('corpus_name', None)
         if corpus_name is None:
             raise ValueError('corpus_name is required.')
-        src = self._prepend(example['src'], corpus_name)
-        example['src'] = src
-        return example
+        corpus_prefix = self.prefix_dict.get(corpus_name, None)
+        if corpus_prefix is None:
+            raise ValueError(f'prefix for {corpus_name} does not exist.')
+        return self._prepend(example, corpus_prefix)
 
     def _repr_args(self):
         """Return str represent key arguments for class."""

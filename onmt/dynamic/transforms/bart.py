@@ -333,11 +333,12 @@ class BARTNoiseTransform(Transform):
                   help="Length of masking window to apply.")
         group.add("--poisson_lambda", "-poisson_lambda",
                   type=float, default=0.0,
-                  help="Randomly shuffle sentences for this proportion.")
+                  help="Lambda for Poisson distribution to sample span length "
+                       "if `-mask_length` set to span-poisson.")
         group.add("--replace_length", "-replace_length",
                   type=int, default=-1, choices=[-1, 0, 1],
-                  help="When masking N tokens, replace with 0, 1, or N tokens."
-                  "(use -1 for N)")
+                  help="When masking N tokens, replace with 0, 1, or N tokens. "
+                       "(use -1 for N)")
 
     def warm_up(self, vocabs):
         self.vocab = vocabs

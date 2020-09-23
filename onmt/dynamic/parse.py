@@ -2,6 +2,8 @@
 import os
 from onmt.utils.parse import ArgumentParser
 from onmt.utils.logging import logger
+from onmt.constants import CorpusName
+from onmt.dynamic.transforms import AVAILABLE_TRANSFORMS
 
 
 class DynamicArgumentParser(ArgumentParser):
@@ -53,21 +55,19 @@ class DynamicArgumentParser(ArgumentParser):
             # Check weight
             weight = corpus.get('weight', None)
             if weight is None:
-                logger.warning(f"Corpus {cname}'s weight should be given."
-                               " We default it to 1 for you.")
+                if cname != CorpusName.VALID:
+                    logger.warning(f"Corpus {cname}'s weight should be given."
+                                   " We default it to 1 for you.")
                 corpus['weight'] = 1
         logger.info(f"Parsed {len(corpora)} corpora from -data.")
         opt.data = corpora
 
     @classmethod
     def _validate_transforms_opts(cls, opt):
-        """Check options relate to transforms."""
-        assert 0 <= opt.subword_alpha <= 1, \
-            "subword_alpha should be in the range [0, 1]"
-        kwargs_dict = eval(opt.onmttok_kwargs)
-        if not isinstance(kwargs_dict, dict):
-            raise ValueError(f"-onmttok_kwargs is not a dict valid string.")
-        opt.onmttok_kwargs = kwargs_dict
+        """Check options used by transforms."""
+        for name, transform_cls in AVAILABLE_TRANSFORMS.items():
+            if name in opt._all_transform:
+                transform_cls._validate_options(opt)
 
     @classmethod
     def _get_all_transform(cls, opt):
@@ -100,6 +100,6 @@ class DynamicArgumentParser(ArgumentParser):
     def validate_prepare_opts(cls, opt):
         """Validate all options relate to prepare (data/transform/vocab)."""
         cls._validate_data(opt)
-        cls._validate_transforms_opts(opt)
         cls._get_all_transform(opt)
+        cls._validate_transforms_opts(opt)
         cls._validate_vocab_opts(opt)

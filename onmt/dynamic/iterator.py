@@ -138,37 +138,80 @@ class WeightedMixer(MixingStrategy):
 
 
 class DynamicDatasetIter(object):
-    """Yield data from multiple parallel plain text corpora."""
+    """Yield batch from (multiple) plain text corpus.
 
-    def __init__(self, corpora, transforms, fields, opts, is_train,
-                 stride=1, offset=0):
+    Args:
+        corpora (dict[str, ParallelCorpus]): collections of corpora to iterate;
+        corpora_info (dict[str, dict]): corpora infos correspond to corpora;
+        transforms (dict[str, Transform]): transforms may be used by corpora;
+        fields (dict[str, Field]): fields dict for convert corpora into Tensor;
+        is_train (bool): True when generate data for training;
+        batch_size (int): numbers of examples in a batch;
+        batch_size_fn (function): functions to calculate batch_size;
+        batch_size_multiple (int): make batch size multiply of this;
+        sort_key (function): functions define how to sort examples;
+        bucket_size (int): accum this number of examples in a dynamic dataset;
+        pool_factor (int): accum this number of batch before sorting;
+        skip_empty_level (str): security level when encouter empty line;
+        stride (int): iterate data files with this stride;
+        offset (int): iterate data files with this offset.
+
+    Attributes:
+        dataset_adapter (DatasetAdapter): organize raw corpus to tensor adapt;
+        mixer (MixingStrategy): the strategy to iterate corpora.
+    """
+
+    def __init__(self, corpora, corpora_info, transforms, fields, is_train,
+                 batch_size, batch_size_fn, batch_size_multiple, sort_key,
+                 bucket_size=2048, pool_factor=8192,
+                 skip_empty_level='warning', stride=1, offset=0):
         self.corpora = corpora
         self.transforms = transforms
         self.fields = fields
-        self.corpora_info = opts.data
+        self.corpora_info = corpora_info
         self.is_train = is_train
         self.init_iterators = False
-        self.batch_size = opts.batch_size if is_train \
-            else opts.valid_batch_size
-        self.batch_size_fn = max_tok_len \
-            if is_train and opts.batch_type == "tokens" else None
-        if opts.batch_size_multiple is not None:
-            self.batch_size_multiple = opts.batch_size_multiple
-        else:
-            self.batch_size_multiple = 8 if opts.model_dtype == "fp16" else 1
+        self.batch_size = batch_size
+        self.batch_size_fn = batch_size_fn
+        self.batch_size_multiple = batch_size_multiple
         self.device = 'cpu'
-        self.sort_key = str2sortkey[opts.data_type]
-        self.bucket_size = opts.bucket_size
-        self.pool_factor = opts.pool_factor
+        self.sort_key = sort_key
+        self.bucket_size = bucket_size
+        self.pool_factor = pool_factor
         if stride <= 0:
             raise ValueError(f"Invalid argument for stride={stride}.")
         self.stride = stride
         self.offset = offset
+        if skip_empty_level not in ['silent', 'warning', 'error']:
+            raise ValueError(
+                f"Invalid argument skip_empty_level={skip_empty_level}")
+        self.skip_empty_level = skip_empty_level
+
+    @classmethod
+    def from_opts(cls, corpora, transforms, fields, opts, is_train,
+                  stride=1, offset=0):
+        """Initilize `DynamicDatasetIter` with options parsed from `opts`."""
+        batch_size = opts.batch_size if is_train else opts.valid_batch_size
+        batch_size_fn = max_tok_len \
+            if is_train and opts.batch_type == "tokens" else None
+        if opts.batch_size_multiple is not None:
+            batch_size_multiple = opts.batch_size_multiple
+        else:
+            batch_size_multiple = 8 if opts.model_dtype == "fp16" else 1
+        sort_key = str2sortkey[opts.data_type]
+        return cls(
+            corpora, opts.data, transforms, fields, is_train,
+            batch_size, batch_size_fn, batch_size_multiple, sort_key,
+            bucket_size=opts.bucket_size, pool_factor=opts.pool_factor,
+            skip_empty_level=opts.skip_empty_level,
+            stride=stride, offset=offset
+        )
 
     def _init_datasets(self):
         datasets_iterables = build_corpora_iters(
             self.corpora, self.transforms,
             self.corpora_info, self.is_train,
+            skip_empty_level=self.skip_empty_level,
             stride=self.stride, offset=self.offset)
         self.dataset_adapter = DatasetAdapter(self.fields, self.is_train)
         datasets_weights = {
@@ -218,6 +261,6 @@ def build_dynamic_dataset_iter(fields, opts, is_train=True,
     if corpora is None:
         assert not is_train, "only valid corpus is ignorable."
         return None
-    return DynamicDatasetIter(
+    return DynamicDatasetIter.from_opts(
         corpora, transforms, fields, opts, is_train,
         stride=stride, offset=offset)

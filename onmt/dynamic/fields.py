@@ -71,9 +71,13 @@ def save_fields(opts, fields):
     torch.save(fields, fields_path)
 
 
-def load_fields(opts):
-    """Load dumped `fields` object."""
-    fields_path = "{}.vocab.pt".format(opts.save_data)
-    logger.info(f"Loading fields from {fields_path}...")
-    fields = torch.load(fields_path)
+def load_fields(save_data, checkpoint=None):
+    """Load dumped fields object from `save_data` or `checkpoint` if any."""
+    if checkpoint is not None:
+        logger.info(f"Loading fields from checkpoint...")
+        fields = checkpoint['vocab']
+    else:
+        fields_path = "{}.vocab.pt".format(save_data)
+        logger.info(f"Loading fields from {fields_path}...")
+        fields = torch.load(fields_path)
     return fields

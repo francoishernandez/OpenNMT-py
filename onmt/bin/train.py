@@ -34,9 +34,9 @@ def prepare_fields_transforms(opt):
 
     transforms = make_transforms(opt, transforms_cls, fields)
     save_transforms(opt, transforms)
-    if opt.n_sample > 1:
+    if opt.n_sample != 0:
         logger.warning(
-            "`-n_sample` > 1: Training will not be started. "
+            "`-n_sample` != 0: Training will not be started. "
             f"Stop after saving {opt.n_sample} samples/corpus.")
         save_transformed_sample(opt, transforms, n_sample=opt.n_sample)
         sys.exit("Sample saved, please check it before restart training.")
@@ -77,8 +77,7 @@ def train(opt):
         # This does not work if we merge with the first loop, not sure why
         for device_id in range(nb_gpu):
             # Get the iterator to generate from
-            train_iter = get_train_iter(
-                opt, dynamic=True, stride=nb_gpu, offset=device_id)
+            train_iter = get_train_iter(opt, stride=nb_gpu, offset=device_id)
             producer = mp.Process(target=batch_producer,
                                   args=(train_iter, queues[device_id],
                                         semaphore, opt,),
@@ -96,9 +95,9 @@ def train(opt):
             p.terminate()
 
     elif nb_gpu == 1:  # case 1 GPU only
-        single_main(opt, 0, dynamic=True)
+        single_main(opt, 0)
     else:   # case only CPU
-        single_main(opt, -1, dynamic=True)
+        single_main(opt, -1)
 
 
 def _get_parser():

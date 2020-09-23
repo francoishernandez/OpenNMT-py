@@ -30,8 +30,9 @@ class File(object):
 class ParallelCorpus(object):
     """A parallel corpus file pair that can be loaded to iterate."""
 
-    def __init__(self, src, tgt, align=None):
+    def __init__(self, name, src, tgt, align=None):
         """Initialize src & tgt side file path."""
+        self.id = name
         self.src = src
         self.tgt = tgt
         self.align = align
@@ -70,12 +71,14 @@ def get_corpora(opts, is_train=False):
         for corpus_id, corpus_dict in opts.data.items():
             if corpus_id != CorpusName.VALID:
                 corpora_dict[corpus_id] = ParallelCorpus(
+                    corpus_id,
                     corpus_dict["path_src"],
                     corpus_dict["path_tgt"],
                     corpus_dict["path_align"])
     else:
         if CorpusName.VALID in opts.data.keys():
             corpora_dict[CorpusName.VALID] = ParallelCorpus(
+                CorpusName.VALID,
                 opts.data[CorpusName.VALID]["path_src"],
                 opts.data[CorpusName.VALID]["path_tgt"],
                 opts.data[CorpusName.VALID]["path_align"])
@@ -85,12 +88,27 @@ def get_corpora(opts, is_train=False):
 
 
 class ParallelCorpusIterator(object):
-    def __init__(self, cid, corpus, transform, infinitely=False,
-                 stride=1, offset=0):
-        self.cid = cid
+    """An iterator dedicate for ParallelCorpus.
+
+    Args:
+        corpus (ParallelCorpus): corpus to iterate;
+        transform (Transform): transforms to be applied to corpus;
+        infinitely (bool): True to iterate endlessly;
+        skip_empty_level (str): security level when encouter empty line;
+        stride (int): iterate corpus with this line stride;
+        offset (int): iterate corpus with this line offset.
+    """
+
+    def __init__(self, corpus, transform, infinitely=False,
+                 skip_empty_level='warning', stride=1, offset=0):
+        self.cid = corpus.id
         self.corpus = corpus
         self.transform = transform
         self.infinitely = infinitely
+        if skip_empty_level not in ['silent', 'warning', 'error']:
+            raise ValueError(
+                f"Invalid argument skip_empty_level={skip_empty_level}")
+        self.skip_empty_level = skip_empty_level
         self.stride = stride
         self.offset = offset
 
@@ -118,7 +136,18 @@ class ParallelCorpusIterator(object):
 
     def _add_index(self, stream):
         for i, item in enumerate(stream):
-            item[0]['indices'] = i * self.stride + self.offset
+            example = item[0]
+            line_number = i * self.stride + self.offset
+            example['indices'] = line_number
+            if (len(example['src']) == 0 or len(example['tgt']) == 0 or
+                    ('align' in example and example['align'] == 0)):
+                # empty example: skip
+                empty_msg = f"Empty line exists in {self.cid}#{line_number}."
+                if self.skip_empty_level == 'error':
+                    raise IOError(empty_msg)
+                elif self.skip_empty_level == 'warning':
+                    logger.warning(empty_msg)
+                continue
             yield item
 
     def _iter_corpus(self):
@@ -139,7 +168,7 @@ class ParallelCorpusIterator(object):
 
 
 def build_corpora_iters(corpora, transforms, corpora_info, is_train=False,
-                        stride=1, offset=0):
+                        skip_empty_level='warning', stride=1, offset=0):
     """Return `ParallelCorpusIterator` for all corpora defined in opts."""
     corpora_iters = dict()
     for c_id, corpus in corpora.items():
@@ -148,22 +177,33 @@ def build_corpora_iters(corpora, transforms, corpora_info, is_train=False,
         transform_pipe = TransformPipe.build_from(corpus_transform)
         logger.info(f"{c_id}'s transforms: {str(transform_pipe)}")
         corpus_iter = ParallelCorpusIterator(
-            c_id, corpus, transform_pipe, infinitely=is_train,
-            stride=stride, offset=offset)
+            corpus, transform_pipe, infinitely=is_train,
+            skip_empty_level=skip_empty_level, stride=stride, offset=offset)
         corpora_iters[c_id] = corpus_iter
     return corpora_iters
 
 
 def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
     """Save transformed data sample as specified in opts."""
+
+    if n_sample == -1:
+        logger.info(f"n_sample={n_sample}: Save full transformed corpus.")
+    elif n_sample == 0:
+        logger.info(f"n_sample={n_sample}: no sample will be saved.")
+        return
+    elif n_sample > 0:
+        logger.info(f"Save {n_sample} transformed example/corpus.")
+    else:
+        raise ValueError(f"n_sample should >= -1, get {n_sample}.")
+
     from onmt.dynamic.iterator import DatasetAdapter
     corpora = get_corpora(opts, is_train=True)
     if build_vocab:
         counter_src = Counter()
         counter_tgt = Counter()
     datasets_iterables = build_corpora_iters(
-        corpora, transforms,
-        opts.data, is_train=True)
+        corpora, transforms, opts.data, is_train=True,
+        skip_empty_level=opts.skip_empty_level)
     sample_path = os.path.join(
         os.path.dirname(opts.save_data), CorpusName.SAMPLE)
     os.makedirs(sample_path, exist_ok=True)
@@ -182,7 +222,7 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
                     counter_tgt.update(tgt_line.split(' '))
                 f_src.write(src_line + '\n')
                 f_tgt.write(tgt_line + '\n')
-                if i >= n_sample:
+                if n_sample > 0 and i >= n_sample:
                     break
     if build_vocab:
         return counter_src, counter_tgt

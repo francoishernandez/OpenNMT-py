@@ -21,7 +21,8 @@ def build_vocab_main(opts):
     """
 
     DynamicArgumentParser.validate_prepare_opts(opts)
-    assert opts.n_sample > 1, f"Illegal argument n_sample={opts.n_sample}."
+    assert opts.n_sample == -1 or opts.n_sample > 1, \
+        f"Illegal argument n_sample={opts.n_sample}."
 
     logger = init_logger()
     set_random_seed(opts.seed, False)

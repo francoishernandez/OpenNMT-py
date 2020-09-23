@@ -36,6 +36,12 @@ class TokenizerTransform(Transform):
                        "sampling, and dropout probability for BPE-dropout.")
         _COMMON_OPT_ADDED = True
 
+    @classmethod
+    def _validate_options(cls, opts):
+        """Extra checks for Subword options."""
+        assert 0 <= opts.subword_alpha <= 1, \
+            "subword_alpha should be in the range [0, 1]"
+
     def _parse_opts(self):
         raise NotImplementedError
 
@@ -206,6 +212,15 @@ class ONMTTokenizerTransform(TokenizerTransform):
                   default="{'mode': 'none'}",
                   help="Accept any OpenNMT Tokenizer's options in dict "
                        "string, except subword related options.")
+
+    @classmethod
+    def _validate_options(cls, opts):
+        """Extra checks for OpenNMT Tokenizer options."""
+        super()._validate_options(opts)
+        kwargs_dict = eval(opts.onmttok_kwargs)
+        if not isinstance(kwargs_dict, dict):
+            raise ValueError(f"-onmttok_kwargs is not a dict valid string.")
+        opts.onmttok_kwargs = kwargs_dict
 
     def _set_subword_opts(self):
         """Set all options relate to subword for OpenNMT/Tokenizer."""

@@ -71,6 +71,18 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
                   type=int, default=None,
                   help="Truncate target sequence length.")
 
+        group = parser.add_argument_group('embeddings')
+        group.add('-both_embeddings', '--both_embeddings',
+                  help="Path to the embeddings file to use "
+                  "for both source and target tokens.")
+        group.add('-src_embeddings', '--src_embeddings',
+                  help="Path to the embeddings file to use for source tokens.")
+        group.add('-tgt_embeddings', '--tgt_embeddings',
+                  help="Path to the embeddings file to use for target tokens.")
+        group.add('-embeddings_type', '--embeddings_type',
+                  choices=["GloVe", "word2vec"],
+                  help="Type of embeddings file.")
+
 
 def _dynamic_transform_opts(parser):
     """Options related to transforms.

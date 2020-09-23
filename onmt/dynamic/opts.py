@@ -11,6 +11,12 @@ def _dynamic_corpus_opts(parser):
               help='data configuration list.')
     group.add('-save_data', '--save_data', required=True,
               help='Output directory for data saving path.')
+    group.add('-skip_empty_level', '--skip_empty_level', default='warning',
+              choices=['silent', 'warning', 'error'],
+              help="Security level when encounter empty examples."
+              "silent: silently ignore/skip empty example;"
+              "warning: warning when ignore/skip empty example;"
+              "error: raise error & stop excution when encouter empty.)")
     group.add('-overwrite', '--overwrite', action="store_true",
               help="Overwrite existing shards if any.")
     group.add('-transforms', '--transforms', default=[], nargs='+',
@@ -89,10 +95,10 @@ def dynamic_prepare_opts(parser, build_vocab_only=False):
     _dynamic_transform_opts(parser)
     parser.add_argument(
         '-n_sample', '--n_sample',
-        type=int, default=(5000 if build_vocab_only else -1),
-        help=("Build vocab using this number of transformed samples/corpus."
-              if build_vocab_only else
-              "Stop after save this number of transformed samples/corpus."))
+        type=int, default=(5000 if build_vocab_only else 0),
+        help=("Build vocab using " if build_vocab_only else "Stop after save ")
+        + "this number of transformed samples/corpus. Can be [-1, 0, N>0]. "
+        "Set to -1 to go full corpus, 0 to skip.")
 
     if build_vocab_only:
         _add_reproducibility_opts(parser)

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Training on a single process."""
-import os
-
 import torch
 
 from onmt.inputters.inputter import IterOnDevice
@@ -17,45 +15,20 @@ from onmt.dynamic.fields import load_fields
 from onmt.dynamic.iterator import build_dynamic_dataset_iter
 
 
-def _check_save_model_path(opt):
-    save_model_path = os.path.abspath(opt.save_model)
-    model_dirname = os.path.dirname(save_model_path)
-    if not os.path.exists(model_dirname):
-        os.makedirs(model_dirname)
-
-
-def _tally_parameters(model):
-    enc = 0
-    dec = 0
-    for name, param in model.named_parameters():
-        if 'encoder' in name:
-            enc += param.nelement()
-        else:
-            dec += param.nelement()
-    return enc + dec, enc, dec
-
-
 def configure_process(opt, device_id):
     if device_id >= 0:
         torch.cuda.set_device(device_id)
     set_random_seed(opt.seed, device_id >= 0)
 
 
-def _load_checkpoint(opt):
+def _load_checkpoint(ckpt_path):
     """Load checkpoint if any."""
     checkpoint = None
-    if opt.train_from:
-        logger.info('Loading checkpoint from %s' % opt.train_from)
-        checkpoint = torch.load(opt.train_from,
+    if ckpt_path:
+        logger.info('Loading checkpoint from %s' % ckpt_path)
+        checkpoint = torch.load(ckpt_path,
                                 map_location=lambda storage, loc: storage)
     return checkpoint
-
-
-def _load_fields(opt, checkpoint):
-    """Load fields from preprocess file/checkpoint."""
-    # should already verified data config
-    fields = load_fields(opt)
-    return fields
 
 
 def _get_model_opts(opt, checkpoint=None):
@@ -83,25 +56,25 @@ def _build_train_iter(opt, fields, stride=1, offset=0):
     return train_iter
 
 
-def get_train_iter(opt, dynamic=False, stride=1, offset=0):
+def get_train_iter(opt, stride=1, offset=0):
     """Return training iterator."""
-    checkpoint = _load_checkpoint(opt)
-    fields = _load_fields(opt, checkpoint)
+    checkpoint = _load_checkpoint(ckpt_path=opt.train_from)
+    fields = load_fields(opt.save_data, checkpoint)
     train_iter = _build_train_iter(opt, fields, stride=stride, offset=offset)
     return train_iter
 
 
-def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
+def main(opt, device_id, batch_queue=None, semaphore=None):
     """Start training on `device_id`."""
     # NOTE: It's important that ``opt`` has been validated and updated
     # at this point.
     configure_process(opt, device_id)
     init_logger(opt.log_file)
     # Load checkpoint if we resume from a previous training.
-    checkpoint = _load_checkpoint(opt)
-    model_opt = _get_model_opts(opt, checkpoint=checkpoint)
+    checkpoint = _load_checkpoint(ckpt_path=opt.train_from)
+    fields = load_fields(opt.save_data, checkpoint)
 
-    fields = _load_fields(opt, checkpoint)
+    model_opt = _get_model_opts(opt, checkpoint=checkpoint)
     # Report src and tgt vocab sizes, including for features
     for side in ['src', 'tgt']:
         f = fields[side]
@@ -115,11 +88,7 @@ def main(opt, device_id, batch_queue=None, semaphore=None, dynamic=False):
 
     # Build model.
     model = build_model(model_opt, opt, fields, checkpoint)
-    n_params, enc, dec = _tally_parameters(model)
-    logger.info('encoder: %d' % enc)
-    logger.info('decoder: %d' % dec)
-    logger.info('* number of parameters: %d' % n_params)
-    _check_save_model_path(opt)
+    model.count_parameters(log=logger.info)
 
     # Build optimizer.
     optim = Optimizer.from_opt(model, opt, checkpoint=checkpoint)

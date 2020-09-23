@@ -153,7 +153,7 @@ learning_rate: 2
 decay_method: noam
 label_smoothing: 0.1
 adam_beta2: 0.998
-bach_size: 4096
+batch_size: 4096
 batch_type: tokens
 normalization: tokens
 train_steps: 200000

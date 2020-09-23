@@ -89,17 +89,31 @@ class DynamicArgumentParser(ArgumentParser):
         opt._all_transform = all_transforms
 
     @classmethod
-    def _validate_vocab_opts(cls, opt):
+    def _validate_vocab_opts(cls, opt, build_vocab_only=False):
         """Check options relate to vocab."""
         if opt.src_vocab:
             cls._validate_file(opt.src_vocab, info='src vocab')
         if opt.tgt_vocab:
             cls._validate_file(opt.tgt_vocab, info='tgt vocab')
 
+        if not build_vocab_only:
+            # Check embeddings stuff
+            if opt.both_embeddings is not None:
+                assert (opt.src_embeddings is None
+                        and opt.tgt_embeddings is None), \
+                    "You don't need -src_embeddings or -tgt_embeddings \
+                    if -both_embeddings is set."
+
+            if any([opt.both_embeddings is not None,
+                    opt.src_embeddings is not None,
+                    opt.tgt_embeddings is not None]):
+                assert opt.embeddings_type is not None, \
+                    "You need to specify an -embedding_type!"
+
     @classmethod
-    def validate_prepare_opts(cls, opt):
+    def validate_prepare_opts(cls, opt, build_vocab_only=False):
         """Validate all options relate to prepare (data/transform/vocab)."""
         cls._validate_data(opt)
         cls._validate_transforms_opts(opt)
         cls._get_all_transform(opt)
-        cls._validate_vocab_opts(opt)
+        cls._validate_vocab_opts(opt, build_vocab_only=build_vocab_only)

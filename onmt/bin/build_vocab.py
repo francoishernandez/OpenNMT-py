@@ -20,7 +20,7 @@ def build_vocab_main(opts):
     ```
     """
 
-    DynamicArgumentParser.validate_prepare_opts(opts)
+    DynamicArgumentParser.validate_prepare_opts(opts, build_vocab_only=True)
     assert opts.n_sample > 1, f"Illegal argument n_sample={opts.n_sample}."
 
     logger = init_logger()

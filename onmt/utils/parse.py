@@ -123,18 +123,3 @@ class ArgumentParser(cfargparse.ArgumentParser):
     def validate_translate_opts(cls, opt):
         if opt.beam_size != 1 and opt.random_sampling_topk != 1:
             raise ValueError('Can either do beam search OR random sampling.')
-
-    @classmethod
-    def validate_preprocess_args(cls, opt):
-        # Check embeddings stuff
-        if opt.both_embeddings is not None:
-            assert (opt.src_embeddings is None
-                    and opt.tgt_embeddings is None), \
-                "You don't need -src_embeddings or -tgt_embeddings \
-                if -both_embeddings is set."
-
-        if any([opt.both_embeddings is not None,
-                opt.src_embeddings is not None,
-                opt.tgt_embeddings is not None]):
-            assert opt.embeddings_type is not None, \
-                "You need to specify an -embedding_type!"

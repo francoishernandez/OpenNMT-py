@@ -99,23 +99,13 @@ def dynamic_prepare_opts(parser, build_vocab_only=False):
     _dynamic_corpus_opts(parser)
     _dynamic_fields_opts(parser, build_vocab_only=build_vocab_only)
     _dynamic_transform_opts(parser)
-<<<<<<< HEAD
-
     group = parser.add_argument_group("Dataset sampling")
-    group.add_argument(
-        "-n_sample", "--n_sample",
-        type=int, default=(5000 if build_vocab_only else -1),
-        help=("Build vocab using this number of transformed samples/corpus."
-              if build_vocab_only else
-              "Stop after save this number of transformed samples/corpus."))
-=======
     parser.add_argument(
         '-n_sample', '--n_sample',
         type=int, default=(5000 if build_vocab_only else 0),
         help=("Build vocab using " if build_vocab_only else "Stop after save ")
         + "this number of transformed samples/corpus. Can be [-1, 0, N>0]. "
         "Set to -1 to go full corpus, 0 to skip.")
->>>>>>> 32ee11e76eb1445ff696f745545e54a5a3e42281
 
     if build_vocab_only:
         _add_reproducibility_opts(parser)

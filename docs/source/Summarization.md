@@ -29,11 +29,7 @@ An example article-title pair from Gigaword should look like this:
 
 For CNN-DM we follow See et al. [2] and additionally truncate the source length at 400 tokens and the target at 100. We also note that in CNN-DM, we found models to work better if the target surrounds sentences with tags such that a sentence looks like `<t> w1 w2 w3 . </t>`. If you use this formatting, you can remove the tags after the inference step with the commands `sed -i 's/ <\/t>//g' FILE.txt` and `sed -i 's/<t> //g' FILE.txt`.
 
-**Configuration**:
-
-(1) CNN-DM
-
-YAML configuration:
+**YAML Configuration**:
 
 ```yaml
 # cnndm.yaml
@@ -55,22 +51,27 @@ data:
     cnndm:
         path_src: cnndm/train.txt.src
         path_tgt: cnndm/train.txt.tgt.tagged
-        transforms: [filtertoolong]
+        transforms: []
         weight: 1
     valid:
         path_src: cnndm/val.txt.src
         path_tgt: cnndm/val.txt.tgt.tagged
-        transforms: [filtertoolong]
+        transforms: []
 ...
 ```
 
+Let's compute the vocab over the full dataset (`-n_sample -1`):
 ```bash
-onmt_build_vocab -config cnndm.yaml -n_sample -1 # will compute the vocab over the full dataset
+onmt_build_vocab -config cnndm.yaml -n_sample -1
 ```
+
+This command will have written source and target vocabulary to `cnndm/run/example.vocab.src` and `cnndm/run/example.vocab.tgt`. These two files should be the same, as `share_vocab` is set.
 
 ### Training
 
-The training procedure described in this section for the most part follows parameter choices and implementation similar to that of See et al. [2]. We describe notable options in the following list:
+The training procedure described in this section for the most part follows parameter choices and implementation similar to that of See et al. [2].
+
+Most significant options are:
 
 - `copy_attn`: This is the most important option, since it allows the model to copy words from the source.
 - `global_attention mlp`: This makes the model use the  attention mechanism introduced by Bahdanau et al. [3] instead of that by Luong et al. [4] (`global_attention dot`).
@@ -87,7 +88,7 @@ We are using using a 128-dimensional word-embedding, and 512-dimensional 1 layer
 
 We additionally set the maximum norm of the gradient to 2, and renormalize if the gradient norm exceeds this value and do not use any dropout.
 
-**configurations**:
+**Configurations**:
 
 (1) CNN-DM
 
@@ -210,7 +211,7 @@ During inference, we use beam-search with a beam-size of 10. We also added speci
 - `block_ngram_repeat 3`: Prevent the model from repeating trigrams.
 - `ignore_when_blocking "." "</t>" "<t>"`: Allow the model to repeat trigrams with the sentence boundary tokens.
 
-**commands used**:
+**Commands used**:
 
 (1) CNN-DM
 
@@ -218,8 +219,8 @@ During inference, we use beam-search with a beam-size of 10. We also added speci
 onmt_translate -gpu X \
                -batch_size 20 \
                -beam_size 10 \
-               -model models/cnndm... \
-               -src data/cnndm/test.txt.src \
+               -model cnndm/run/... \
+               -src cnndm/test.txt.src \
                -output testout/cnndm.out \
                -min_length 35 \
                -verbose \
@@ -234,12 +235,11 @@ onmt_translate -gpu X \
 ```
 
 
-
 ### Evaluation
 
 #### CNN-DM
 
-To evaluate the ROUGE scores on CNN-DM, we extended the pyrouge wrapper with additional evaluations such as the amount of repeated n-grams (typically found in models with copy attention), found [here](https://github.com/sebastianGehrmann/rouge-baselines). The repository includes a sub-repo called pyrouge. Make sure to clone the code with the `git clone --recurse-submodules https://github.com/sebastianGehrmann/rouge-baselines` command to check this out as well and follow the installation instructions on the pyrouge repository before calling this script.
+To evaluate the ROUGE scores on CNN-DM, we extended the `pyrouge` wrapper with additional evaluations such as the amount of repeated n-grams (typically found in models with copy attention), found [here](https://github.com/sebastianGehrmann/rouge-baselines). The repository includes a sub-repo called pyrouge. Make sure to clone the code with the `git clone --recurse-submodules https://github.com/sebastianGehrmann/rouge-baselines` command to check this out as well and follow the installation instructions on the pyrouge repository before calling this script.
 The installation instructions can be found [here](https://github.com/falcondai/pyrouge/tree/9cdbfbda8b8d96e7c2646ffd048743ddcf417ed9#installation). Note that on MacOS, we found that the pointer to your perl installation in line 1 of `pyrouge/RELEASE-1.5.5/ROUGE-1.5.5.pl` might be different from the one you have installed. A simple fix is to change this line to `#!/usr/local/bin/perl -w` if it fails.
 
 It can be run with the following command:
@@ -254,7 +254,7 @@ The `sent_tag_verbatim` option strips `<t>` and `</t>` tags around sentences - w
 
 For evaluation of large test sets such as Gigaword, we use the a parallel python wrapper around ROUGE, found [here](https://github.com/pltrdy/files2rouge).
 
-**command used**:
+**Command used**:
 `files2rouge giga.out test.title.txt --verbose`
 
 ### Scores and Models

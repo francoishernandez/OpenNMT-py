@@ -20,6 +20,11 @@ class Transform(object):
         pass
 
     @classmethod
+    def _validate_options(cls, opts):
+        """Extra checks to validate options added from `add_options`."""
+        pass
+
+    @classmethod
     def get_specials(cls, opts):
         return (set(), set())
 

@@ -8,6 +8,10 @@ from copy import deepcopy
 
 
 def build_model_saver(model_opt, opt, model, fields, optim):
+    # _check_save_model_path
+    save_model_path = os.path.abspath(opt.save_model)
+    os.makedirs(os.path.dirname(save_model_path), exist_ok=True)
+
     model_saver = ModelSaver(opt.save_model,
                              model,
                              model_opt,

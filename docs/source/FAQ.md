@@ -275,6 +275,17 @@ Methods:
 
 As you can see, there is the `@register_transform` wrapper before the class definition. This will allow for the class to be automatically detected (if put in the proper `transforms` folder) and usable in your training configurations through its `name` argument.
 
+The `example` argument of `apply` is a `dict` of the form:
+```
+{
+	"src": <source string>,
+	"tgt": <target string>,
+	"align": <alignment pharaoh string> # optional
+}
+```
+
+This is defined in `onmt.dynamic.corpus.ParallelCorpus.load`. This class is not easily extendable for now but it can be considered for future developments. For instance, we could create some `CustomParallelCorpus` class that would handle other kind of inputs.
+
 
 ## Can I get word alignments while translating?
 

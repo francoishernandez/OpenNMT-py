@@ -23,6 +23,7 @@ source OpenNMT-py-ggnn-example/env.sh
 cd OpenNMT-py
 ```
 
+
 The YAML configuration for this example is the following:
 
 ```yaml

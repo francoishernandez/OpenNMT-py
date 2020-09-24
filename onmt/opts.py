@@ -583,12 +583,6 @@ def translate_opts(parser):
     group.add('--report_time', '-report_time', action='store_true',
               help="Report some translation time metrics")
 
-    # Options most relevant to summarization.
-    group.add('--dynamic_dict', '-dynamic_dict', action='store_true',
-              help="Create dynamic dictionaries")
-    group.add('--share_vocab', '-share_vocab', action='store_true',
-              help="Share source and target vocabulary")
-
     # Adding options relate to decoding strategy
     _add_decoding_opts(parser)
 

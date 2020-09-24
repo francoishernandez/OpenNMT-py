@@ -6,7 +6,8 @@ import torch
 # import onmt.opts as opts
 from onmt.utils.distributed import ErrorHandler, consumer, batch_producer
 from onmt.utils.misc import set_random_seed
-from onmt.utils.logging import logger
+from onmt.modules.embeddings import prepare_pretrained_embeddings
+from onmt.utils.logging import init_logger, logger
 
 from onmt.train_single import main as single_main, get_train_iter
 
@@ -32,6 +33,9 @@ def prepare_fields_transforms(opt):
         opt, src_specials=specials['src'], tgt_specials=specials['tgt'])
     save_fields(opt, fields)
 
+    # prepare pretrained embeddings, if any
+    prepare_pretrained_embeddings(opt, fields)
+
     transforms = make_transforms(opt, transforms_cls, fields)
     save_transforms(opt, transforms)
     if opt.n_sample != 0:
@@ -47,6 +51,7 @@ def train(opt):
     DynamicArgumentParser.update_model_opts(opt)
     DynamicArgumentParser.validate_model_opts(opt)
 
+    init_logger(opt.log_file)
     set_random_seed(opt.seed, False)
 
     if not opt.train_from:

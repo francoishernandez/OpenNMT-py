@@ -63,11 +63,6 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
                   type=int, default=0,
                   help="Discard target words with lower frequency.")
 
-        group.add("-dynamic_dict", "--dynamic_dict", action="store_true",
-                  help="Create dynamic dictionaries (matching source and "
-                       "target tokens at the example level), which are "
-                       "required for the copy attention mechanism.")
-
         # Truncation options, for text corpus
         group = parser.add_argument_group("Pruning")
         group.add("--src_seq_length_trunc", "-src_seq_length_trunc",
@@ -76,6 +71,18 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
         group.add("--tgt_seq_length_trunc", "-tgt_seq_length_trunc",
                   type=int, default=None,
                   help="Truncate target sequence length.")
+
+        group = parser.add_argument_group('embeddings')
+        group.add('-both_embeddings', '--both_embeddings',
+                  help="Path to the embeddings file to use "
+                  "for both source and target tokens.")
+        group.add('-src_embeddings', '--src_embeddings',
+                  help="Path to the embeddings file to use for source tokens.")
+        group.add('-tgt_embeddings', '--tgt_embeddings',
+                  help="Path to the embeddings file to use for target tokens.")
+        group.add('-embeddings_type', '--embeddings_type',
+                  choices=["GloVe", "word2vec"],
+                  help="Type of embeddings file.")
 
 
 def _dynamic_transform_opts(parser):

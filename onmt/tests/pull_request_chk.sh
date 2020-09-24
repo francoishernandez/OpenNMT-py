@@ -95,7 +95,6 @@ ${PYTHON} onmt/bin/train.py \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
             -src_vocab_size 1000 \
             -tgt_vocab_size 1000 \
-            -dynamic_dict \
             -rnn_size 2 -batch_size 10 \
             -word_vec_size 5 -report_every 5        \
             -rnn_size 10 -train_steps 10 \
@@ -127,7 +126,6 @@ ${PYTHON} onmt/bin/train.py \
             -config ${DATA_DIR}/ggnn_data.yaml \
             -save_data $TMP_OUT_DIR/onmt.train.check_ggnn \
             -src_seq_length 1000 -tgt_seq_length 30 \
-            -dynamic_dict \
             -encoder_type ggnn -layers 2 \
             -decoder_type rnn -rnn_size 256 \
             -learning_rate 0.1 -learning_rate_decay 0.8 \

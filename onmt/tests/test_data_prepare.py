@@ -28,6 +28,8 @@ def get_default_opts():
     ]
 
     opt = parser.parse_known_args(default_opts)[0]
+    # Inject some dummy training options that may needed when build fields
+    opt.copy_attn = False
     return opt
 
 
@@ -102,7 +104,7 @@ test_databuild = [[],
                   [('tgt_seq_len', 5000)],
                   [('tgt_seq_length_trunc', 1)],
                   [('tgt_seq_length_trunc', 5000)],
-                  [('dynamic_dict', True)],
+                  [('copy_attn', True)],
                   [('share_vocab', True)],
                   [('n_sample', 30)],
                   [('n_sample', 30),

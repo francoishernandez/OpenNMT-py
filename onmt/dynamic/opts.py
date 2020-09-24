@@ -87,7 +87,7 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
                   type=int, default=None,
                   help="Truncate target sequence length.")
 
-        group = parser.add_argument_group('embeddings')
+        group = parser.add_argument_group('Embeddings')
         group.add('-both_embeddings', '--both_embeddings',
                   help="Path to the embeddings file to use "
                   "for both source and target tokens.")

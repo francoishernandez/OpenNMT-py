@@ -298,17 +298,22 @@ def convert_to_torch_tensor(word_to_float_list_dict, vocab):
 
 
 def prepare_pretrained_embeddings(opt, fields):
-    if any([opt.both_embeddings is not None,
-            opt.src_embeddings is not None,
-            opt.tgt_embeddings is not None]):
-        vocs = []
-        for side in ['src', 'tgt']:
-            try:
-                vocab = fields[side].base_field.vocab
-            except AttributeError:
-                vocab = fields[side].vocab
-            vocs.append(vocab)
-        enc_vocab, dec_vocab = vocs
+    if all([opt.both_embeddings is None,
+            opt.src_embeddings is None,
+            opt.tgt_embeddings is None]):
+        return
+
+    assert opt.save_data, "-save_data is required when using \
+        pretrained embeddings."
+
+    vocs = []
+    for side in ['src', 'tgt']:
+        try:
+            vocab = fields[side].base_field.vocab
+        except AttributeError:
+            vocab = fields[side].vocab
+        vocs.append(vocab)
+    enc_vocab, dec_vocab = vocs
 
     skip_lines = 1 if opt.embeddings_type == "word2vec" else 0
     if opt.both_embeddings is not None:

@@ -205,7 +205,8 @@ def consumer(process_fn, opt, device_id, error_queue, batch_queue, semaphore):  
         if gpu_rank != opt.gpu_ranks[device_id]:
             raise AssertionError("An error occurred in \
                   Distributed initialization")
-        process_fn(opt, device_id, batch_queue, semaphore)
+        process_fn(opt, device_id=device_id,
+                   batch_queue=batch_queue, semaphore=semaphore)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing
     except Exception:

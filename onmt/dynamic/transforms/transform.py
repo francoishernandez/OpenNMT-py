@@ -189,11 +189,11 @@ def get_specials(opts, transforms_cls_dict):
     return all_specials
 
 
-def save_transforms(opts, transforms):
+def save_transforms(transforms, save_data, overwrite=True):
     """Dump `transforms` object."""
-    transforms_path = "{}.transforms.pt".format(opts.save_data)
+    transforms_path = "{}.transforms.pt".format(save_data)
     os.makedirs(os.path.dirname(transforms_path), exist_ok=True)
-    check_path(transforms_path, exist_ok=opts.overwrite, log=logger.warning)
+    check_path(transforms_path, exist_ok=overwrite, log=logger.warning)
     logger.info(f"Saving Transforms to {transforms_path}.")
     torch.save(transforms, transforms_path)
 

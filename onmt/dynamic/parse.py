@@ -97,6 +97,9 @@ class DynamicArgumentParser(ArgumentParser):
             cls._validate_file(opt.tgt_vocab, info='tgt vocab')
 
         if not build_vocab_only:
+            if opt.dump_fields or opt.dump_transforms:
+                assert opt.save_data, "-save_data should be set if set \
+                    -dump_fields or -dump_transforms."
             # Check embeddings stuff
             if opt.both_embeddings is not None:
                 assert (opt.src_embeddings is None
@@ -109,10 +112,15 @@ class DynamicArgumentParser(ArgumentParser):
                     opt.tgt_embeddings is not None]):
                 assert opt.embeddings_type is not None, \
                     "You need to specify an -embedding_type!"
+                assert opt.save_data, "-save_data should be set if use \
+                    pretrained embeddings."
 
     @classmethod
     def validate_prepare_opts(cls, opt, build_vocab_only=False):
         """Validate all options relate to prepare (data/transform/vocab)."""
+        if opt.n_sample != 0:
+            assert opt.save_data, "-save_data should be set if \
+                     want save samples."
         cls._validate_data(opt)
         cls._get_all_transform(opt)
         cls._validate_transforms_opts(opt)

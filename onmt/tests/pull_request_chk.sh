@@ -24,6 +24,7 @@ clean_up()
     else
         # delete all .pt's
         rm -f $TMP_OUT_DIR/*.pt
+        rm -rf $TMP_OUT_DIR/sample
         rm -d $TMP_OUT_DIR
     fi
 }
@@ -71,12 +72,24 @@ rm -r $TMP_OUT_DIR/sample
 #
 # Training test
 #
+echo -n "[+] Testing NMT fields/transforms prepare..."
+${PYTHON} onmt/bin/train.py \
+            -config ${DATA_DIR}/data.yaml \
+            -save_data $TMP_OUT_DIR/onmt.train.check \
+            -dump_fields -dump_transforms -n_sample 30 \
+            -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
+            -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
+            -src_vocab_size 1000 \
+            -tgt_vocab_size 1000 >> ${LOG_FILE} 2>&1
+[ "$?" -eq 0 ] || error_exit
+echo "Succeeded" | tee -a ${LOG_FILE}
+# rm $TMP_OUT_DIR/onmt.train.check*  # used in tool testing
+
 echo "[+] Doing Training test..."
 
 echo -n "  [+] Testing NMT training..."
 ${PYTHON} onmt/bin/train.py \
             -config ${DATA_DIR}/data.yaml \
-            -save_data $TMP_OUT_DIR/onmt.train.check \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
             -src_vocab_size 1000 \
@@ -90,7 +103,6 @@ echo "Succeeded" | tee -a ${LOG_FILE}
 echo -n "  [+] Testing NMT training w/ copy..."
 ${PYTHON} onmt/bin/train.py \
             -config ${DATA_DIR}/data.yaml \
-            -save_data $TMP_OUT_DIR/onmt.train.check_copy \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
             -src_vocab_size 1000 \
@@ -101,12 +113,10 @@ ${PYTHON} onmt/bin/train.py \
             -copy_attn >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-rm $TMP_OUT_DIR/onmt.train.check_copy*
 
 echo -n "  [+] Testing NMT training w/ align..."
 ${PYTHON} onmt/bin/train.py \
             -config ${DATA_DIR}/align_data.yaml \
-            -save_data $TMP_OUT_DIR/onmt.train.check_align \
             -src_vocab $TMP_OUT_DIR/onmt.vocab.src \
             -tgt_vocab $TMP_OUT_DIR/onmt.vocab.tgt \
             -src_vocab_size 1000 \
@@ -118,13 +128,11 @@ ${PYTHON} onmt/bin/train.py \
             -report_every 5 -train_steps 10 >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-rm $TMP_OUT_DIR/onmt.train.check_align*
 rm $TMP_OUT_DIR/onmt.vocab*
 
 echo -n "  [+] Testing Graph Neural Network training..."
 ${PYTHON} onmt/bin/train.py \
             -config ${DATA_DIR}/ggnn_data.yaml \
-            -save_data $TMP_OUT_DIR/onmt.train.check_ggnn \
             -src_seq_length 1000 -tgt_seq_length 30 \
             -encoder_type ggnn -layers 2 \
             -decoder_type rnn -rnn_size 256 \
@@ -134,7 +142,6 @@ ${PYTHON} onmt/bin/train.py \
             -n_steps 10 -n_node 64 >> ${LOG_FILE} 2>&1
 [ "$?" -eq 0 ] || error_exit
 echo "Succeeded" | tee -a ${LOG_FILE}
-rm $TMP_OUT_DIR/onmt.train.check_ggnn*
 
 #
 # Translation test

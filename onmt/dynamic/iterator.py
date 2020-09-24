@@ -6,7 +6,7 @@ from torchtext.data import Dataset as TorchtextDataset, \
 from onmt.inputters import str2sortkey, max_tok_len, OrderedIterator
 from onmt.inputters.dataset_base import _dynamic_dict
 from onmt.dynamic.corpus import get_corpora, build_corpora_iters
-from onmt.dynamic.transforms import load_transforms
+from onmt.dynamic.transforms import make_transforms
 
 
 class DatasetAdapter(object):
@@ -253,10 +253,10 @@ class DynamicDatasetIter(object):
                 yield batch
 
 
-def build_dynamic_dataset_iter(fields, opts, is_train=True,
+def build_dynamic_dataset_iter(fields, transforms_cls, opts, is_train=True,
                                stride=1, offset=0):
     """Build `DynamicDatasetIter` from fields & opts."""
-    transforms = load_transforms(opts)
+    transforms = make_transforms(opts, transforms_cls, fields)
     corpora = get_corpora(opts, is_train)
     if corpora is None:
         assert not is_train, "only valid corpus is ignorable."

@@ -73,7 +73,7 @@ def train(opt):
             q = mp.Queue(opt.queue_size)
             queues += [q]
             procs.append(mp.Process(target=consumer, args=(
-                single_main, opt, device_id, error_queue, q, semaphore, True),
+                single_main, opt, device_id, error_queue, q, semaphore,),
                 daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)

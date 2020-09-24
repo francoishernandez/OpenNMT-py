@@ -59,9 +59,6 @@ def _dynamic_fields_opts(parser, build_vocab_only=False):
         group.add('-tgt_words_min_frequency', '--tgt_words_min_frequency',
                   type=int, default=0)
 
-        group.add('-dynamic_dict', '--dynamic_dict', action='store_true',
-                  help="Create dynamic dictionaries")
-
         # Truncation options, for text corpus
         group = parser.add_argument_group('Pruning')
         group.add('--src_seq_length_trunc', '-src_seq_length_trunc',

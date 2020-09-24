@@ -27,7 +27,7 @@ cd OpenNMT-py
 1) Preprocess the data.
 
 ```
-python preprocess.py -train_src $data_path/src-train.txt -train_tgt $data_path/tgt-train.txt -valid_src $data_path/src-val.txt -valid_tgt $data_path/tgt-val.txt -src_seq_length 1000 -tgt_seq_length 30 -src_vocab $data_path/srcvocab.txt -tgt_vocab $data_path/tgtvocab.txt -dynamic_dict -save_data $data_path/final 2>&1 > $data_path/preprocess.out
+python preprocess.py -train_src $data_path/src-train.txt -train_tgt $data_path/tgt-train.txt -valid_src $data_path/src-val.txt -valid_tgt $data_path/tgt-val.txt -src_seq_length 1000 -tgt_seq_length 30 -src_vocab $data_path/srcvocab.txt -tgt_vocab $data_path/tgtvocab.txt -save_data $data_path/final 2>&1 > $data_path/preprocess.out
 ```
 
 2) Train the model.
@@ -39,7 +39,7 @@ python train.py -data $data_path/final -encoder_type ggnn -layers 2 -decoder_typ
 3) Translate the graph of 2 equivalent linear algebra expressions into the axiom list which proves them equivalent.
 
 ```
-python translate.py -model $data_path/final-model_step_10000.pt -src $data_path/src-test.txt -beam_size 5 -n_best 5 -gpu 0 -output $data_path/pred-test_beam5.txt -dynamic_dict 2>&1 > $data_path/translate5.out
+python translate.py -model $data_path/final-model_step_10000.pt -src $data_path/src-test.txt -beam_size 5 -n_best 5 -gpu 0 -output $data_path/pred-test_beam5.txt 2>&1 > $data_path/translate5.out
 ```
 
 ### Graph data format

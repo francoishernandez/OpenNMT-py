@@ -22,7 +22,6 @@ def get_default_opts():
 
     default_opts = [
         '-config', 'data/data.yaml',
-        '-save_data', SAVE_DATA_PREFIX,
         '-src_vocab', 'data/vocab-train.src',
         '-tgt_vocab', 'data/vocab-train.tgt'
     ]
@@ -30,6 +29,7 @@ def get_default_opts():
     opt = parser.parse_known_args(default_opts)[0]
     # Inject some dummy training options that may needed when build fields
     opt.copy_attn = False
+    DynamicArgumentParser.validate_prepare_opts(opt)
     return opt
 
 
@@ -55,14 +55,15 @@ class TestData(unittest.TestCase):
             # Remove the generated *pt files.
             for pt in glob.glob(SAVE_DATA_PREFIX + '*.pt'):
                 os.remove(pt)
-            # Remove the generated data samples
-            sample_path = os.path.join(
-                os.path.dirname(self.opt.save_data),
-                CorpusName.SAMPLE)
-            if os.path.exists(sample_path):
-                for f in glob.glob(sample_path + '/*'):
-                    os.remove(f)
-                os.rmdir(sample_path)
+            if self.opt.save_data:
+                # Remove the generated data samples
+                sample_path = os.path.join(
+                    os.path.dirname(self.opt.save_data),
+                    CorpusName.SAMPLE)
+                if os.path.exists(sample_path):
+                    for f in glob.glob(sample_path + '/*'):
+                        os.remove(f)
+                    os.rmdir(sample_path)
 
 
 def _add_test(param_setting, methodname):
@@ -106,8 +107,10 @@ test_databuild = [[],
                   [('tgt_seq_length_trunc', 5000)],
                   [('copy_attn', True)],
                   [('share_vocab', True)],
-                  [('n_sample', 30)],
                   [('n_sample', 30),
+                   ('save_data', SAVE_DATA_PREFIX)],
+                  [('n_sample', 30),
+                   ('save_data', SAVE_DATA_PREFIX),
                    ('skip_empty_level', 'error')]
                   ]
 

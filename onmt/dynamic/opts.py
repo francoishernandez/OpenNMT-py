@@ -4,17 +4,12 @@ from onmt.opts import _train_general_opts, config_opts, model_opts,\
 from onmt.dynamic.transforms import AVAILABLE_TRANSFORMS
 
 
-def _dynamic_corpus_opts(parser):
+def _dynamic_corpus_opts(parser, build_vocab_only=False):
     """Options related to training corpus, type: a list of dictionary."""
-    group = parser.add_argument_group("Data")
+    group = parser.add_argument_group('Data')
     group.add("-data", "--data", required=True,
               help="List of datasets and their specifications. "
                    "See examples/*.yaml for further details.")
-    group.add("-save_data", "--save_data", required=True,
-              help="Output base path for objects that will "
-                   "be saved (vocab, transforms, embeddings, ...).")
-    group.add("-overwrite", "--overwrite", action="store_true",
-              help="Overwrite existing objects if any.")
     group.add("-skip_empty_level", "--skip_empty_level", default="warning",
               choices=["silent", "warning", "error"],
               help="Security level when encounter empty examples."
@@ -25,6 +20,26 @@ def _dynamic_corpus_opts(parser):
               choices=AVAILABLE_TRANSFORMS.keys(),
               help="Default transform pipeline to apply to data. "
                    "Can be specified in each corpus of data to override.")
+
+    group.add("-save_data", "--save_data", required=build_vocab_only,
+              help="Output base path for objects that will "
+                   "be saved (vocab, transforms, embeddings, ...).")
+    group.add("-overwrite", "--overwrite", action="store_true",
+              help="Overwrite existing objects if any.")
+    group.add(
+        '-n_sample', '--n_sample',
+        type=int, default=(5000 if build_vocab_only else 0),
+        help=("Build vocab using " if build_vocab_only else "Stop after save ")
+        + "this number of transformed samples/corpus. Can be [-1, 0, N>0]. "
+        "Set to -1 to go full corpus, 0 to skip.")
+
+    if not build_vocab_only:
+        group.add('-dump_fields', '--dump_fields', action='store_true',
+                  help="Dump fields `*.vocab.pt` to disk."
+                  " -save_data should be set as saving prefix.")
+        group.add('-dump_transforms', '--dump_transforms', action='store_true',
+                  help="Dump transforms `*.transforms.pt` to disk."
+                  " -save_data should be set as saving prefix.")
 
 
 def _dynamic_fields_opts(parser, build_vocab_only=False):
@@ -103,16 +118,9 @@ def dynamic_prepare_opts(parser, build_vocab_only=False):
     will be used in `onmt/bin/build_vocab.py`.
     """
     config_opts(parser)
-    _dynamic_corpus_opts(parser)
+    _dynamic_corpus_opts(parser, build_vocab_only=build_vocab_only)
     _dynamic_fields_opts(parser, build_vocab_only=build_vocab_only)
     _dynamic_transform_opts(parser)
-    group = parser.add_argument_group("Dataset sampling")
-    group.add_argument(
-        '-n_sample', '--n_sample',
-        type=int, default=(5000 if build_vocab_only else 0),
-        help=("Build vocab using " if build_vocab_only else "Stop after save ")
-        + "this number of transformed samples/corpus. Can be [-1, 0, N>0]. "
-        "Set to -1 to go full corpus, 0 to skip.")
 
     if build_vocab_only:
         _add_reproducibility_opts(parser)

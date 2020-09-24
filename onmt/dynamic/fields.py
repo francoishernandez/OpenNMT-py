@@ -62,11 +62,11 @@ def get_vocabs(fields):
     return vocabs
 
 
-def save_fields(opts, fields):
+def save_fields(fields, save_data, overwrite=True):
     """Dump `fields` object."""
-    fields_path = "{}.vocab.pt".format(opts.save_data)
+    fields_path = "{}.vocab.pt".format(save_data)
     os.makedirs(os.path.dirname(fields_path), exist_ok=True)
-    check_path(fields_path, exist_ok=opts.overwrite, log=logger.warning)
+    check_path(fields_path, exist_ok=overwrite, log=logger.warning)
     logger.info(f"Saving fields to {fields_path}...")
     torch.save(fields, fields_path)
 

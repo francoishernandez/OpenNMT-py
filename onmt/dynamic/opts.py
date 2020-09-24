@@ -100,7 +100,7 @@ def dynamic_prepare_opts(parser, build_vocab_only=False):
     _dynamic_fields_opts(parser, build_vocab_only=build_vocab_only)
     _dynamic_transform_opts(parser)
     group = parser.add_argument_group("Dataset sampling")
-    parser.add_argument(
+    group.add_argument(
         '-n_sample', '--n_sample',
         type=int, default=(5000 if build_vocab_only else 0),
         help=("Build vocab using " if build_vocab_only else "Stop after save ")

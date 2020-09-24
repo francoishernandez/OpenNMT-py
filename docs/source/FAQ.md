@@ -225,7 +225,58 @@ data:
 
 Other tokenization methods and transforms are readily available. See the dedicated docs for more details.
 
-## Can I get word alignment while translating?
+## How can I create custom on-the-fly data transforms?
+
+The code is easily extendable with custom transforms inheriting from the `Transform` base class.
+
+You can for instance have a look at the `FilterTooLongTransform` class as a template:
+
+```python
+@register_transform(name='filtertoolong')
+class FilterTooLongTransform(Transform):
+    """Filter out sentence that are too long."""
+
+    def __init__(self, opts):
+        super().__init__(opts)
+        self.src_seq_length = opts.src_seq_length
+        self.tgt_seq_length = opts.tgt_seq_length
+
+    @classmethod
+    def add_options(cls, parser):
+        """Avalilable options relate to this Transform."""
+        group = parser.add_argument_group("Transform/Filter")
+        group.add("--src_seq_length", "-src_seq_length", type=int, default=200,
+                  help="Maximum source sequence length.")
+        group.add("--tgt_seq_length", "-tgt_seq_length", type=int, default=200,
+                  help="Maximum target sequence length.")
+
+    def apply(self, example, is_train=False, stats=None, **kwargs):
+        """Return None if too long else return as is."""
+        if (len(example['src']) > self.src_seq_length or
+                len(example['tgt']) > self.tgt_seq_length):
+            if stats is not None:
+                stats.filter_too_long()
+            return None
+        else:
+            return example
+
+    def _repr_args(self):
+        """Return str represent key arguments for class."""
+        return '{}={}, {}={}'.format(
+            'src_seq_length', self.src_seq_length,
+            'tgt_seq_length', self.tgt_seq_length
+        )
+```
+
+Methods:
+- `add_options` allows to add custom options that would be necessary for the transform configuration;
+- `apply` is where the transform happens;
+- `_repr_args` is for clean logging purposes.
+
+As you can see, there is the `@register_transform` wrapper before the class definition. This will allow for the class to be automatically detected (if put in the proper `transforms` folder) and usable in your training configurations through its `name` argument.
+
+
+## Can I get word alignments while translating?
 
 ### Raw alignments from averaging Transformer attention heads
 

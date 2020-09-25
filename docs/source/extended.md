@@ -6,12 +6,13 @@ This example is for training for the [WMT'14 English to German news translation 
 
 ## Step 0: Download the data and prepare the subwords model
 
+Preliminary steps are defined in the [`examples/scripts/prepare_wmt_data.sh`](https://github.com/OpenNMT/OpenNMT-py/tree/master/examples/scripts/prepare_wmt_data.sh). The following command will download the necessary datasets, and prepare a sentencepiece model:
 ```bash
-mkdir -p data/multi30k
-wget http://www.quest.dcs.shef.ac.uk/wmt16_files_mmt/training.tar.gz &&  tar -xf training.tar.gz -C data/multi30k && rm training.tar.gz
-wget http://www.quest.dcs.shef.ac.uk/wmt16_files_mmt/validation.tar.gz && tar -xf validation.tar.gz -C data/multi30k && rm validation.tar.gz
-wget http://www.quest.dcs.shef.ac.uk/wmt17_files_mmt/mmt_task1_test2016.tar.gz && tar -xf mmt_task1_test2016.tar.gz -C data/multi30k && rm mmt_task1_test2016.tar.gz
+chmod u+x prepare_wmt_data.sh
+./prepare_wmt_data.sh
 ```
+
+Note: you should have installed [sentencepiece](https://github.com/google/sentencepiece) binaries before running this script.
 
 ## Step 1. Build the vocabulary.
 

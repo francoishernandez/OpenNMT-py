@@ -102,7 +102,7 @@ onmt_train -config toy_en_de.yaml
 
 This configuration will run the default model, which consists of a 2-layer LSTM with 500 hidden units on both the encoder and decoder. It will run on a single GPU (`world_size 1` & `gpu_ranks [0]`).
 
-Before the training process actually starts, the `*.vocab.pt` together with `*.transforms.pt` will be dumpped to `-save_data` with configurations specified in `-config` yaml file. We'll also generate transformed samples to simplify any potentially required visual inspection. The number of sample lines to dump per corpus is set with the `-n_sample` flag.
+Before the training process actually starts, the `*.vocab.pt` together with `*.transforms.pt` can be dumped to `-save_data` with configurations specified in `-config` yaml file by enabling the `-dump_fields` and `-dump_transforms` flags. It is also possible to generate transformed samples to simplify any potentially required visual inspection. The number of sample lines to dump per corpus is set with the `-n_sample` flag.
 
 For more advanded models and parameters, see [other example configurations](https://github.com/OpenNMT/OpenNMT-py/tree/master/config) or the [FAQ](FAQ).
 

@@ -51,12 +51,9 @@ data:
     cnndm:
         path_src: cnndm/train.txt.src
         path_tgt: cnndm/train.txt.tgt.tagged
-        transforms: []
-        weight: 1
     valid:
         path_src: cnndm/val.txt.src
         path_tgt: cnndm/val.txt.tgt.tagged
-        transforms: []
 ...
 ```
 

@@ -175,6 +175,7 @@ Finally, we can compute detokenized BLEU with `sacrebleu`:
 ```bash
 for checkpoint in data/wmt/run/model_step*.pt; do
     echo "$checkpoint"
+    base=$(basename $checkpoint)
     sacrebleu data/wmt/test.de < data/wmt/test.de.hyp_${base%.*}
 done
 ```

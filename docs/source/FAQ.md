@@ -166,17 +166,14 @@ data:
     corpus_1:
         path_src: toy-ende/src-train1.txt
         path_tgt: toy-ende/tgt-train1.txt
-        transforms: []
         weight: 7
     corpus_2:
         path_src: toy-ende/src-train1.txt
         path_tgt: toy-ende/tgt-train1.txt
-        transforms: []
         weight: 3
     valid:
         path_src: toy-ende/src-val.txt
         path_tgt: toy-ende/tgt-val.txt
-        transforms: []
 ...
 
 ```
@@ -236,7 +233,7 @@ Note: all the details about every flag and options for each transform can be fou
 
 Transform name: `filtertoolong`
 
-Class: `onmt.dynamic.transforms.misc.FilterTooLongTransform`
+Class: `onmt.transforms.misc.FilterTooLongTransform`
 
 The following options can be added to the configuration :
 - `src_seq_length`: maximum source sequence length;
@@ -246,7 +243,7 @@ The following options can be added to the configuration :
 
 Transform name: `prefix`
 
-Class: `onmt.dynamic.transforms.misc.PrefixTransform`
+Class: `onmt.transforms.misc.PrefixTransform`
 
 For each dataset that the `prefix` transform is applied to, you can set the additional `src_prefix` and `tgt_prefix` parameters in its data configuration:
 
@@ -278,7 +275,7 @@ Common options for the tokenization transforms are the following:
 
 Transform name: `onmt_tokenize`
 
-Class: `onmt.dynamic.transforms.misc.ONMTTokenizerTransform`
+Class: `onmt.transforms.misc.ONMTTokenizerTransform`
 
 Additional options are available:
 - `src_subword_type`: type of subword model for source side (from `["none", "sentencepiece", "bpe"]`);
@@ -290,7 +287,7 @@ Additional options are available:
 
 Transform name: `sentencepiece`
 
-Class: `onmt.dynamic.transforms.misc.SentencePieceTransform`
+Class: `onmt.transforms.misc.SentencePieceTransform`
 
 The `src_subword_model` and `tgt_subword_model` should be valid sentencepiece models.
 
@@ -298,7 +295,7 @@ The `src_subword_model` and `tgt_subword_model` should be valid sentencepiece mo
 
 Transform name: `bpe`
 
-Class: `onmt.dynamic.transforms.misc.BPETransform`
+Class: `onmt.transforms.misc.BPETransform`
 
 The `src_subword_model` and `tgt_subword_model` should be valid BPE models.
 
@@ -323,7 +320,7 @@ These different types of noise can be controlled with the following options:
 
 Transform name: `switchout`
 
-Class: `onmt.dynamic.transforms.misc.SwitchOutTransform`
+Class: `onmt.transforms.misc.SwitchOutTransform`
 
 Options:
 
@@ -333,7 +330,7 @@ Options:
 
 Transform name: `tokendrop`
 
-Class: `onmt.dynamic.transforms.misc.TokenDropTransform`
+Class: `onmt.transforms.misc.TokenDropTransform`
 
 Options:
 
@@ -343,7 +340,7 @@ Options:
 
 Transform name: `tokenmask`
 
-Class: `onmt.dynamic.transforms.misc.TokenMaskTransform`
+Class: `onmt.transforms.misc.TokenMaskTransform`
 
 Options:
 
@@ -408,7 +405,7 @@ The `example` argument of `apply` is a `dict` of the form:
 }
 ```
 
-This is defined in `onmt.dynamic.corpus.ParallelCorpus.load`. This class is not easily extendable for now but it can be considered for future developments. For instance, we could create some `CustomParallelCorpus` class that would handle other kind of inputs.
+This is defined in `onmt.inputters.corpus.ParallelCorpus.load`. This class is not easily extendable for now but it can be considered for future developments. For instance, we could create some `CustomParallelCorpus` class that would handle other kind of inputs.
 
 
 ## Can I get word alignments while translating?

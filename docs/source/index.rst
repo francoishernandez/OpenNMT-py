@@ -21,10 +21,10 @@ Contents
       :caption: Examples
       :maxdepth: 2
 
-      Library.md
-      extended.md
-      Summarization.md
-      ggnn.md
+      examples/Library.md
+      examples/Translation.md
+      examples/Summarization.md
+      examples/GGNN.md
 
 
 .. toctree::

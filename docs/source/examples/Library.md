@@ -20,8 +20,8 @@ from collections import defaultdict, Counter
 ```python
 import onmt
 from onmt.inputters.inputter import _load_vocab, _build_fields_vocab, get_fields, IterOnDevice
-from onmt.dynamic.corpus import ParallelCorpus
-from onmt.dynamic.iterator import DynamicDatasetIter
+from onmt.inputters.corpus import ParallelCorpus
+from onmt.inputters.dynamic_iterator import DynamicDatasetIter
 from onmt.translate import GNMTGlobalScorer, Translator, TranslationBuilder
 from onmt.utils.misc import set_random_seed
 ```
@@ -116,13 +116,13 @@ with open("toy-ende/config.yaml", "w") as f:
 
 
 ```python
-from onmt.dynamic.parse import DynamicArgumentParser
+from onmt.utils.parse import ArgumentParser
 parser = DynamicArgumentParser(description='build_vocab.py')
 ```
 
 
 ```python
-from onmt.dynamic.opts import dynamic_prepare_opts
+from onmt.opts import dynamic_prepare_opts
 dynamic_prepare_opts(parser, build_vocab_only=True)
 ```
 

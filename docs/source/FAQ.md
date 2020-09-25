@@ -270,8 +270,10 @@ Common options for the tokenization transforms are the following:
 
 - `src_subword_model`: path of source side (or both if shared) subword model;
 - `tgt_subword_model`: path of target side subword model;
-- `subword_nbest`: number of candidates for subword regularization (sentencepiece);
-- `subword_alpha`: smoothing parameter for sentencepiece regularization / dropout probability for BPE.
+- `src_subword_nbest`: number of candidates for subword regularization (sentencepiece), source side;
+- `tgt_subword_nbest`: number of candidates for subword regularization (sentencepiece), target_side;
+- `src_subword_alpha`: smoothing parameter for sentencepiece regularization / dropout probability for BPE, source side;
+- `tgt_subword_alpha`: smoothing parameter for sentencepiece regularization / dropout probability for BPE, target side.
 
 #### [OpenNMT Tokenizer](https://github.com/opennmt/Tokenizer)
 
@@ -282,7 +284,8 @@ Class: `onmt.dynamic.transforms.misc.ONMTTokenizerTransform`
 Additional options are available:
 - `src_subword_type`: type of subword model for source side (from `["none", "sentencepiece", "bpe"]`);
 - `tgt_subword_type`: type of subword model for target side (from `["none", "sentencepiece", "bpe"]`);
-- `onmttok_kwargs`: additional kwargs for pyonmttok Tokenizer class.
+- `src_onmttok_kwargs`: additional kwargs for pyonmttok Tokenizer class, source side;
+- `src_onmttok_kwargs`: additional kwargs for pyonmttok Tokenizer class, target side.
 
 #### [SentencePiece](https://github.com/google/sentencepiece)
 

@@ -21,25 +21,32 @@ class TokenizerTransform(Transform):
             'Transform/Subword/Common', conflict_handler='resolve')
         group.add('-src_subword_model', '--src_subword_model',
                   help="Path of subword model for src (or shared).")
-        group.add('-tgt_subword_model', '--tgt_subword_model',
+        group.add("-tgt_subword_model", "--tgt_subword_model",
                   help="Path of subword model for tgt.")
+
         # subword regularization(or BPE dropout) options:
         group.add('-src_subword_nbest', '--src_subword_nbest',
                   type=int, default=1,
-                  help="No of (n_best) candidate in subword regularization."
-                  " Only valid for unigram sampling method (not for BPE).")
+                  help="Number of candidates in subword regularization. "
+                       "Valid for unigram sampling, "
+                       "invalid for BPE-dropout. "
+                       "(source side)")
         group.add('-tgt_subword_nbest', '--tgt_subword_nbest',
                   type=int, default=1,
-                  help="No of (n_best) candidate in subword regularization."
-                  " Only valid for unigram sampling method (not for BPE).")
+                  help="Number of candidates in subword regularization. "
+                       "Valid for unigram sampling, "
+                       "invalid for BPE-dropout. "
+                       "(target side)")
         group.add('-src_subword_alpha', '--src_subword_alpha',
                   type=float, default=0,
-                  help="Smoothing param of sentencepiece unigram sampling"
-                  " or dropout probability of BPE-dropout for src.")
+                  help="Smoothing parameter for sentencepiece unigram "
+                       "sampling, and dropout probability for BPE-dropout. "
+                       "(source side)")
         group.add('-tgt_subword_alpha', '--tgt_subword_alpha',
                   type=float, default=0,
-                  help="Smoothing param of sentencepiece unigram sampling"
-                  " or dropout probability of BPE-dropout for tgt.")
+                  help="Smoothing parameter for sentencepiece unigram "
+                       "sampling, and dropout probability for BPE-dropout. "
+                       "(target side)")
 
     @classmethod
     def _validate_options(cls, opts):
@@ -220,11 +227,12 @@ class ONMTTokenizerTransform(TokenizerTransform):
         group.add('-src_subword_type', '--src_subword_type',
                   type=str, default='none',
                   choices=['none', 'sentencepiece', 'bpe'],
-                  help="Type of subword model for src (or shared) in onmttok.")
+                  help="Type of subword model for src (or shared) "
+                       "in pyonmttok.")
         group.add('-tgt_subword_type', '--tgt_subword_type',
                   type=str, default='none',
                   choices=['none', 'sentencepiece', 'bpe'],
-                  help="Type of subword model for tgt in onmttok.")
+                  help="Type of subword model for tgt in  pyonmttok.")
         group.add('-src_onmttok_kwargs', '--src_onmttok_kwargs', type=str,
                   default="{'mode': 'none'}",
                   help="Other pyonmttok options for src in dict string, "

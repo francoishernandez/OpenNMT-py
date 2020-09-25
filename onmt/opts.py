@@ -7,11 +7,13 @@ from onmt.models.sru import CheckSRU
 
 
 def config_opts(parser):
-    parser.add('-config', '--config', required=False,
-               is_config_file_arg=True, help='config file path')
-    parser.add('-save_config', '--save_config', required=False,
-               is_write_out_config_file_arg=True,
-               help='config file save path')
+    group = parser.add_argument_group("Configuration")
+    group.add('-config', '--config', required=False,
+              is_config_file_arg=True,
+              help='Path of the main YAML config file.')
+    group.add('-save_config', '--save_config', required=False,
+              is_write_out_config_file_arg=True,
+              help='Path where to save the config.')
 
 
 def _add_logging_opts(parser, is_train=True):
@@ -56,8 +58,8 @@ def _add_logging_opts(parser, is_train=True):
 def _add_reproducibility_opts(parser):
     group = parser.add_argument_group('Reproducibility')
     group.add('--seed', '-seed', type=int, default=-1,
-              help="Random seed used for the experiments "
-                   "reproducibility.")
+              help="Set random seed used for better "
+                   "reproducibility between experiments.")
 
 
 def model_opts(parser):

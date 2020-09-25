@@ -50,12 +50,9 @@ data:
     corpus_1:
         path_src: toy-ende/src-train.txt
         path_tgt: toy-ende/tgt-train.txt
-        transforms: []
-        weight: 1
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
-        transforms: []
 ...
 
 ```

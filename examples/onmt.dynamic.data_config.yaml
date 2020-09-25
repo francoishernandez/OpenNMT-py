@@ -17,11 +17,14 @@ share_vocab: True
 #### Subword
 src_subword_model: examples/subword.spm.model
 tgt_subword_model: examples/subword.spm.model
-subword_nbest: 1
-subword_alpha: 0.0
+src_subword_nbest: 1
+tgt_subword_nbest: 1
+src_subword_alpha: 0.0
+tgt_subword_alpha: 0.0
 src_subword_type: sentencepiece
 tgt_subword_type: sentencepiece
-onmttok_kwargs: "{'mode': 'aggressive', 'spacer_annotate': True}"
+src_onmttok_kwargs: "{'mode': 'aggressive', 'spacer_annotate': True}"
+tgt_onmttok_kwargs: "{'mode': 'aggressive', 'spacer_annotate': True}"
 #### Sampling
 switchout_temperature: 1.0
 tokendrop_temperature: 1.0

@@ -202,7 +202,7 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
         counter_src = Counter()
         counter_tgt = Counter()
     datasets_iterables = build_corpora_iters(
-        corpora, transforms, opts.data, is_train=True,
+        corpora, transforms, opts.data, is_train=False,
         skip_empty_level=opts.skip_empty_level)
     sample_path = os.path.join(
         os.path.dirname(opts.save_data), CorpusName.SAMPLE)

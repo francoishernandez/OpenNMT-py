@@ -2,7 +2,7 @@
 import os
 from onmt.utils.logging import logger
 from onmt.constants import CorpusName
-from onmt.dynamic.transforms import TransformPipe
+from onmt.transforms import TransformPipe
 
 from collections import Counter
 from contextlib import contextmanager
@@ -205,7 +205,7 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
     else:
         raise ValueError(f"n_sample should >= -1, get {n_sample}.")
 
-    from onmt.dynamic.iterator import DatasetAdapter
+    from onmt.inputters.dynamic_iterator import DatasetAdapter
     corpora = get_corpora(opts, is_train=True)
     if build_vocab:
         counter_src = Counter()

@@ -12,7 +12,7 @@ from onmt.utils.parse import ArgumentParser
 
 parser = ArgumentParser(description='train.py')
 onmt.opts.model_opts(parser)
-onmt.opts.train_opts(parser)
+onmt.opts._add_train_general_opts(parser)
 
 # -data option is required, but not used in this test, so dummy.
 opt = parser.parse_known_args(['-data', 'dummy'])[0]

@@ -11,7 +11,7 @@ from onmt.models import build_model_saver
 from onmt.utils.logging import init_logger, logger
 from onmt.utils.parse import ArgumentParser
 
-from onmt.dynamic.iterator import build_dynamic_dataset_iter
+from onmt.inputters.dynamic_iterator import build_dynamic_dataset_iter
 
 
 def configure_process(opt, device_id):

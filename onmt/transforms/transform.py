@@ -3,7 +3,7 @@ import os
 import torch
 from onmt.utils.logging import logger
 from onmt.utils.misc import check_path
-from onmt.dynamic.fields import get_vocabs
+from onmt.inputters.fields import get_vocabs
 
 
 class Transform(object):

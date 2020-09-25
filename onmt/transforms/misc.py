@@ -1,5 +1,5 @@
 from onmt.utils.logging import logger
-from onmt.dynamic.transforms import register_transform
+from onmt.transforms import register_transform
 from .transform import Transform
 
 

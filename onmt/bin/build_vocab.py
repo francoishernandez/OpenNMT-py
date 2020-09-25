@@ -2,10 +2,10 @@
 """Get vocabulary coutings from transformed corpora samples."""
 from onmt.utils.logging import init_logger
 from onmt.utils.misc import set_random_seed
-from onmt.dynamic.parse import DynamicArgumentParser
-from onmt.dynamic.opts import dynamic_prepare_opts
-from onmt.dynamic.corpus import save_transformed_sample
-from onmt.dynamic.transforms import make_transforms, get_transforms_cls
+from onmt.utils.parse import ArgumentParser
+from onmt.opts import dynamic_prepare_opts
+from onmt.inputters.corpus import save_transformed_sample
+from onmt.transforms import make_transforms, get_transforms_cls
 
 
 def build_vocab_main(opts):
@@ -20,7 +20,7 @@ def build_vocab_main(opts):
     ```
     """
 
-    DynamicArgumentParser.validate_prepare_opts(opts, build_vocab_only=True)
+    ArgumentParser.validate_prepare_opts(opts, build_vocab_only=True)
     assert opts.n_sample == -1 or opts.n_sample > 1, \
         f"Illegal argument n_sample={opts.n_sample}."
 
@@ -52,7 +52,7 @@ def build_vocab_main(opts):
 
 
 def _get_parser():
-    parser = DynamicArgumentParser(description='build_vocab.py')
+    parser = ArgumentParser(description='build_vocab.py')
     dynamic_prepare_opts(parser, build_vocab_only=True)
     return parser
 

@@ -5,8 +5,8 @@ from torchtext.data import Dataset as TorchtextDataset, \
     Example as TorchtextExample, batch as torchtext_batch
 from onmt.inputters import str2sortkey, max_tok_len, OrderedIterator
 from onmt.inputters.dataset_base import _dynamic_dict
-from onmt.dynamic.corpus import get_corpora, build_corpora_iters
-from onmt.dynamic.transforms import make_transforms
+from onmt.inputters.corpus import get_corpora, build_corpora_iters
+from onmt.transforms import make_transforms
 
 
 class DatasetAdapter(object):

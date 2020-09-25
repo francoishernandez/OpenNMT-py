@@ -13,11 +13,12 @@ from onmt.utils.logging import init_logger, logger
 from onmt.models.model_saver import load_checkpoint
 from onmt.train_single import main as single_main, _build_train_iter
 
-from onmt.dynamic.parse import DynamicArgumentParser
-from onmt.dynamic.opts import dynamic_train_opts
-from onmt.dynamic.corpus import save_transformed_sample
-from onmt.dynamic.fields import build_dynamic_fields, save_fields, load_fields
-from onmt.dynamic.transforms import make_transforms, save_transforms, \
+from onmt.utils.parse import ArgumentParser
+from onmt.opts import train_opts
+from onmt.inputters.corpus import save_transformed_sample
+from onmt.inputters.fields import build_dynamic_fields, save_fields, \
+    load_fields
+from onmt.transforms import make_transforms, save_transforms, \
     get_specials, get_transforms_cls
 
 # Set sharing strategy manually instead of default based on the OS.
@@ -54,7 +55,7 @@ def prepare_fields_transforms(opt):
 
 def _init_train(opt):
     """Common initilization stuff for all training process."""
-    DynamicArgumentParser.validate_prepare_opts(opt)
+    ArgumentParser.validate_prepare_opts(opt)
 
     if opt.train_from:
         # Load checkpoint if we resume from a previous training.
@@ -93,9 +94,9 @@ def _init_train(opt):
 
 def train(opt):
     init_logger(opt.log_file)
-    DynamicArgumentParser.validate_train_opts(opt)
-    DynamicArgumentParser.update_model_opts(opt)
-    DynamicArgumentParser.validate_model_opts(opt)
+    ArgumentParser.validate_train_opts(opt)
+    ArgumentParser.update_model_opts(opt)
+    ArgumentParser.validate_model_opts(opt)
 
     set_random_seed(opt.seed, False)
 
@@ -156,8 +157,8 @@ def train(opt):
 
 
 def _get_parser():
-    parser = DynamicArgumentParser(description='dynamic_train.py')
-    dynamic_train_opts(parser)
+    parser = ArgumentParser(description='train.py')
+    train_opts(parser)
     return parser
 
 

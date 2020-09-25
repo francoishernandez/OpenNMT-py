@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from functools import partial
 from onmt.constants import DefaultTokens, SubwordMarker
-from onmt.dynamic.transforms import register_transform
+from onmt.transforms import register_transform
 from .transform import Transform
 
 

@@ -7,8 +7,8 @@ import unittest
 import glob
 import os
 
-from onmt.dynamic.parse import DynamicArgumentParser
-from onmt.dynamic.opts import dynamic_prepare_opts
+from onmt.utils.parse import ArgumentParser
+from onmt.opts import dynamic_prepare_opts
 from onmt.bin.train import prepare_fields_transforms
 from onmt.constants import CorpusName
 
@@ -17,7 +17,7 @@ SAVE_DATA_PREFIX = 'data/test_data_prepare'
 
 
 def get_default_opts():
-    parser = DynamicArgumentParser(description='data sample prepare')
+    parser = ArgumentParser(description='data sample prepare')
     dynamic_prepare_opts(parser)
 
     default_opts = [
@@ -29,7 +29,7 @@ def get_default_opts():
     opt = parser.parse_known_args(default_opts)[0]
     # Inject some dummy training options that may needed when build fields
     opt.copy_attn = False
-    DynamicArgumentParser.validate_prepare_opts(opt)
+    ArgumentParser.validate_prepare_opts(opt)
     return opt
 
 

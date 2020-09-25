@@ -48,8 +48,10 @@ data:
 #### Subword
 src_subword_model: data/wmt/wmtende.model
 tgt_subword_model: data/wmt/wmtende.model
-subword_nbest: 1
-subword_alpha: 0.0
+src_subword_nbest: 1
+src_subword_alpha: 0.0
+tgt_subword_nbest: 1
+tgt_subword_alpha: 0.0
 #### Filter
 src_seq_length: 150
 tgt_seq_length: 150

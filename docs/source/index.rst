@@ -7,9 +7,14 @@ Contents
 
       main.md
       quickstart.md
-      FAQ.md
       CONTRIBUTING.md
       ref.rst
+
+.. toctree::
+      :caption: FAQ
+      :maxdepth: 2
+
+      FAQ.md
 
 
 .. toctree::

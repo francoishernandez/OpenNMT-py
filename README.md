@@ -61,7 +61,7 @@ Table of Contents
   * [Acknowledgements](#acknowledgements)
   * [Citation](#citation)
 
-## Usage
+## Setup
 
 OpenNMT-py requires:
 
@@ -90,7 +90,7 @@ pip install -r requirements.opt.txt
 
 ## Features
 
-- **/!\ New in OpenNMT-py 2.0**: [On the fly data processing]([here](https://opennmt.net/OpenNMT-py/FAQ.html#what-are-the-readily-available-on-the-fly-data-transforms).)
+- :warning: **New in OpenNMT-py 2.0**: [On the fly data processing]([here](https://opennmt.net/OpenNMT-py/FAQ.html#what-are-the-readily-available-on-the-fly-data-transforms).)
 
 - [Seq2Seq models (encoder-decoder) with multiple RNN cells (lstm/gru) and attention (dotprod/mlp) types](http://opennmt.net/OpenNMT-py/options/train.html#model-encoder-decoder)
 - [Transformer models](http://opennmt.net/OpenNMT-py/FAQ.html#how-do-i-use-the-transformer-model)
@@ -151,12 +151,9 @@ data:
     corpus_1:
         path_src: toy-ende/src-train.txt
         path_tgt: toy-ende/tgt-train.txt
-        transforms: []
-        weight: 1
     valid:
         path_src: data/src-val.txt
         path_tgt: data/tgt-val.txt
-        transforms: []
 ...
 
 ```
@@ -253,7 +250,7 @@ Major contributors are:
 [Guillaume Klein](https://github.com/guillaumekln) (Systran)
 [Paul Tardy](https://github.com/pltrdy) (Ubiqus / Lium)
 [François Hernandez](https://github.com/francoishernandez) (Ubiqus)
-[Linxiao Zeng](https://github.com/Ubiqus/Zenglinxiao) (Ubiqus)
+[Linxiao Zeng](https://github.com/Zenglinxiao) (Ubiqus)
 [Jianyu Zhan](http://github.com/jianyuzhan) (Shanghai)
 [Dylan Flaute](http://github.com/flauted) (University of Dayton)
 and more !

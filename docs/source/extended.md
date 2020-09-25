@@ -1,7 +1,7 @@
 
 # Translation
 
-This example is for training for the WMT'14 English to German news translation task (https://www.statmt.org/wmt14/translation-task.html). It will use on the fly tokenization with [sentencepiece](https://github.com/google/sentencepiece) and [sacrebleu](https://github.com/mjpost/sacrebleu) for evaluation.
+This example is for training for the [WMT'14 English to German news translation task](https://www.statmt.org/wmt14/translation-task.html). It will use on the fly tokenization with [sentencepiece](https://github.com/google/sentencepiece) and [sacrebleu](https://github.com/mjpost/sacrebleu) for evaluation.
 
 
 ## Step 0: Download the data and prepare the subwords model

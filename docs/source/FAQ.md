@@ -302,7 +302,7 @@ The `src_subword_model` and `tgt_subword_model` should be valid BPE models.
 
 ### BART-style noise
 
-BART-style noise is composed of several parts, as described in BART: [Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension](https://arxiv.org/abs/1910.13461).
+BART-style noise is composed of several parts, as described in [BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension](https://arxiv.org/abs/1910.13461).
 
 These different types of noise can be controlled with the following options:
 

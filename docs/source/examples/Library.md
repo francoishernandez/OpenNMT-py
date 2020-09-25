@@ -1,7 +1,7 @@
 
 # Library
 
-The example notebook (available [here](https://github.com/OpenNMT/OpenNMT-py/blob/master/docs/source/Library.ipynb)) should be able to run as a standalone execution, provided `onmt` is in the path (installed via `pip` for instance).
+The example notebook (available [here](https://github.com/OpenNMT/OpenNMT-py/blob/master/docs/source/examples/Library.ipynb)) should be able to run as a standalone execution, provided `onmt` is in the path (installed via `pip` for instance).
 
 Some parts may not be 100% 'library-friendly' but it's mostly workable.
 

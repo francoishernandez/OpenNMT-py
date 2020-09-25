@@ -23,6 +23,7 @@ from onmt.inputters.inputter import _load_vocab, _build_fields_vocab, get_fields
 from onmt.dynamic.corpus import ParallelCorpus
 from onmt.dynamic.iterator import DynamicDatasetIter
 from onmt.translate import GNMTGlobalScorer, Translator, TranslationBuilder
+from onmt.utils.misc import set_random_seed
 ```
 
 ### Enable logging
@@ -41,6 +42,14 @@ init_logger()
 
 
 
+### Set random seed
+
+
+```python
+is_cuda = torch.cuda.is_available()
+set_random_seed(1111, is_cuda)
+```
+
 ### Retrieve data
 
 To make a proper example, we will need some data, as well as some vocabulary(ies).
@@ -52,16 +61,16 @@ Let's take the same data as in the [quickstart](https://opennmt.net/OpenNMT-py/q
 !wget https://s3.amazonaws.com/opennmt-trainingdata/toy-ende.tar.gz
 ```
 
-    --2020-09-22 16:31:08--  https://s3.amazonaws.com/opennmt-trainingdata/toy-ende.tar.gz
-    Resolving s3.amazonaws.com (s3.amazonaws.com)... 52.216.97.181
-    Connecting to s3.amazonaws.com (s3.amazonaws.com)|52.216.97.181|:443... connected.
+    --2020-09-25 15:28:05--  https://s3.amazonaws.com/opennmt-trainingdata/toy-ende.tar.gz
+    Resolving s3.amazonaws.com (s3.amazonaws.com)... 52.217.18.38
+    Connecting to s3.amazonaws.com (s3.amazonaws.com)|52.217.18.38|:443... connected.
     HTTP request sent, awaiting response... 200 OK
     Length: 1662081 (1,6M) [application/x-gzip]
-    Saving to: ‘toy-ende.tar.gz.15’
+    Saving to: ‘toy-ende.tar.gz.5’
     
-    toy-ende.tar.gz.15  100%[===================>]   1,58M  2,17MB/s    in 0,7s    
+    toy-ende.tar.gz.5   100%[===================>]   1,58M  2,33MB/s    in 0,7s    
     
-    2020-09-22 16:31:09 (2,17 MB/s) - ‘toy-ende.tar.gz.15’ saved [1662081/1662081]
+    2020-09-25 15:28:07 (2,33 MB/s) - ‘toy-ende.tar.gz.5’ saved [1662081/1662081]
     
 
 
@@ -76,7 +85,7 @@ ls toy-ende
 ```
 
     config.yaml  src-test.txt   src-val.txt   tgt-train.txt
-    run          src-train.txt  tgt-test.txt  tgt-val.txt
+    [0m[01;34mrun[0m/         src-train.txt  tgt-test.txt  tgt-val.txt
 
 
 ### Prepare data and vocab
@@ -131,7 +140,7 @@ opts
 
 
 
-    Namespace(config='toy-ende/config.yaml', data="{'corpus': {'path_src': 'toy-ende/src-train.txt', 'path_tgt': 'toy-ende/tgt-train.txt', 'transforms': [], 'weight': 1}, 'valid': {'path_src': 'toy-ende/src-val.txt', 'path_tgt': 'toy-ende/tgt-val.txt', 'transforms': []}}", insert_ratio=0.0, mask_length='subword', mask_ratio=0.0, n_sample=10000, onmttok_kwargs="{'mode': 'none'}", overwrite=False, permute_sent_ratio=0.0, poisson_lambda=0.0, random_ratio=0.0, replace_length=-1, rotate_ratio=0.5, save_config=None, save_data='toy-ende/run/example', seed=-1, share_vocab=False, src_seq_length=200, src_subword_model=None, src_subword_type='none', src_vocab=None, subword_alpha=0, subword_nbest=1, switchout_temperature=1.0, tgt_seq_length=200, tgt_subword_model=None, tgt_subword_type='none', tgt_vocab=None, tokendrop_temperature=1.0, tokenmask_temperature=1.0, transforms=[])
+    Namespace(config='toy-ende/config.yaml', data="{'corpus': {'path_src': 'toy-ende/src-train.txt', 'path_tgt': 'toy-ende/tgt-train.txt', 'transforms': [], 'weight': 1}, 'valid': {'path_src': 'toy-ende/src-val.txt', 'path_tgt': 'toy-ende/tgt-val.txt', 'transforms': []}}", insert_ratio=0.0, mask_length='subword', mask_ratio=0.0, n_sample=10000, onmttok_kwargs="{'mode': 'none'}", overwrite=False, permute_sent_ratio=0.0, poisson_lambda=0.0, random_ratio=0.0, replace_length=-1, rotate_ratio=0.5, save_config=None, save_data='toy-ende/run/example', seed=-1, share_vocab=False, skip_empty_level='warning', src_seq_length=200, src_subword_model=None, src_subword_type='none', src_vocab=None, subword_alpha=0, subword_nbest=1, switchout_temperature=1.0, tgt_seq_length=200, tgt_subword_model=None, tgt_subword_type='none', tgt_vocab=None, tokendrop_temperature=1.0, tokenmask_temperature=1.0, transforms=[])
 
 
 
@@ -141,14 +150,14 @@ from onmt.bin.build_vocab import build_vocab_main
 build_vocab_main(opts)
 ```
 
-    [2020-09-22 16:31:09,862 WARNING] Corpus valid's weight should be given. We default it to 1 for you.
-    [2020-09-22 16:31:09,866 INFO] Parsed 2 corpora from -data.
-    [2020-09-22 16:31:09,868 INFO] Counter vocab from 10000 samples.
-    [2020-09-22 16:31:09,871 INFO] corpus's transforms: TransformPipe()
-    [2020-09-22 16:31:09,901 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:10,084 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:10,115 INFO] Counters src:24995
-    [2020-09-22 16:31:10,116 INFO] Counters tgt:35816
+    [2020-09-25 15:28:08,068 INFO] Parsed 2 corpora from -data.
+    [2020-09-25 15:28:08,069 INFO] Counter vocab from 10000 samples.
+    [2020-09-25 15:28:08,070 INFO] Save 10000 transformed example/corpus.
+    [2020-09-25 15:28:08,070 INFO] corpus's transforms: TransformPipe()
+    [2020-09-25 15:28:08,101 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:28:08,320 INFO] Just finished the first loop
+    [2020-09-25 15:28:08,320 INFO] Counters src:24995
+    [2020-09-25 15:28:08,321 INFO] Counters tgt:35816
 
 
 
@@ -156,7 +165,7 @@ build_vocab_main(opts)
 ls toy-ende/run
 ```
 
-    example.vocab.src  example.vocab.tgt  sample
+    example.vocab.src  example.vocab.tgt  [0m[01;34msample[0m/
 
 
 We just created our source and target vocabularies, respectively `toy-ende/run/example.vocab.src` and `toy-ende/run/example.vocab.tgt`.
@@ -187,10 +196,10 @@ _tgt_vocab, _tgt_vocab_size = _load_vocab(
     counters)
 ```
 
-    [2020-09-22 16:31:11,523 INFO] Loading src vocabulary from toy-ende/run/example.vocab.src
-    [2020-09-22 16:31:11,584 INFO] Loaded src vocab has 24995 tokens.
-    [2020-09-22 16:31:11,593 INFO] Loading tgt vocabulary from toy-ende/run/example.vocab.tgt
-    [2020-09-22 16:31:11,647 INFO] Loaded tgt vocab has 35816 tokens.
+    [2020-09-25 15:28:08,495 INFO] Loading src vocabulary from toy-ende/run/example.vocab.src
+    [2020-09-25 15:28:08,554 INFO] Loaded src vocab has 24995 tokens.
+    [2020-09-25 15:28:08,562 INFO] Loading tgt vocabulary from toy-ende/run/example.vocab.tgt
+    [2020-09-25 15:28:08,617 INFO] Loaded tgt vocab has 35816 tokens.
 
 
 
@@ -209,9 +218,9 @@ fields
 
 
 
-    {'src': <onmt.inputters.text_dataset.TextMultiField at 0x7fb613e8b748>,
-     'tgt': <onmt.inputters.text_dataset.TextMultiField at 0x7fb613e8b828>,
-     'indices': <torchtext.data.field.Field at 0x7fb613e8bf60>}
+    {'src': <onmt.inputters.text_dataset.TextMultiField at 0x7fca93802c50>,
+     'tgt': <onmt.inputters.text_dataset.TextMultiField at 0x7fca93802f60>,
+     'indices': <torchtext.data.field.Field at 0x7fca93802940>}
 
 
 
@@ -231,8 +240,8 @@ vocab_fields = _build_fields_vocab(
     tgt_vocab_size, tgt_words_min_frequency)
 ```
 
-    [2020-09-22 16:31:12,362 INFO]  * tgt vocab size: 30004.
-    [2020-09-22 16:31:12,412 INFO]  * src vocab size: 24997.
+    [2020-09-25 15:28:08,699 INFO]  * tgt vocab size: 30004.
+    [2020-09-25 15:28:08,749 INFO]  * src vocab size: 24997.
 
 
 An alternative way of creating these fields is to run `onmt_train` without actually training, to just output the necessary files.
@@ -311,32 +320,23 @@ src_val = "toy-ende/src-val.txt"
 tgt_val = "toy-ende/tgt-val.txt"
 
 # build the ParallelCorpus
-corpus = ParallelCorpus(src_train, tgt_train)
-valid = ParallelCorpus(src_val, tgt_val)
-```
-
-
-```python
-corpora = {"corpus": corpus}
-transforms = {}
-opts = Namespace()
-opts.batch_size = 4096
-opts.batch_type = "tokens"
-opts.valid_batch_size = 8
-opts.batch_size_multiple = 1
-opts.data_type = "text"
-opts.bucket_size = 4096
-opts.pool_factor = 100
-opts.data = {"corpus": {"weight": 1}}
+corpus = ParallelCorpus("corpus", src_train, tgt_train)
+valid = ParallelCorpus("valid", src_val, tgt_val)
 ```
 
 
 ```python
 # build the training iterator
-is_train = True
 train_iter = DynamicDatasetIter(
-    corpora, transforms, vocab_fields, opts, is_train,
-    stride=1, offset=0)
+    corpora={"corpus": corpus},
+    corpora_info={"corpus": {"weight": 1}},
+    transforms={},
+    fields=vocab_fields,
+    is_train=True,
+    batch_type="tokens",
+    batch_size=4096,
+    batch_size_multiple=1,
+    data_type="text")
 ```
 
 
@@ -347,26 +347,17 @@ train_iter = iter(IterOnDevice(train_iter, 0))
 
 
 ```python
-corpora = {"valid": valid}
-transforms = {}
-opts = Namespace()
-opts.batch_size = 4096
-opts.batch_type = "tokens"
-opts.valid_batch_size = 8
-opts.batch_size_multiple = 1
-opts.data_type = "text"
-opts.bucket_size = 4096
-opts.pool_factor = 100
-opts.data = {"valid": {"weight": 1}}
-```
-
-
-```python
 # build the validation iterator
-is_train = False
 valid_iter = DynamicDatasetIter(
-    corpora, transforms, vocab_fields, opts, is_train,
-    stride=1, offset=0)
+    corpora={"valid": valid},
+    corpora_info={"valid": {"weight": 1}},
+    transforms={},
+    fields=vocab_fields,
+    is_train=False,
+    batch_type="sents",
+    batch_size=8,
+    batch_size_multiple=1,
+    data_type="text")
 ```
 
 
@@ -396,52 +387,52 @@ trainer.train(train_iter=train_iter,
               valid_steps=500)
 ```
 
-    [2020-09-22 16:31:18,569 INFO] Start training loop and validate every 500 steps...
-    [2020-09-22 16:31:18,572 INFO] corpus's transforms: TransformPipe()
-    [2020-09-22 16:31:18,574 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:24,717 INFO] Step 50/ 1000; acc:   7.21; ppl: 6659.24; xent: 8.80; lr: 1.00000; 19307/19183 tok/s;      6 sec
-    [2020-09-22 16:31:28,225 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:30,779 INFO] Step 100/ 1000; acc:   9.26; ppl: 1989.38; xent: 7.60; lr: 1.00000; 19281/19312 tok/s;     12 sec
-    [2020-09-22 16:31:36,770 INFO] Step 150/ 1000; acc:  10.16; ppl: 1374.93; xent: 7.23; lr: 1.00000; 18835/18653 tok/s;     18 sec
-    [2020-09-22 16:31:37,902 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:42,944 INFO] Step 200/ 1000; acc:  11.11; ppl: 1114.67; xent: 7.02; lr: 1.00000; 19001/18907 tok/s;     24 sec
-    [2020-09-22 16:31:49,075 INFO] Step 250/ 1000; acc:  12.05; ppl: 940.74; xent: 6.85; lr: 1.00000; 19266/19120 tok/s;     31 sec
-    [2020-09-22 16:31:52,315 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:31:55,233 INFO] Step 300/ 1000; acc:  13.13; ppl: 756.69; xent: 6.63; lr: 1.00000; 18918/18918 tok/s;     37 sec
-    [2020-09-22 16:32:01,301 INFO] Step 350/ 1000; acc:  13.84; ppl: 673.48; xent: 6.51; lr: 1.00000; 18444/18335 tok/s;     43 sec
-    [2020-09-22 16:32:02,179 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:32:07,458 INFO] Step 400/ 1000; acc:  14.74; ppl: 579.51; xent: 6.36; lr: 1.00000; 19241/19129 tok/s;     49 sec
-    [2020-09-22 16:32:13,644 INFO] Step 450/ 1000; acc:  16.07; ppl: 507.73; xent: 6.23; lr: 1.00000; 18889/18905 tok/s;     55 sec
-    [2020-09-22 16:32:16,765 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:32:19,841 INFO] Step 500/ 1000; acc:  16.48; ppl: 456.66; xent: 6.12; lr: 1.00000; 19076/18925 tok/s;     61 sec
-    [2020-09-22 16:32:19,842 INFO] valid's transforms: TransformPipe()
-    [2020-09-22 16:32:19,844 INFO] Loading ParallelCorpus(toy-ende/src-val.txt, toy-ende/tgt-val.txt, align=None)...
-    [2020-09-22 16:32:28,779 INFO] Validation perplexity: 276.766
-    [2020-09-22 16:32:28,780 INFO] Validation accuracy: 20.0439
-    [2020-09-22 16:32:34,824 INFO] Step 550/ 1000; acc:  17.48; ppl: 404.68; xent: 6.00; lr: 1.00000; 7507/7418 tok/s;     76 sec
-    [2020-09-22 16:32:35,565 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:32:41,112 INFO] Step 600/ 1000; acc:  18.90; ppl: 348.96; xent: 5.85; lr: 1.00000; 18067/18046 tok/s;     83 sec
-    [2020-09-22 16:32:47,363 INFO] Step 650/ 1000; acc:  19.69; ppl: 311.28; xent: 5.74; lr: 1.00000; 18561/18595 tok/s;     89 sec
-    [2020-09-22 16:32:50,417 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:32:53,650 INFO] Step 700/ 1000; acc:  20.55; ppl: 279.91; xent: 5.63; lr: 1.00000; 18735/18615 tok/s;     95 sec
-    [2020-09-22 16:32:59,905 INFO] Step 750/ 1000; acc:  21.90; ppl: 243.30; xent: 5.49; lr: 1.00000; 18580/18489 tok/s;    101 sec
-    [2020-09-22 16:33:00,493 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:33:06,243 INFO] Step 800/ 1000; acc:  23.01; ppl: 215.40; xent: 5.37; lr: 1.00000; 17972/17859 tok/s;    108 sec
-    [2020-09-22 16:33:10,432 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:33:12,454 INFO] Step 850/ 1000; acc:  24.39; ppl: 188.56; xent: 5.24; lr: 1.00000; 18979/18915 tok/s;    114 sec
-    [2020-09-22 16:33:18,704 INFO] Step 900/ 1000; acc:  25.39; ppl: 169.35; xent: 5.13; lr: 1.00000; 18709/18341 tok/s;    120 sec
-    [2020-09-22 16:33:24,976 INFO] Step 950/ 1000; acc:  26.46; ppl: 150.88; xent: 5.02; lr: 1.00000; 18393/18571 tok/s;    126 sec
-    [2020-09-22 16:33:25,388 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
-    [2020-09-22 16:33:31,180 INFO] Step 1000/ 1000; acc:  27.87; ppl: 132.36; xent: 4.89; lr: 1.00000; 18655/18517 tok/s;    133 sec
-    [2020-09-22 16:33:31,182 INFO] Loading ParallelCorpus(toy-ende/src-val.txt, toy-ende/tgt-val.txt, align=None)...
-    [2020-09-22 16:33:40,079 INFO] Validation perplexity: 218.311
-    [2020-09-22 16:33:40,080 INFO] Validation accuracy: 21.7181
+    [2020-09-25 15:28:15,184 INFO] Start training loop and validate every 500 steps...
+    [2020-09-25 15:28:15,185 INFO] corpus's transforms: TransformPipe()
+    [2020-09-25 15:28:15,187 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:28:21,140 INFO] Step 50/ 1000; acc:   7.52; ppl: 8832.29; xent: 9.09; lr: 1.00000; 18916/18871 tok/s;      6 sec
+    [2020-09-25 15:28:24,869 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:28:27,121 INFO] Step 100/ 1000; acc:   9.34; ppl: 1840.06; xent: 7.52; lr: 1.00000; 18911/18785 tok/s;     12 sec
+    [2020-09-25 15:28:33,048 INFO] Step 150/ 1000; acc:  10.35; ppl: 1419.18; xent: 7.26; lr: 1.00000; 19062/19017 tok/s;     18 sec
+    [2020-09-25 15:28:37,019 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:28:39,022 INFO] Step 200/ 1000; acc:  11.14; ppl: 1127.44; xent: 7.03; lr: 1.00000; 19084/18911 tok/s;     24 sec
+    [2020-09-25 15:28:45,073 INFO] Step 250/ 1000; acc:  12.46; ppl: 912.13; xent: 6.82; lr: 1.00000; 18575/18570 tok/s;     30 sec
+    [2020-09-25 15:28:49,301 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:28:51,151 INFO] Step 300/ 1000; acc:  13.04; ppl: 779.50; xent: 6.66; lr: 1.00000; 18394/18307 tok/s;     36 sec
+    [2020-09-25 15:28:57,316 INFO] Step 350/ 1000; acc:  14.04; ppl: 685.48; xent: 6.53; lr: 1.00000; 18339/18173 tok/s;     42 sec
+    [2020-09-25 15:29:02,117 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:29:03,576 INFO] Step 400/ 1000; acc:  14.99; ppl: 590.20; xent: 6.38; lr: 1.00000; 18090/18029 tok/s;     48 sec
+    [2020-09-25 15:29:09,546 INFO] Step 450/ 1000; acc:  16.00; ppl: 524.51; xent: 6.26; lr: 1.00000; 18726/18536 tok/s;     54 sec
+    [2020-09-25 15:29:14,585 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:29:15,596 INFO] Step 500/ 1000; acc:  16.78; ppl: 453.38; xent: 6.12; lr: 1.00000; 17877/17980 tok/s;     60 sec
+    [2020-09-25 15:29:15,597 INFO] valid's transforms: TransformPipe()
+    [2020-09-25 15:29:15,599 INFO] Loading ParallelCorpus(toy-ende/src-val.txt, toy-ende/tgt-val.txt, align=None)...
+    [2020-09-25 15:29:24,528 INFO] Validation perplexity: 295.1
+    [2020-09-25 15:29:24,529 INFO] Validation accuracy: 17.6533
+    [2020-09-25 15:29:30,592 INFO] Step 550/ 1000; acc:  17.47; ppl: 421.26; xent: 6.04; lr: 1.00000; 7726/7610 tok/s;     75 sec
+    [2020-09-25 15:29:36,055 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:29:36,695 INFO] Step 600/ 1000; acc:  18.95; ppl: 354.44; xent: 5.87; lr: 1.00000; 17470/17598 tok/s;     82 sec
+    [2020-09-25 15:29:42,794 INFO] Step 650/ 1000; acc:  19.60; ppl: 328.47; xent: 5.79; lr: 1.00000; 18994/18793 tok/s;     88 sec
+    [2020-09-25 15:29:48,635 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:29:48,924 INFO] Step 700/ 1000; acc:  20.57; ppl: 285.48; xent: 5.65; lr: 1.00000; 17856/17788 tok/s;     94 sec
+    [2020-09-25 15:29:54,898 INFO] Step 750/ 1000; acc:  21.97; ppl: 249.06; xent: 5.52; lr: 1.00000; 19030/18924 tok/s;    100 sec
+    [2020-09-25 15:30:01,233 INFO] Step 800/ 1000; acc:  22.66; ppl: 228.54; xent: 5.43; lr: 1.00000; 17571/17471 tok/s;    106 sec
+    [2020-09-25 15:30:01,357 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:30:07,345 INFO] Step 850/ 1000; acc:  24.32; ppl: 193.65; xent: 5.27; lr: 1.00000; 18344/18313 tok/s;    112 sec
+    [2020-09-25 15:30:11,363 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:30:13,487 INFO] Step 900/ 1000; acc:  24.93; ppl: 177.65; xent: 5.18; lr: 1.00000; 18293/18105 tok/s;    118 sec
+    [2020-09-25 15:30:19,670 INFO] Step 950/ 1000; acc:  26.33; ppl: 157.10; xent: 5.06; lr: 1.00000; 17791/17746 tok/s;    124 sec
+    [2020-09-25 15:30:24,072 INFO] Loading ParallelCorpus(toy-ende/src-train.txt, toy-ende/tgt-train.txt, align=None)...
+    [2020-09-25 15:30:25,820 INFO] Step 1000/ 1000; acc:  27.47; ppl: 137.64; xent: 4.92; lr: 1.00000; 17942/17962 tok/s;    131 sec
+    [2020-09-25 15:30:25,822 INFO] Loading ParallelCorpus(toy-ende/src-val.txt, toy-ende/tgt-val.txt, align=None)...
+    [2020-09-25 15:30:34,665 INFO] Validation perplexity: 241.801
+    [2020-09-25 15:30:34,666 INFO] Validation accuracy: 20.2837
 
 
 
 
 
-    <onmt.utils.statistics.Statistics at 0x7fb613a1ba90>
+    <onmt.utils.statistics.Statistics at 0x7fca934e8e80>
 
 
 
@@ -512,50 +503,50 @@ for batch in data_iter:
 
     
     SENT 0: ['Parliament', 'Does', 'Not', 'Support', 'Amendment', 'Freeing', 'Tymoshenko']
-    PRED 0: Das Parlament , die Europäische Parlament , die dem Parlament , dem Parlament , dem Parlament , dem Parlament , dem Parlament zu <unk> .
-    PRED SCORE: -1.6008
+    PRED 0: Parlament das Parlament über die Europäische Parlament , die sich in der Lage in der Lage ist , die es in der Lage sind .
+    PRED SCORE: -1.5935
     
     
     SENT 0: ['Today', ',', 'the', 'Ukraine', 'parliament', 'dismissed', ',', 'within', 'the', 'Code', 'of', 'Criminal', 'Procedure', 'amendment', ',', 'the', 'motion', 'to', 'revoke', 'an', 'article', 'based', 'on', 'which', 'the', 'opposition', 'leader', ',', 'Yulia', 'Tymoshenko', ',', 'was', 'sentenced', '.']
-    PRED 0: Die Aussprache , die sich in den letzten Jahren , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage ,
-    PRED SCORE: -1.7200
+    PRED 0: In der Nähe des Hotels , die in der Lage , die sich in der Lage ist , in der Lage , die in der Lage , die in der Lage ist .
+    PRED SCORE: -1.7173
     
     
     SENT 0: ['The', 'amendment', 'that', 'would', 'lead', 'to', 'freeing', 'the', 'imprisoned', 'former', 'Prime', 'Minister', 'was', 'revoked', 'during', 'second', 'reading', 'of', 'the', 'proposal', 'for', 'mitigation', 'of', 'sentences', 'for', 'economic', 'offences', '.']
-    PRED 0: Die Tatsache , die im Rahmen war , war es , die in der Lage , die im Vorschlag , war .
-    PRED SCORE: -1.6019
+    PRED 0: Die Tatsache , die sich in der Lage in der Lage ist , die für eine Antwort der Entwicklung für die Entwicklung von Präsident .
+    PRED SCORE: -1.6834
     
     
     SENT 0: ['In', 'October', ',', 'Tymoshenko', 'was', 'sentenced', 'to', 'seven', 'years', 'in', 'prison', 'for', 'entering', 'into', 'what', 'was', 'reported', 'to', 'be', 'a', 'disadvantageous', 'gas', 'deal', 'with', 'Russia', '.']
-    PRED 0: In einigen Jahren war es , um zu einem Jahren zu <unk> , was die Zusammenarbeit mit Russland .
-    PRED SCORE: -1.5860
+    PRED 0: In der Nähe wurde die Menschen in der Lage ist , die sich in der Lage <unk> .
+    PRED SCORE: -1.5765
     
     
     SENT 0: ['The', 'verdict', 'is', 'not', 'yet', 'final;', 'the', 'court', 'will', 'hear', 'Tymoshenko', '&apos;s', 'appeal', 'in', 'December', '.']
-    PRED 0: Die Aussprache ist nicht <unk> , die <unk> <unk> und <unk> <unk> .
-    PRED SCORE: -1.4980
+    PRED 0: Es ist nicht der Fall , die in der Lage in der Lage sind .
+    PRED SCORE: -1.3287
     
     
     SENT 0: ['Tymoshenko', 'claims', 'the', 'verdict', 'is', 'a', 'political', 'revenge', 'of', 'the', 'regime;', 'in', 'the', 'West', ',', 'the', 'trial', 'has', 'also', 'evoked', 'suspicion', 'of', 'being', 'biased', '.']
-    PRED 0: Es ist eine Frage der <unk> , in der Nähe , die in der Lage , die sich in der Lage , die in der Lage , in denen auch <unk> .
-    PRED SCORE: -1.8194
+    PRED 0: Um in der Lage ist auch eine Lösung Rolle .
+    PRED SCORE: -1.3975
     
     
     SENT 0: ['The', 'proposal', 'to', 'remove', 'Article', '365', 'from', 'the', 'Code', 'of', 'Criminal', 'Procedure', ',', 'upon', 'which', 'the', 'former', 'Prime', 'Minister', 'was', 'sentenced', ',', 'was', 'supported', 'by', '147', 'members', 'of', 'parliament', '.']
-    PRED 0: Der Vorschlag , die sich von den Menschen , die in der Türkei , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die in der Lage , die
-    PRED SCORE: -1.6393
+    PRED 0: Der Vorschlag , die in der Lage , die in der Lage , die in der Lage ist , war er von der Fall <unk> wurde .
+    PRED SCORE: -1.6062
     
     
     SENT 0: ['Its', 'ratification', 'would', 'require', '226', 'votes', '.']
-    PRED 0: Bitte beachten Sie , dass sie <unk> werden .
-    PRED SCORE: -1.4621
+    PRED 0: Es wäre noch einmal noch einmal <unk> .
+    PRED SCORE: -1.8001
     
     
     SENT 0: ['Libya', '&apos;s', 'Victory']
-    PRED 0: In der Nähe ist es , wenn man eine <unk> , <unk> , <unk> .
-    PRED SCORE: -1.9260
+    PRED 0: In der Nähe des Hotels befindet sich in der Nähe des Hotels in der Lage .
+    PRED SCORE: -1.7097
     
     
     SENT 0: ['The', 'story', 'of', 'Libya', '&apos;s', 'liberation', ',', 'or', 'rebellion', ',', 'already', 'has', 'its', 'defeated', '.']
-    PRED 0: Die Firma , <unk> oder <unk> , <unk> , <unk> , <unk> , <unk> .
-    PRED SCORE: -1.6742
+    PRED 0: In der Nähe des Hotels in der Lage ist in der Lage .
+    PRED SCORE: -1.7885

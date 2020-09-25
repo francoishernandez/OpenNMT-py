@@ -184,7 +184,7 @@ data:
 
 ## How can I apply on-the-fly tokenization and subword regularization when training?
 
-This is naturally embedded in the data configuration format introduced in OpenNMT-py 2.0. Each entry of the `data` configuration will have its own *transforms*. *transforms* basically is a list of functions that will be applied sequentially to the examples when read from file.
+This is naturally embedded in the data configuration format introduced in OpenNMT-py 2.0. Each entry of the `data` configuration will have its own `transforms`. `transforms` basically is a `list` of functions that will be applied sequentially to the examples when read from file.
 
 ### Example
 
@@ -224,6 +224,128 @@ data:
 ```
 
 Other tokenization methods and transforms are readily available. See the dedicated docs for more details.
+
+## What are the readily available on-the-fly data transforms?
+
+It's your lucky day! We already embedded several transforms that can be used easily.
+
+Note: all the details about every flag and options for each transform can be found in the [train](#train) section.
+
+### General purpose
+
+#### Filter examples by length
+
+Transform name: `filtertoolong`
+
+Class: `onmt.dynamic.transforms.misc.FilterTooLongTransform`
+
+The following options can be added to the configuration :
+- `src_seq_length`: maximum source sequence length;
+- `tgt_seq_length`: maximum target sequence length.
+
+#### Add custom prefix to examples
+
+Transform name: `prefix`
+
+Class: `onmt.dynamic.transforms.misc.PrefixTransform`
+
+For each dataset that the `prefix` transform is applied to, you can set the additional `src_prefix` and `tgt_prefix` parameters in its data configuration:
+
+```yaml
+data:
+    corpus_1:
+        path_src: toy-ende/src-train1.txt
+        path_tgt: toy-ende/tgt-train1.txt
+        transforms: [prefix]
+        weight: 1
+        src_prefix: __some_src_prefix__
+        tgt_prefix: __some_tgt_prefix__
+```
+
+
+
+### Tokenization
+
+Common options for the tokenization transforms are the following:
+
+- `src_subword_model`: path of source side (or both if shared) subword model;
+- `tgt_subword_model`: path of target side subword model;
+- `subword_nbest`: number of candidates for subword regularization (sentencepiece);
+- `subword_alpha`: smoothing parameter for sentencepiece regularization / dropout probability for BPE.
+
+#### [OpenNMT Tokenizer](https://github.com/opennmt/Tokenizer)
+
+Transform name: `onmt_tokenize`
+
+Class: `onmt.dynamic.transforms.misc.ONMTTokenizerTransform`
+
+Additional options are available:
+- `src_subword_type`: type of subword model for source side (from `["none", "sentencepiece", "bpe"]`);
+- `tgt_subword_type`: type of subword model for target side (from `["none", "sentencepiece", "bpe"]`);
+- `onmttok_kwargs`: additional kwargs for pyonmttok Tokenizer class.
+
+#### [SentencePiece](https://github.com/google/sentencepiece)
+
+Transform name: `sentencepiece`
+
+Class: `onmt.dynamic.transforms.misc.SentencePieceTransform`
+
+The `src_subword_model` and `tgt_subword_model` should be valid sentencepiece models.
+
+#### BPE ([subword-nmt](https://github.com/rsennrich/subword-nmt))
+
+Transform name: `bpe`
+
+Class: `onmt.dynamic.transforms.misc.BPETransform`
+
+The `src_subword_model` and `tgt_subword_model` should be valid BPE models.
+
+### BART-style noise
+
+BART-style noise is composed of several parts, as described in BART: [Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension](https://arxiv.org/abs/1910.13461).
+
+These different types of noise can be controlled with the following options:
+
+- `permute_sent_ratio`: proportion of sentences to permute (default boundaries are ".", "?" and "!");
+- `rotate_ratio`: proportion of inputs to permute;
+- `insert_ratio`: proportion of additional random tokens to insert;
+- `random_ratio`: proportion of tokens to replace with random;
+- `mask_ratio`: proportion of words/subwords to mask;
+- `mask_length`: length of masking window (from `["subword", "word", "span-poisson"]`);
+- `poisson_lambda`: $\lambda$ value for Poisson distribution to sample span length (in the case of `mask_length` set to `span-poisson`);
+- `replace_length`: when masking N tokens, replace with 0, 1, " "or N tokens. (set to -1 for N).
+
+### SwitchOut and sampling
+
+#### [SwitchOut](https://arxiv.org/abs/1808.07512)
+
+Transform name: `switchout`
+
+Class: `onmt.dynamic.transforms.misc.SwitchOutTransform`
+
+Options:
+
+- `switchout_temperature`: sampling temperature for SwitchOut.
+
+#### Drop some tokens
+
+Transform name: `tokendrop`
+
+Class: `onmt.dynamic.transforms.misc.TokenDropTransform`
+
+Options:
+
+- `tokendrop_temperature`: sampling temperature for token deletion.
+
+#### Mask some tokens
+
+Transform name: `tokenmask`
+
+Class: `onmt.dynamic.transforms.misc.TokenMaskTransform`
+
+Options:
+
+- `tokenmask_temperature`: sampling temperature for token masking.
 
 ## How can I create custom on-the-fly data transforms?
 

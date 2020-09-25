@@ -5,26 +5,35 @@ from onmt.constants import CorpusName
 from onmt.dynamic.transforms import TransformPipe
 
 from collections import Counter
+from contextlib import contextmanager
 
 
-class File(object):
-    def __init__(self, name, *args, **kwargs):
-        self.name = name
-        self.args = args
-        self.kwargs = kwargs
+@contextmanager
+def exfile_open(filename, *args, **kwargs):
+    """Extended file opener enables open(filename=None).
 
-    def __enter__(self):
-        if self.name is None:
-            from itertools import repeat
-            self._file = repeat(None)
-        else:
-            import codecs
-            self._file = codecs.open(self.name, *self.args, **self.kwargs)
-        return self._file
+    This context manager enables open(filename=None) as well as regular file.
+    filename None will produce endlessly None for each iterate,
+    while filename with valid path will produce lines as usual.
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.name is not None and self._file:
-            self._file.close()
+    Args:
+        filename (str|None): a valid file path or None;
+        *args: args relate to open file using codecs;
+        **kwargs: kwargs relate to open file using codecs.
+
+    Yields:
+        `None` repeatly if filename==None,
+        else yield from file specified in `filename`.
+    """
+    if filename is None:
+        from itertools import repeat
+        _file = repeat(None)
+    else:
+        import codecs
+        _file = codecs.open(filename, *args, **kwargs)
+    yield _file
+    if filename is not None and _file:
+        _file.close()
 
 
 class ParallelCorpus(object):
@@ -43,9 +52,9 @@ class ParallelCorpus(object):
         `offset` and `stride` allow to iterate only on every
         `stride` example, starting from `offset`.
         """
-        with File(self.src, mode='rb') as fs,\
-                File(self.tgt, mode='rb') as ft,\
-                File(self.align, mode='rb') as fa:
+        with exfile_open(self.src, mode='rb') as fs,\
+                exfile_open(self.tgt, mode='rb') as ft,\
+                exfile_open(self.align, mode='rb') as fa:
             logger.info(f"Loading {repr(self)}...")
             for i, (sline, tline, align) in enumerate(zip(fs, ft, fa)):
                 if (i % stride) == offset:
@@ -202,7 +211,7 @@ def save_transformed_sample(opts, transforms, n_sample=3, build_vocab=False):
         counter_src = Counter()
         counter_tgt = Counter()
     datasets_iterables = build_corpora_iters(
-        corpora, transforms, opts.data, is_train=True,
+        corpora, transforms, opts.data, is_train=False,
         skip_empty_level=opts.skip_empty_level)
     sample_path = os.path.join(
         os.path.dirname(opts.save_data), CorpusName.SAMPLE)

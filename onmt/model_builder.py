@@ -7,13 +7,12 @@ import torch
 import torch.nn as nn
 from torch.nn.init import xavier_uniform_
 
-import onmt.inputters as inputters
 import onmt.modules
 from onmt.encoders import str2enc
 
 from onmt.decoders import str2dec
 
-from onmt.modules import Embeddings, VecEmbedding, CopyGenerator
+from onmt.modules import Embeddings, CopyGenerator
 from onmt.modules.util_class import Cast
 from onmt.utils.misc import use_gpu
 from onmt.utils.logging import logger
@@ -29,23 +28,14 @@ def build_embeddings(opt, text_field, for_encoder=True):
     """
     emb_dim = opt.src_word_vec_size if for_encoder else opt.tgt_word_vec_size
 
-    if opt.model_type == "vec" and for_encoder:
-        return VecEmbedding(
-            opt.feat_vec_size,
-            emb_dim,
-            position_encoding=opt.position_encoding,
-            dropout=(opt.dropout[0] if type(opt.dropout) is list
-                     else opt.dropout),
-        )
-
     pad_indices = [f.vocab.stoi[f.pad_token] for _, f in text_field]
     word_padding_idx, feat_pad_indices = pad_indices[0], pad_indices[1:]
 
     num_embs = [len(f.vocab) for _, f in text_field]
     num_word_embeddings, num_feat_embeddings = num_embs[0], num_embs[1:]
 
-    fix_word_vecs = opt.fix_word_vecs_enc if for_encoder \
-        else opt.fix_word_vecs_dec
+    freeze_word_vecs = opt.freeze_word_vecs_enc if for_encoder \
+        else opt.freeze_word_vecs_dec
 
     emb = Embeddings(
         word_vec_size=emb_dim,
@@ -59,7 +49,7 @@ def build_embeddings(opt, text_field, for_encoder=True):
         word_vocab_size=num_word_embeddings,
         feat_vocab_sizes=num_feat_embeddings,
         sparse=opt.optim == "sparseadam",
-        fix_word_vecs=fix_word_vecs
+        freeze_word_vecs=freeze_word_vecs
     )
     return emb
 
@@ -71,8 +61,7 @@ def build_encoder(opt, embeddings):
         opt: the option in current environment.
         embeddings (Embeddings): vocab embeddings for this encoder.
     """
-    enc_type = opt.encoder_type if opt.model_type == "text" \
-        or opt.model_type == "vec" else opt.model_type
+    enc_type = opt.encoder_type if opt.model_type == "text" else opt.model_type
     return str2enc[enc_type].from_opt(opt, embeddings)
 
 
@@ -97,18 +86,17 @@ def load_test_model(opt, model_path=None):
     model_opt = ArgumentParser.ckpt_model_opts(checkpoint['opt'])
     ArgumentParser.update_model_opts(model_opt)
     ArgumentParser.validate_model_opts(model_opt)
-    vocab = checkpoint['vocab']
-    if inputters.old_style_vocab(vocab):
-        fields = inputters.load_old_vocab(
-            vocab, opt.data_type, dynamic_dict=model_opt.copy_attn
-        )
-    else:
-        fields = vocab
+    fields = checkpoint['vocab']
 
     model = build_base_model(model_opt, fields, use_gpu(opt), checkpoint,
                              opt.gpu)
     if opt.fp32:
         model.float()
+    elif opt.int8:
+        if opt.gpu >= 0:
+            raise ValueError(
+                "Dynamic 8-bit quantization is not supported on GPU")
+        torch.quantization.quantize_dynamic(model, inplace=True)
     model.eval()
     model.generator.eval()
     return fields, model, model_opt
@@ -139,7 +127,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
         model_opt.attention_dropout = model_opt.dropout
 
     # Build embeddings.
-    if model_opt.model_type == "text" or model_opt.model_type == "vec":
+    if model_opt.model_type == "text":
         src_field = fields["src"]
         src_emb = build_embeddings(model_opt, src_field)
     else:
@@ -179,7 +167,8 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
             gen_func = nn.LogSoftmax(dim=-1)
         generator = nn.Sequential(
             nn.Linear(model_opt.dec_rnn_size,
-                      len(fields["tgt"].base_field.vocab)),
+                      len(fields["tgt"].base_field.vocab),
+                      bias=False),
             Cast(torch.float32),
             gen_func
         )

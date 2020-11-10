@@ -191,11 +191,6 @@ jobs:
       run: |
         python tools/extract_embeddings.py \
           -model onmt/tests/test_model.pt
-    - name: Build docs
-      run: |
-        pip install -r docs/requirements.txt
-        set -e
-        cd docs/ && make html && cd ..
   build-docs:
     runs-on: ubuntu-latest
     steps:
@@ -213,12 +208,5 @@ jobs:
     - name: Build docs
       run: |
         set -e
+        # Check that docs are built without errors
         cd docs/ && make html && cd ..
-    - name: Deploy docs
-      if: github.ref == "master"
-      uses: JamesIves/github-pages-deploy-action@3.7.1
-      with:
-        GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-        BRANCH: gh-pages
-        FOLDER: docs/build/html
-        CLEAN: true

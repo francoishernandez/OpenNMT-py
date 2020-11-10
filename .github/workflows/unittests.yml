@@ -184,7 +184,8 @@ jobs:
           -emb_file_enc onmt/tests/sample_glove.txt \
           -emb_file_dec onmt/tests/sample_glove.txt \
           -dict_file /tmp/onmt.train.check.vocab.pt \
-          -output_file /tmp/q_gloveembeddings && rm /tmp/q_gloveembeddings
+          -output_file /tmp/q_gloveembeddings \
+          && rm /tmp/q_gloveembeddings*
         rm /tmp/onmt.train.check.*.pt
     - name: Test extract_embeddings tool
       run: |

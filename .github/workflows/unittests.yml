@@ -35,11 +35,94 @@ jobs:
         python -m unittest discover
     - name: Test vocabulary build
       run: |
-          PYTHONPATH=$PYTHONPATH:. python onmt/bin/build_vocab.py \
-            -config data/data.yaml \
-            -save_data /tmp/onmt \
-            -n_sample 5000 \
-            -src_vocab /tmp/onmt.vocab.src \
-            -tgt_vocab /tmp/onmt.vocab.tgt \
-            && rm -rf /tmp/sample
-        
+        python onmt/bin/build_vocab.py \
+          -config data/data.yaml \
+          -save_data /tmp/onmt \
+          -n_sample 5000 \
+          -src_vocab /tmp/onmt.vocab.src \
+          -tgt_vocab /tmp/onmt.vocab.tgt \
+          && rm -rf /tmp/sample
+    - name: Test field/transform dump
+      run: |
+        # The dumped fields are used later when testing tools
+        python train.py \
+          -config data/data.yaml \
+          -save_data /tmp/onmt.train.check \
+          -dump_fields \
+          -dump_transforms \
+          -n_sample 30 \
+          -src_vocab /tmp/onmt.vocab.src \
+          -tgt_vocab /tmp/onmt.vocab.tgt \
+          -src_vocab_size 1000 \
+          -tgt_vocab_size 1000
+    - name: Test RNN training
+      run: |
+        python train.py \
+          -config data/data.yaml \
+          -src_vocab /tmp/onmt.vocab.src \
+          -tgt_vocab /tmp/onmt.vocab.tgt \
+          -src_vocab_size 1000 \
+          -tgt_vocab_size 1000 \
+          -rnn_size 2 \
+          -batch_size 10 \
+          -word_vec_size 5 \
+          -report_every 5\
+          -rnn_size 10 \
+          -train_steps 10
+    - name: Test RNN training with copy
+      run: |
+        python train.py \
+          -config data/data.yaml \
+          -src_vocab /tmp/onmt.vocab.src \
+          -tgt_vocab /tmp/onmt.vocab.tgt \
+          -src_vocab_size 1000 \
+          -tgt_vocab_size 1000 \
+          -rnn_size 2 \
+          -batch_size 10 \
+          -word_vec_size 5 \
+          -report_every 5 \
+          -rnn_size 10 \
+          -train_steps 10 \
+          -copy_attn
+    - name: Test Transformer training with align
+      run: |
+        python train.py \
+          -config data/align_data.yaml \
+          -src_vocab /tmp/onmt.vocab.src \
+          -tgt_vocab /tmp/onmt.vocab.tgt \
+          -src_vocab_size 1000 \
+          -tgt_vocab_size 1000 \
+          -max_generator_batches 0 \
+          -encoder_type transformer \
+          -decoder_type transformer \
+          -layers 4 \
+          -word_vec_size 16 \
+          -rnn_size 16 \
+          -heads 2 \
+          -transformer_ff 64 \
+          -lambda_align 0.05 \
+          -alignment_layer 2 \
+          -alignment_heads 0 \
+          -report_every 5 \
+          -train_steps 10
+    - name: Test Graph neural network training
+      run: |
+        python train.py \
+          -config data/ggnn_data.yaml \
+          -src_seq_length 1000 \
+          -tgt_seq_length 30 \
+          -encoder_type ggnn \
+          -layers 2 \
+          -decoder_type rnn \
+          -rnn_size 256 \
+          -learning_rate 0.1 \
+          -learning_rate_decay 0.8 \
+          -global_attention general \
+          -batch_size 32 \
+          -word_vec_size 256 \
+          -bridge \
+          -train_steps 10 \
+          -n_edge_types 9 \
+          -state_dim 256 \
+          -n_steps 10 \
+          -n_node 64

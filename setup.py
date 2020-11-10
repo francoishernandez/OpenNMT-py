@@ -11,7 +11,7 @@ setup(
     description='A python implementation of OpenNMT',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='2.0.0rc1auto6',
+    version='2.0.0rc1.dev1',
     packages=find_packages(),
     project_urls={
         "Documentation": "http://opennmt.net/OpenNMT-py/",

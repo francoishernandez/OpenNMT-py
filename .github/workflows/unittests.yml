@@ -191,4 +191,8 @@ jobs:
       run: |
         python tools/extract_embeddings.py \
           -model onmt/tests/test_model.pt
-           
+    - name: Build docs
+      run: |
+        pip install -r docs/requirements.txt
+        set -e
+        cd docs/ && make html && cd ..

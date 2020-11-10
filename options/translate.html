@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Options: translate.py: &mdash; OpenNMT-py  documentation</title>
+  <title>Translate &mdash; OpenNMT-py  documentation</title>
   
 
   
@@ -17,42 +17,39 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script src="https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../genindex.html"/>
-        <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="OpenNMT-py  documentation" href="../index.html"/>
-        <link rel="next" title="Example: Translation" href="../extended.html"/>
-        <link rel="prev" title="Options: train.py:" href="train.html"/> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Server" href="server.html" />
+    <link rel="prev" title="Train" href="train.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -86,32 +83,64 @@
               
             
             
-              <ul class="current">
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../main.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../onmt.html">Doc: Framework</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../onmt.modules.html">Doc: Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../onmt.translation.html">Doc: Translation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../onmt.io.html">Doc: Data Loaders</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Library.html">Library: Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="preprocess.html">Options: preprocess.py:</a></li>
-<li class="toctree-l1"><a class="reference internal" href="train.html">Options: train.py:</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Options: translate.py:</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#model"><strong>Model</strong>:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#data"><strong>Data</strong>:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#beam"><strong>Beam</strong>:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#logging"><strong>Logging</strong>:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#efficiency"><strong>Efficiency</strong>:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#speech"><strong>Speech</strong>:</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../extended.html">Example: Translation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Summarization.html">Example: Summarization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../im2text.html">Example: Image to Text</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../speech2text.html">Example: Speech to Text</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../ref.html">References</a></li>
+</ul>
+<p class="caption"><span class="caption-text">FAQ</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">How do I use Pretrained embeddings (e.g. GloVe)?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#how-do-i-use-the-transformer-model">How do I use the Transformer model?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#do-you-support-multi-gpu">Do you support multi-gpu?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#how-can-i-ensemble-models-at-inference">How can I ensemble Models at inference?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#how-can-i-weight-different-corpora-at-training">How can I weight different corpora at training?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#how-can-i-apply-on-the-fly-tokenization-and-subword-regularization-when-training">How can I apply on-the-fly tokenization and subword regularization when training?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#what-are-the-readily-available-on-the-fly-data-transforms">What are the readily available on-the-fly data transforms?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#how-can-i-create-custom-on-the-fly-data-transforms">How can I create custom on-the-fly data transforms?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html#can-i-get-word-alignments-while-translating">Can I get word alignments while translating?</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/Library.html">Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/Translation.html">Translation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/Summarization.html">Summarization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/GGNN.html">Gated Graph Sequence Neural Networks</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Scripts</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_vocab.html">Build Vocab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">Train</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Translate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Data">Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Decoding tricks">Decoding tricks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Random Sampling">Random Sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Reproducibility">Reproducibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Beam Search">Beam Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Logging">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Efficiency">Efficiency</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">Server</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../onmt.html">Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onmt.modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onmt.translation.html">Translation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onmt.translate.translation_server.html">Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../onmt.inputters.html">Data Loaders</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Legacy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../legacy/FAQ.html">FAQ (Legacy version)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy/im2text.html">Image to Text</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy/speech2text.html">Speech to Text</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy/vid2text.html">Video to Text</a></li>
 </ul>
 
             
@@ -123,7 +152,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">OpenNMT-py</a>
@@ -131,9 +160,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -156,13 +186,13 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-      <li>Options: translate.py:</li>
+      <li>Translate</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/options/translate.md.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/options/translate.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -175,121 +205,254 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <!--- This file was automatically generated. Do not modify it manually but use the docs/options/generate.sh script instead. --><p>translate.py</p>
-<div class="section" id="options-translate-py">
-<span id="options-translate-py"></span><h1>Options: translate.py:<a class="headerlink" href="#options-translate-py" title="Permalink to this headline">¶</a></h1>
-<p>translate.py</p>
-<div class="section" id="model">
-<span id="model"></span><h2><strong>Model</strong>:<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-model []</strong>
-Path to model .pt file</li>
-</ul>
+  <div class="section" id="translate">
+<h1>Translate<a class="headerlink" href="#translate" title="Permalink to this headline">¶</a></h1>
+<p><p>translate.py</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">translate</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">config</span> <span class="n">CONFIG</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">save_config</span> <span class="n">SAVE_CONFIG</span><span class="p">]</span> <span class="o">--</span><span class="n">model</span>
+                    <span class="n">MODEL</span> <span class="p">[</span><span class="n">MODEL</span> <span class="o">...</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fp32</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">int8</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">avg_raw_probs</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">data_type</span> <span class="n">DATA_TYPE</span><span class="p">]</span> <span class="o">--</span><span class="n">src</span> <span class="n">SRC</span> <span class="p">[</span><span class="o">--</span><span class="n">tgt</span> <span class="n">TGT</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">tgt_prefix</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">shard_size</span> <span class="n">SHARD_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output</span> <span class="n">OUTPUT</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">report_align</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">report_time</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">block_ngram_repeat</span> <span class="n">BLOCK_NGRAM_REPEAT</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">ignore_when_blocking</span> <span class="n">IGNORE_WHEN_BLOCKING</span> <span class="p">[</span><span class="n">IGNORE_WHEN_BLOCKING</span> <span class="o">...</span><span class="p">]]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">replace_unk</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">phrase_table</span> <span class="n">PHRASE_TABLE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">random_sampling_topk</span> <span class="n">RANDOM_SAMPLING_TOPK</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">random_sampling_temp</span> <span class="n">RANDOM_SAMPLING_TEMP</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">beam_size</span> <span class="n">BEAM_SIZE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">min_length</span> <span class="n">MIN_LENGTH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">max_length</span> <span class="n">MAX_LENGTH</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">max_sent_length</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">stepwise_penalty</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">length_penalty</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">wu</span><span class="p">,</span><span class="n">avg</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">ratio</span> <span class="n">RATIO</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">coverage_penalty</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">wu</span><span class="p">,</span><span class="n">summary</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">alpha</span> <span class="n">ALPHA</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">beta</span> <span class="n">BETA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">log_file</span> <span class="n">LOG_FILE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">log_file_level</span> <span class="p">{</span><span class="n">CRITICAL</span><span class="p">,</span><span class="n">ERROR</span><span class="p">,</span><span class="n">WARNING</span><span class="p">,</span><span class="n">INFO</span><span class="p">,</span><span class="n">DEBUG</span><span class="p">,</span><span class="n">NOTSET</span><span class="p">,</span><span class="mi">50</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">0</span><span class="p">}]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">attn_debug</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">align_debug</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">dump_beam</span> <span class="n">DUMP_BEAM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">n_best</span> <span class="n">N_BEST</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">batch_size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch_type</span> <span class="p">{</span><span class="n">sents</span><span class="p">,</span><span class="n">tokens</span><span class="p">}]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">gpu</span> <span class="n">GPU</span><span class="p">]</span>
+</pre></div>
 </div>
-<div class="section" id="data">
-<span id="data"></span><h2><strong>Data</strong>:<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-data_type [text]</strong>
-Type of the source input. Options: [text|img].</li>
-<li><strong>-src []</strong>
-Source sequence to decode (one line per sequence)</li>
-<li><strong>-src_dir []</strong>
-Source directory for image or audio files</li>
-<li><strong>-tgt []</strong>
-True target sequence (optional)</li>
-<li><strong>-output [pred.txt]</strong>
-Path to output the predictions (each line will be the decoded sequence</li>
-<li><strong>-report_bleu []</strong>
-Report bleu score after translation, call tools/multi-bleu.perl on command line</li>
-<li><strong>-report_rouge []</strong>
-Report rouge 1/2/3/L/SU4 score after translation call tools/test_rouge.py on
-command line</li>
-<li><strong>-dynamic_dict []</strong>
-Create dynamic dictionaries</li>
-<li><strong>-share_vocab []</strong>
-Share source and target vocabulary</li>
-</ul>
+<div class="section" id="Configuration">
+<h2>Configuration<a class="headerlink" href="#Configuration" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>-config, --config</kbd></dt>
+<dd><p>Path of the main YAML config file.</p>
+</dd>
+<dt><kbd>-save_config, --save_config</kbd></dt>
+<dd><p>Path where to save the config.</p>
+</dd>
+</dl>
 </div>
-<div class="section" id="beam">
-<span id="beam"></span><h2><strong>Beam</strong>:<a class="headerlink" href="#beam" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-beam_size [5]</strong>
-Beam size</li>
-<li><strong>-min_length []</strong>
-Minimum prediction length</li>
-<li><strong>-max_length [100]</strong>
-Maximum prediction length.</li>
-<li><strong>-max_sent_length []</strong>
-Deprecated, use <code class="docutils literal notranslate"><span class="pre">-max_length</span></code> instead</li>
-<li><strong>-stepwise_penalty []</strong>
-Apply penalty at every decoding step. Helpful for summary penalty.</li>
-<li><strong>-length_penalty [none]</strong>
-Length Penalty to use.</li>
-<li><strong>-coverage_penalty [none]</strong>
-Coverage Penalty to use.</li>
-<li><strong>-alpha []</strong>
-Google NMT length penalty parameter (higher = longer generation)</li>
-<li><strong>-beta []</strong>
-Coverage penalty parameter</li>
-<li><strong>-replace_unk []</strong>
-Replace the generated UNK tokens with the source token that had highest
-attention weight. If phrase_table is provided, it will lookup the identified
-source token and give the corresponding target token. If it is not provided(or
-the identified source token does not exist in the table) then it will copy the
-source token</li>
-</ul>
+<div class="section" id="Model">
+<h2>Model<a class="headerlink" href="#Model" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--model, -model</kbd></dt>
+<dd><p>Path to model .pt file(s). Multiple models can be specified, for ensemble decoding.</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--fp32, -fp32</kbd></dt>
+<dd><p>Force the model to be in FP32 because FP16 is very slow on GTX1080(ti).</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--int8, -int8</kbd></dt>
+<dd><p>Enable dynamic 8-bit quantization (CPU only).</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--avg_raw_probs, -avg_raw_probs</kbd></dt>
+<dd><p>If this is set, during ensembling scores from different models will be combined by averaging their raw probabilities and then taking the log. Otherwise, the log probabilities will be averaged directly. Necessary for models whose output layers can assign zero probability.</p>
+<p>Default: False</p>
+</dd>
+</dl>
 </div>
-<div class="section" id="logging">
-<span id="logging"></span><h2><strong>Logging</strong>:<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-verbose []</strong>
-Print scores and predictions for each sentence</li>
-<li><strong>-attn_debug []</strong>
-Print best attn for each word</li>
-<li><strong>-dump_beam []</strong>
-File to dump beam information to.</li>
-<li><strong>-n_best [1]</strong>
-If verbose is set, will output the n_best decoded sentences</li>
-</ul>
+<div class="section" id="Data">
+<h2>Data<a class="headerlink" href="#Data" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--data_type, -data_type</kbd></dt>
+<dd><p>Type of the source input. Options: [text].</p>
+<p>Default: “text”</p>
+</dd>
+<dt><kbd>--src, -src</kbd></dt>
+<dd><p>Source sequence to decode (one line per sequence)</p>
+</dd>
+<dt><kbd>--tgt, -tgt</kbd></dt>
+<dd><p>True target sequence (optional)</p>
+</dd>
+<dt><kbd>--tgt_prefix, -tgt_prefix</kbd></dt>
+<dd><p>Generate predictions using provided <cite>-tgt</cite> as prefix.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--shard_size, -shard_size</kbd></dt>
+<dd><p>Divide src and tgt (if applicable) into smaller multiple src and tgt files, then build shards, each shard will have opt.shard_size samples except last shard. shard_size=0 means no segmentation shard_size&gt;0 means segment dataset into multiple shards, each shard has shard_size samples</p>
+<p>Default: 10000</p>
+</dd>
+<dt><kbd>--output, -output</kbd></dt>
+<dd><p>Path to output the predictions (each line will be the decoded sequence</p>
+<p>Default: “pred.txt”</p>
+</dd>
+<dt><kbd>--report_align, -report_align</kbd></dt>
+<dd><p>Report alignment for each translation.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--report_time, -report_time</kbd></dt>
+<dd><p>Report some translation time metrics</p>
+<p>Default: False</p>
+</dd>
+</dl>
 </div>
-<div class="section" id="efficiency">
-<span id="efficiency"></span><h2><strong>Efficiency</strong>:<a class="headerlink" href="#efficiency" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-batch_size [30]</strong>
-Batch size</li>
-<li><strong>-gpu [-1]</strong>
-Device to run on</li>
-</ul>
+<div class="section" id="Decoding tricks">
+<h2>Decoding tricks<a class="headerlink" href="#Decoding tricks" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--block_ngram_repeat, -block_ngram_repeat</kbd></dt>
+<dd><p>Block repetition of ngrams during decoding.</p>
+<p>Default: 0</p>
+</dd>
+<dt><kbd>--ignore_when_blocking, -ignore_when_blocking</kbd></dt>
+<dd><p>Ignore these strings when blocking repeats. You want to block sentence delimiters.</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--replace_unk, -replace_unk</kbd></dt>
+<dd><p>Replace the generated UNK tokens with the source token that had highest attention weight. If phrase_table is provided, it will look up the identified source token and give the corresponding target token. If it is not provided (or the identified source token does not exist in the table), then it will copy the source token.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--phrase_table, -phrase_table</kbd></dt>
+<dd><p>If phrase_table is provided (with replace_unk), it will look up the identified source token and give the corresponding target token. If it is not provided (or the identified source token does not exist in the table), then it will copy the source token.</p>
+<p>Default: “”</p>
+</dd>
+</dl>
 </div>
-<div class="section" id="speech">
-<span id="speech"></span><h2><strong>Speech</strong>:<a class="headerlink" href="#speech" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><strong>-sample_rate [16000]</strong>
-Sample rate.</li>
-<li><strong>-window_size [0.02]</strong>
-Window size for spectrogram in seconds</li>
-<li><strong>-window_stride [0.01]</strong>
-Window stride for spectrogram in seconds</li>
-<li><strong>-window [hamming]</strong>
-Window type for spectrogram generation</li>
-</ul>
+<div class="section" id="Random Sampling">
+<h2>Random Sampling<a class="headerlink" href="#Random Sampling" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--random_sampling_topk, -random_sampling_topk</kbd></dt>
+<dd><p>Set this to -1 to do random sampling from full distribution. Set this to value k&gt;1 to do random sampling restricted to the k most likely next tokens. Set this to 1 to use argmax or for doing beam search.</p>
+<p>Default: 1</p>
+</dd>
+<dt><kbd>--random_sampling_temp, -random_sampling_temp</kbd></dt>
+<dd><p>If doing random sampling, divide the logits by this before computing softmax during decoding.</p>
+<p>Default: 1.0</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Reproducibility">
+<h2>Reproducibility<a class="headerlink" href="#Reproducibility" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--seed, -seed</kbd></dt>
+<dd><p>Set random seed used for better reproducibility between experiments.</p>
+<p>Default: -1</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Beam Search">
+<h2>Beam Search<a class="headerlink" href="#Beam Search" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--beam_size, -beam_size</kbd></dt>
+<dd><p>Beam size</p>
+<p>Default: 5</p>
+</dd>
+<dt><kbd>--min_length, -min_length</kbd></dt>
+<dd><p>Minimum prediction length</p>
+<p>Default: 0</p>
+</dd>
+<dt><kbd>--max_length, -max_length</kbd></dt>
+<dd><p>Maximum prediction length.</p>
+<p>Default: 100</p>
+</dd>
+<dt><kbd>--max_sent_length, -max_sent_length</kbd></dt>
+<dd><p>Deprecated, use <cite>-max_length</cite> instead</p>
+</dd>
+<dt><kbd>--stepwise_penalty, -stepwise_penalty</kbd></dt>
+<dd><p>Apply penalty at every decoding step. Helpful for summary penalty.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--length_penalty, -length_penalty</kbd></dt>
+<dd><p>Possible choices: none, wu, avg</p>
+<p>Length Penalty to use.</p>
+<p>Default: “none”</p>
+</dd>
+<dt><kbd>--ratio, -ratio</kbd></dt>
+<dd><p>Ratio based beam stop condition</p>
+<p>Default: -0.0</p>
+</dd>
+<dt><kbd>--coverage_penalty, -coverage_penalty</kbd></dt>
+<dd><p>Possible choices: none, wu, summary</p>
+<p>Coverage Penalty to use.</p>
+<p>Default: “none”</p>
+</dd>
+<dt><kbd>--alpha, -alpha</kbd></dt>
+<dd><p>Google NMT length penalty parameter (higher = longer generation)</p>
+<p>Default: 0.0</p>
+</dd>
+<dt><kbd>--beta, -beta</kbd></dt>
+<dd><p>Coverage penalty parameter</p>
+<p>Default: -0.0</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Logging">
+<h2>Logging<a class="headerlink" href="#Logging" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--log_file, -log_file</kbd></dt>
+<dd><p>Output logs to a file under this path.</p>
+<p>Default: “”</p>
+</dd>
+<dt><kbd>--log_file_level, -log_file_level</kbd></dt>
+<dd><p>Possible choices: CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET, 50, 40, 30, 20, 10, 0</p>
+<p>Default: “0”</p>
+</dd>
+<dt><kbd>--verbose, -verbose</kbd></dt>
+<dd><p>Print scores and predictions for each sentence</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--attn_debug, -attn_debug</kbd></dt>
+<dd><p>Print best attn for each word</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--align_debug, -align_debug</kbd></dt>
+<dd><p>Print best align for each word</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--dump_beam, -dump_beam</kbd></dt>
+<dd><p>File to dump beam information to.</p>
+<p>Default: “”</p>
+</dd>
+<dt><kbd>--n_best, -n_best</kbd></dt>
+<dd><p>If verbose is set, will output the n_best decoded sentences</p>
+<p>Default: 1</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Efficiency">
+<h2>Efficiency<a class="headerlink" href="#Efficiency" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>--batch_size, -batch_size</kbd></dt>
+<dd><p>Batch size</p>
+<p>Default: 30</p>
+</dd>
+<dt><kbd>--batch_type, -batch_type</kbd></dt>
+<dd><p>Possible choices: sents, tokens</p>
+<p>Batch grouping for batch_size. Standard is sents. Tokens will do dynamic batching</p>
+<p>Default: “sents”</p>
+</dd>
+<dt><kbd>--gpu, -gpu</kbd></dt>
+<dd><p>Device to run on</p>
+<p>Default: -1</p>
+</dd>
+</dl>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../extended.html" class="btn btn-neutral float-right" title="Example: Translation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="server.html" class="btn btn-neutral float-right" title="Server" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="train.html" class="btn btn-neutral" title="Options: train.py:" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="train.html" class="btn btn-neutral float-left" title="Train" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -298,11 +461,11 @@ Window type for spectrogram generation</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, srush.
+        &copy; Copyright 2017, srush
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -315,38 +478,15 @@ Window type for spectrogram generation</li>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
-      <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-      <script type="text/javascript" src="https://unpkg.com/mermaid@7.1.0/dist/mermaid.min.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

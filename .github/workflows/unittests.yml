@@ -126,3 +126,68 @@ jobs:
           -state_dim 256 \
           -n_steps 10 \
           -n_node 64
+    - name: Test RNN translation
+      run: |
+        head data/src-test.txt > /tmp/src-test.txt
+        python translate.py \
+          -model onmt/tests/test_model.pt \
+          -src /tmp/src-test.txt \
+          -verbose
+    - name: Test RNN ensemble translation
+      run: |
+        head data/src-test.txt > /tmp/src-test.txt
+        python translate.py \
+          -model onmt/tests/test_model.pt \
+          onmt/tests/test_model.pt \
+          -src /tmp/src-test.txt \
+          -verbose
+    - name: Test RNN translation with beam search
+      run: |
+        python translate.py \
+          -model onmt/tests/test_model2.pt \
+          -src data/morph/src.valid \
+          -verbose \
+          -batch_size 10 \
+          -beam_size 10 \
+          -tgt data/morph/tgt.valid \
+          -out /tmp/trans
+        diff data/morph/tgt.valid /tmp/trans && rm /tmp/trans
+    - name: Test RNN translation with random sampling
+      run: |
+        python translate.py \
+          -model onmt/tests/test_model2.pt \
+          -src data/morph/src.valid \
+          -verbose \
+          -batch_size 10 \
+          -beam_size 1 \
+          -seed 1 \
+          -random_sampling_topk "-1" \
+          -random_sampling_temp 0.0001 \
+          -tgt data/morph/tgt.valid \
+          -out /tmp/trans
+        diff data/morph/tgt.valid /tmp/trans && rm /tmp/trans
+    - name: Test extract_vocabulary tool
+      run: |
+        python tools/extract_vocabulary.py \
+          -file /tmp/onmt.train.check.vocab.pt \
+          -file_type field \
+          -side src \
+          -out_file /tmp/onmt.vocab.txt
+        if ! wc -l /tmp/onmt.vocab.txt | grep -qF  "1002"
+          then echo "wrong word count" && exit 1
+        else
+          echo "creat vocabulary pass"
+        fi
+    - name: Test embeddings_to_torch tool
+      run: |
+        python tools/embeddings_to_torch.py \
+          -emb_file_enc onmt/tests/sample_glove.txt \
+          -emb_file_dec onmt/tests/sample_glove.txt \
+          -dict_file /tmp/onmt.train.check.vocab.pt \
+          -output_file /tmp/q_gloveembeddings && rm /tmp/q_gloveembeddings
+        rm /tmp/onmt.train.check.*.pt
+    - name: Test extract_embeddings tool
+      run: |
+        python tools/extract_embeddings.py \
+          -model onmt/tests/test_model.pt
+           
